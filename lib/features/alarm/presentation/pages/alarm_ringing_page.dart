@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../../../core/platform/alarm_platform_client.dart';
 import '../../data/audio_track_repository.dart';
 import '../../domain/entities/audio_track.dart';
@@ -78,7 +80,8 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
         settings: const RouteSettings(name: '/transcript'),
         builder: (_) => SynchronizedTranscriptPage(
           platformClient: widget.platformClient,
-          initialTrack: widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first,
+          initialTrack:
+              widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first,
         ),
       ),
     );
@@ -86,7 +89,8 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
 
   void _onStopPressed() {
     // 1. Stop ringtone and immediately play custom audio
-    final track = widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first;
+    final track =
+        widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first;
     widget.platformClient.stopAlarm(audioTrackId: track.id);
     _navigateToTranscript();
   }
@@ -123,8 +127,29 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
   }
 
   String _formatDate(DateTime dt) {
-    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     final weekday = weekdays[dt.weekday - 1];
     final month = months[dt.month - 1];
     return '$weekday, $month ${dt.day}';
@@ -143,124 +168,124 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF2869D9),
-              Color(0xFF5D94E6),
-              Color(0xFF90B9ED),
-              Color(0xFFBDD7F5),
-            ],
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF2869D9),
+                Color(0xFF5D94E6),
+                Color(0xFF90B9ED),
+                Color(0xFFBDD7F5),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 60),
 
-              // Digital Clock
-              Text(
-                _formatClock(_currentTime),
-                style: const TextStyle(
-                  fontSize: 78,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white,
-                  letterSpacing: -1.5,
-                  height: 1.0,
+                // Digital Clock
+                Text(
+                  _formatClock(_currentTime),
+                  style: const TextStyle(
+                    fontSize: 78,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
+                    letterSpacing: -1.5,
+                    height: 1.0,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Date
-              Text(
-                _formatDate(_currentTime),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withValues(alpha: 0.85),
-                  letterSpacing: 0.2,
+                // Date
+                Text(
+                  _formatDate(_currentTime),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withValues(alpha: 0.85),
+                    letterSpacing: 0.2,
+                  ),
                 ),
-              ),
 
-              const Spacer(flex: 2),
+                const Spacer(flex: 2),
 
-              // Alarm Title
-              Text(
-                widget.label ?? 'Alarm',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                  letterSpacing: 0.3,
+                // Alarm Title
+                Text(
+                  widget.label ?? 'Alarm',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Snooze Button (Green pill matching screenshot)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1FB247),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: const StadiumBorder(),
-                    ),
-                    onPressed: _onSnoozePressed,
-                    child: const Text(
-                      'Snooze for 5 min',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
+                // Snooze Button (Green pill matching screenshot)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1FB247),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: const StadiumBorder(),
+                      ),
+                      onPressed: _onSnoozePressed,
+                      child: const Text(
+                        'Snooze for 5 min',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              const Spacer(flex: 3),
+                const Spacer(flex: 3),
 
-              // Stop Button (White pill matching screenshot)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 48),
-                child: SizedBox(
-                  width: 170,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF1E1E1E),
-                      elevation: 3,
-                      shadowColor: Colors.black.withValues(alpha: 0.25),
-                      shape: const StadiumBorder(),
-                    ),
-                    onPressed: _onStopPressed,
-                    child: const Text(
-                      'Stop',
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
+                // Stop Button (White pill matching screenshot)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 48),
+                  child: SizedBox(
+                    width: 170,
+                    height: 56,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF1E1E1E),
+                        elevation: 3,
+                        shadowColor: Colors.black.withValues(alpha: 0.25),
+                        shape: const StadiumBorder(),
+                      ),
+                      onPressed: _onStopPressed,
+                      child: const Text(
+                        'Stop',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }

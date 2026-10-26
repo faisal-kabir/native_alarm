@@ -20,7 +20,10 @@ void main() {
 
       expect(fromJson.id, model.id);
       expect(fromJson.enabled, model.enabled);
-      expect(fromJson.time.millisecondsSinceEpoch ~/ 1000, model.time.millisecondsSinceEpoch ~/ 1000);
+      expect(
+        fromJson.time.millisecondsSinceEpoch ~/ 1000,
+        model.time.millisecondsSinceEpoch ~/ 1000,
+      );
       expect(fromJson.audioTrackId, model.audioTrackId);
       expect(fromJson.label, model.label);
     });

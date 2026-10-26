@@ -9,7 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:native_alarm/main.dart';
 
 void main() {
-  testWidgets('Alarm app smoke test displays Native Alarms title', (WidgetTester tester) async {
+  testWidgets('Alarm app smoke test displays Native Alarms title', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
     expect(find.text('Native Alarms'), findsOneWidget);
   });

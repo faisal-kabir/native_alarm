@@ -18,14 +18,14 @@ class TranscriptWord extends Equatable {
   List<Object?> get props => [text, startMs, endMs];
 
   factory TranscriptWord.fromJson(Map<String, dynamic> json) => TranscriptWord(
-        text: (json['word'] ?? json['text'] ?? '') as String,
-        startMs: (json['startMs'] as num).toInt(),
-        endMs: (json['endMs'] as num).toInt(),
-      );
+    text: (json['word'] ?? json['text'] ?? '') as String,
+    startMs: (json['startMs'] as num).toInt(),
+    endMs: (json['endMs'] as num).toInt(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'text': text,
-        'startMs': startMs,
-        'endMs': endMs,
-      };
+    'text': text,
+    'startMs': startMs,
+    'endMs': endMs,
+  };
 }

@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../../../../core/platform/alarm_platform_client.dart';
 import '../../data/audio_track_repository.dart';
 import '../../domain/entities/alarm.dart';
@@ -13,7 +15,8 @@ class AlarmListPage extends StatefulWidget {
   State<AlarmListPage> createState() => _AlarmListPageState();
 }
 
-class _AlarmListPageState extends State<AlarmListPage> {
+class _AlarmListPageState extends State<AlarmListPage>
+    with WidgetsBindingObserver {
   final AlarmPlatformClient _platformClient = AlarmPlatformClient();
   late List<Alarm> _alarms;
   StreamSubscription? _eventSubscription;
@@ -25,6 +28,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _alarms = [
       Alarm(
         id: 'alarm_1',
@@ -45,7 +49,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     ];
 
     _checkNotificationPermission();
-    _checkInitialState();
+    _checkAlarmLaunch();
 
     // Listen to background alarm events
     _eventSubscription = _platformClient.events.listen((event) {
@@ -67,6 +71,27 @@ class _AlarmListPageState extends State<AlarmListPage> {
         });
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAlarmLaunch();
+    }
+  }
+
+  Future<void> _checkAlarmLaunch() async {
+    try {
+      final launchData = await _platformClient.consumeAlarmLaunch();
+      final launched = launchData['launchedFromAlarm'] as bool? ?? false;
+      if (launched) {
+        if (!_isTranscriptPageOpen) {
+          _navigateToTranscript();
+        }
+        return;
+      }
+    } catch (_) {}
+    _checkInitialState();
   }
 
   Future<void> _checkInitialState() async {
@@ -136,9 +161,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
     setState(() {
       _isRinging = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Alarm dismissed')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Alarm dismissed')));
   }
 
   void _stopRingtoneAndPlayAudio() {
@@ -184,9 +208,8 @@ class _AlarmListPageState extends State<AlarmListPage> {
       );
     } else {
       _platformClient.cancelAlarm(updated.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alarm cancelled')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Alarm cancelled')));
     }
   }
 
@@ -197,10 +220,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
     }
 
     final now = TimeOfDay.now();
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: now,
-    );
+    final pickedTime = await showTimePicker(context: context, initialTime: now);
 
     if (pickedTime == null) return;
 
@@ -270,7 +290,9 @@ class _AlarmListPageState extends State<AlarmListPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Quick test alarm triggers in 5s! Notification will appear with Dismiss and Play buttons.'),
+          content: Text(
+            'Quick test alarm triggers in 5s! Notification will appear with Dismiss and Play buttons.',
+          ),
           backgroundColor: Color(0xFF7C4DFF),
           duration: Duration(seconds: 4),
         ),
@@ -287,6 +309,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _platformClient.dispose();
     super.dispose();
@@ -297,7 +320,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF13131A),
       appBar: AppBar(
-        title: const Text('Native Alarms', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Native Alarms',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -306,10 +332,7 @@ class _AlarmListPageState extends State<AlarmListPage> {
             tooltip: 'Synchronized Transcript',
             onPressed: _navigateToTranscript,
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _createNewAlarm,
-          ),
+          IconButton(icon: const Icon(Icons.add), onPressed: _createNewAlarm),
         ],
       ),
       body: Column(
@@ -362,7 +385,9 @@ class _AlarmListPageState extends State<AlarmListPage> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: const BorderSide(color: Colors.white54),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         onPressed: _dismissCurrentAlarm,
                         child: const Text('DISMISS'),
@@ -372,10 +397,15 @@ class _AlarmListPageState extends State<AlarmListPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.red.shade900,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         onPressed: _stopRingtoneAndPlayAudio,
-                        child: const Text('PLAY AUDIO', style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'PLAY AUDIO',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ],
                   ),
@@ -391,11 +421,16 @@ class _AlarmListPageState extends State<AlarmListPage> {
               decoration: BoxDecoration(
                 color: Colors.orange.shade900.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orangeAccent.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: Colors.orangeAccent.withValues(alpha: 0.5),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.notifications_off, color: Colors.orangeAccent),
+                  const Icon(
+                    Icons.notifications_off,
+                    color: Colors.orangeAccent,
+                  ),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -405,7 +440,13 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   ),
                   TextButton(
                     onPressed: _requestNotificationPermission,
-                    child: const Text('ENABLE', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'ENABLE',
+                      style: TextStyle(
+                        color: Colors.orangeAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -420,7 +461,9 @@ class _AlarmListPageState extends State<AlarmListPage> {
                 colors: [Color(0xFF2C1958), Color(0xFF1F1B3E)],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+              border: Border.all(
+                color: const Color(0xFF7C4DFF).withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
@@ -439,7 +482,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
                     children: [
                       Text(
                         'Test Native Alarm',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       SizedBox(height: 2),
                       Text(
@@ -453,7 +499,9 @@ class _AlarmListPageState extends State<AlarmListPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C4DFF),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: _scheduleQuickTestAlarm,
                   child: const Text('Test (5s)'),
@@ -499,7 +547,10 @@ class _AlarmListPageState extends State<AlarmListPage> {
                       ),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       title: Text(
                         _formatTime(alarm.time),
                         style: TextStyle(
@@ -515,24 +566,38 @@ class _AlarmListPageState extends State<AlarmListPage> {
                             Text(
                               alarm.label ?? 'Alarm',
                               style: TextStyle(
-                                color: alarm.enabled ? Colors.white70 : Colors.white24,
+                                color: alarm.enabled
+                                    ? Colors.white70
+                                    : Colors.white24,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text('•', style: TextStyle(color: Colors.white24)),
+                            const Text(
+                              '•',
+                              style: TextStyle(color: Colors.white24),
+                            ),
                             const SizedBox(width: 8),
-                            const Icon(Icons.music_note, size: 14, color: Color(0xFFBB86FC)),
+                            const Icon(
+                              Icons.music_note,
+                              size: 14,
+                              color: Color(0xFFBB86FC),
+                            ),
                             const SizedBox(width: 4),
                             const Text(
                               'Morning Motivation',
-                              style: TextStyle(color: Color(0xFFBB86FC), fontSize: 12),
+                              style: TextStyle(
+                                color: Color(0xFFBB86FC),
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       trailing: Switch(
                         value: alarm.enabled,
-                        thumbColor: const WidgetStatePropertyAll(Color(0xFF7C4DFF)),
+                        thumbColor: const WidgetStatePropertyAll(
+                          Color(0xFF7C4DFF),
+                        ),
                         onChanged: (_) => _toggleAlarm(alarm),
                       ),
                       onTap: _navigateToTranscript,

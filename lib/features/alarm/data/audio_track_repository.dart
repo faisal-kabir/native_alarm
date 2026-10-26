@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:flutter/services.dart';
+
 import '../domain/entities/audio_track.dart';
 import '../domain/entities/transcript.dart';
 
