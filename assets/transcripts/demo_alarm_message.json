@@ -1,0 +1,18 @@
+{
+  "id": "morning_message",
+  "audioTrackId": "morning_message",
+  "words": [
+    {"word": "Good", "startMs": 0, "endMs": 181},
+    {"word": "morning.", "startMs": 181, "endMs": 831},
+    {"word": "Wake", "startMs": 831, "endMs": 1109},
+    {"word": "up", "startMs": 1109, "endMs": 1279},
+    {"word": "and", "startMs": 1279, "endMs": 1418},
+    {"word": "start", "startMs": 1418, "endMs": 1818},
+    {"word": "your", "startMs": 1818, "endMs": 1931},
+    {"word": "day", "startMs": 1931, "endMs": 2133},
+    {"word": "with", "startMs": 2133, "endMs": 2335},
+    {"word": "a", "startMs": 2335, "endMs": 2389},
+    {"word": "positive", "startMs": 2389, "endMs": 2912},
+    {"word": "mind.", "startMs": 2912, "endMs": 3552}
+  ]
+}

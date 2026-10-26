@@ -1,0 +1,27 @@
+import 'package:flutter/material.dart';
+import 'package:native_alarm/features/alarm/presentation/pages/alarm_list_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Native Alarm',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6750A4),
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const AlarmListPage(),
+    );
+  }
+}
+
