@@ -12,11 +12,13 @@ import 'alarm_list_page.dart';
 class SynchronizedTranscriptPage extends StatefulWidget {
   final AudioTrack? initialTrack;
   final AlarmPlatformClient platformClient;
+  final String? missionName;
 
   const SynchronizedTranscriptPage({
     super.key,
     this.initialTrack,
     required this.platformClient,
+    this.missionName,
   });
 
   @override
@@ -221,7 +223,7 @@ class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
     return Scaffold(
       backgroundColor: const Color(0xFF13131A),
       appBar: AppBar(
-        title: Text(_track.title),
+        title: Text(widget.missionName ?? _track.title),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(

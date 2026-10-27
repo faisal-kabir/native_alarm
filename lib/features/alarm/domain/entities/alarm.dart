@@ -12,6 +12,7 @@ class Alarm extends Equatable {
   final String audioTrackId;
   final String ringtoneId;
   final String? label;
+  final String? missionName;
 
   const Alarm({
     required this.id,
@@ -21,6 +22,7 @@ class Alarm extends Equatable {
     required this.audioTrackId,
     required this.ringtoneId,
     this.label,
+    this.missionName,
   });
 
   @override
@@ -32,7 +34,30 @@ class Alarm extends Equatable {
     audioTrackId,
     ringtoneId,
     label,
+    missionName,
   ];
+
+  Alarm copyWith({
+    String? id,
+    bool? enabled,
+    DateTime? time,
+    List<int>? repeatWeekdays,
+    String? audioTrackId,
+    String? ringtoneId,
+    String? label,
+    String? missionName,
+  }) {
+    return Alarm(
+      id: id ?? this.id,
+      enabled: enabled ?? this.enabled,
+      time: time ?? this.time,
+      repeatWeekdays: repeatWeekdays ?? this.repeatWeekdays,
+      audioTrackId: audioTrackId ?? this.audioTrackId,
+      ringtoneId: ringtoneId ?? this.ringtoneId,
+      label: label ?? this.label,
+      missionName: missionName ?? this.missionName,
+    );
+  }
 
   factory Alarm.fromModel(AlarmModel model) => Alarm(
     id: model.id,
@@ -42,6 +67,7 @@ class Alarm extends Equatable {
     audioTrackId: model.audioTrackId,
     ringtoneId: model.ringtoneId,
     label: model.label,
+    missionName: model.missionName,
   );
 
   AlarmModel toModel() => AlarmModel(
@@ -52,5 +78,6 @@ class Alarm extends Equatable {
     audioTrackId: audioTrackId,
     ringtoneId: ringtoneId,
     label: label,
+    missionName: missionName,
   );
 }

@@ -121,7 +121,7 @@ class _AlarmListPageState extends State<AlarmListPage>
     await _checkNotificationPermission();
   }
 
-  void _navigateToTranscript() async {
+  void _navigateToTranscript({String? missionName}) async {
     if (_isTranscriptPageOpen) return;
     if (_isRingingPageOpen) {
       Navigator.of(context).popUntil((route) => route.isFirst);
@@ -134,6 +134,7 @@ class _AlarmListPageState extends State<AlarmListPage>
         builder: (_) => SynchronizedTranscriptPage(
           platformClient: _platformClient,
           initialTrack: AudioTrackRepository.predefinedTracks.first,
+          missionName: missionName,
         ),
       ),
     );
@@ -178,14 +179,7 @@ class _AlarmListPageState extends State<AlarmListPage>
       _requestNotificationPermission();
     }
 
-    final updated = Alarm(
-      id: alarm.id,
-      enabled: !alarm.enabled,
-      time: alarm.time,
-      audioTrackId: alarm.audioTrackId,
-      ringtoneId: alarm.ringtoneId,
-      label: alarm.label,
-    );
+    final updated = alarm.copyWith(enabled: !alarm.enabled);
 
     setState(() {
       final index = _alarms.indexWhere((a) => a.id == alarm.id);
@@ -199,6 +193,7 @@ class _AlarmListPageState extends State<AlarmListPage>
         'alarmId': updated.id,
         'timeMs': updated.time.millisecondsSinceEpoch,
         'audioTrackId': updated.audioTrackId,
+        'missionName': updated.missionName ?? 'Start Morning Mission',
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -214,55 +209,292 @@ class _AlarmListPageState extends State<AlarmListPage>
   }
 
   Future<void> _createNewAlarm() async {
+    await _showAlarmEditor();
+  }
+
+  Future<void> _showAlarmEditor({Alarm? alarm}) async {
     if (!_hasNotificationPermission) {
       await _requestNotificationPermission();
       if (!mounted) return;
     }
 
-    final now = TimeOfDay.now();
-    final pickedTime = await showTimePicker(context: context, initialTime: now);
-
-    if (pickedTime == null) return;
-
-    final nowDt = DateTime.now();
-    var scheduledDt = DateTime(
-      nowDt.year,
-      nowDt.month,
-      nowDt.day,
-      pickedTime.hour,
-      pickedTime.minute,
+    final isEditing = alarm != null;
+    DateTime scheduledDt =
+        alarm?.time ?? DateTime.now().add(const Duration(minutes: 5));
+    TimeOfDay selectedTime = TimeOfDay.fromDateTime(scheduledDt);
+    final labelController = TextEditingController(
+      text: alarm?.label ?? (isEditing ? 'Alarm' : 'Morning Alarm'),
     );
-    if (scheduledDt.isBefore(nowDt)) {
-      scheduledDt = scheduledDt.add(const Duration(days: 1));
-    }
-
-    final newAlarm = Alarm(
-      id: 'alarm_${DateTime.now().millisecondsSinceEpoch}',
-      enabled: true,
-      time: scheduledDt,
-      audioTrackId: 'morning_message',
-      ringtoneId: 'default',
-      label: 'New Alarm',
+    final missionNameController = TextEditingController(
+      text: alarm?.missionName ?? 'Start Morning Mission',
     );
 
-    setState(() {
-      _alarms.add(newAlarm);
-    });
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E2C),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEditing ? 'Edit Alarm' : 'New Alarm',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
 
-    _platformClient.scheduleAlarm({
-      'alarmId': newAlarm.id,
-      'timeMs': newAlarm.time.millisecondsSinceEpoch,
-      'audioTrackId': newAlarm.audioTrackId,
-    });
+                  // Time selector tile
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedTime,
+                      );
+                      if (picked != null) {
+                        setModalState(() {
+                          selectedTime = picked;
+                          final nowDt = DateTime.now();
+                          scheduledDt = DateTime(
+                            nowDt.year,
+                            nowDt.month,
+                            nowDt.day,
+                            picked.hour,
+                            picked.minute,
+                          );
+                          if (scheduledDt.isBefore(nowDt)) {
+                            scheduledDt = scheduledDt.add(
+                              const Duration(days: 1),
+                            );
+                          }
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF28283C),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: Color(0xFFBB86FC),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Time',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                _formatTime(scheduledDt),
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          const Text(
+                            'Change',
+                            style: TextStyle(
+                              color: Color(0xFFBB86FC),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Alarm scheduled for ${_formatTime(newAlarm.time)}'),
-          backgroundColor: const Color(0xFF7C4DFF),
-        ),
-      );
-    }
+                  // Alarm Label
+                  TextField(
+                    controller: labelController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Label',
+                      labelStyle: const TextStyle(color: Colors.white70),
+                      hintText: 'Morning Alarm',
+                      hintStyle: const TextStyle(color: Colors.white30),
+                      filled: true,
+                      fillColor: const Color(0xFF28283C),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.label_outline,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Mission Name (Erly-style)
+                  TextField(
+                    controller: missionNameController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Mission name',
+                      labelStyle: const TextStyle(color: Color(0xFFFFB74D)),
+                      hintText: 'Start Morning Mission',
+                      hintStyle: const TextStyle(color: Colors.white30),
+                      helperText: 'Shown on the orange button when alarm rings',
+                      helperStyle: const TextStyle(color: Colors.white54),
+                      filled: true,
+                      fillColor: const Color(0xFF28283C),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFF9800),
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: const Color(0xFFFF9800).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderSide: BorderSide(
+                          color: Color(0xFFFF9800),
+                          width: 2,
+                        ),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.flag,
+                        color: Color(0xFFFF9800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF9800),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        final missionText = missionNameController.text.trim();
+                        final resolvedMission = missionText.isEmpty
+                            ? 'Start Morning Mission'
+                            : missionText;
+                        final labelText = labelController.text.trim().isEmpty
+                            ? 'Alarm'
+                            : labelController.text.trim();
+
+                        final savedAlarm = Alarm(
+                          id:
+                              alarm?.id ??
+                              'alarm_${DateTime.now().millisecondsSinceEpoch}',
+                          enabled: true,
+                          time: scheduledDt,
+                          audioTrackId:
+                              alarm?.audioTrackId ?? 'morning_message',
+                          ringtoneId: alarm?.ringtoneId ?? 'default',
+                          label: labelText,
+                          missionName: resolvedMission,
+                        );
+
+                        setState(() {
+                          if (isEditing) {
+                            final idx = _alarms.indexWhere(
+                              (a) => a.id == alarm.id,
+                            );
+                            if (idx != -1) {
+                              _alarms[idx] = savedAlarm;
+                            }
+                          } else {
+                            _alarms.add(savedAlarm);
+                          }
+                        });
+
+                        _platformClient.scheduleAlarm({
+                          'alarmId': savedAlarm.id,
+                          'timeMs': savedAlarm.time.millisecondsSinceEpoch,
+                          'audioTrackId': savedAlarm.audioTrackId,
+                          'missionName':
+                              savedAlarm.missionName ?? 'Start Morning Mission',
+                        });
+
+                        Navigator.of(context).pop();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Alarm set for ${_formatTime(savedAlarm.time)} with mission "$resolvedMission"',
+                            ),
+                            backgroundColor: const Color(0xFFFF9800),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        isEditing ? 'SAVE CHANGES' : 'CREATE ALARM',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _scheduleQuickTestAlarm() async {
@@ -279,12 +511,14 @@ class _AlarmListPageState extends State<AlarmListPage>
       audioTrackId: 'morning_message',
       ringtoneId: 'default',
       label: '5-Second Test Alarm',
+      missionName: 'Start Morning Mission',
     );
 
     _platformClient.scheduleAlarm({
       'alarmId': testAlarm.id,
       'timeMs': triggerTime.millisecondsSinceEpoch,
       'audioTrackId': testAlarm.audioTrackId,
+      'missionName': testAlarm.missionName,
     });
 
     if (mounted) {
@@ -578,29 +812,47 @@ class _AlarmListPageState extends State<AlarmListPage>
                             ),
                             const SizedBox(width: 8),
                             const Icon(
-                              Icons.music_note,
-                              size: 14,
-                              color: Color(0xFFBB86FC),
+                              Icons.flag,
+                              size: 13,
+                              color: Color(0xFFFF9800),
                             ),
                             const SizedBox(width: 4),
-                            const Text(
-                              'Morning Motivation',
-                              style: TextStyle(
-                                color: Color(0xFFBB86FC),
-                                fontSize: 12,
+                            Expanded(
+                              child: Text(
+                                alarm.missionName ?? 'Start Morning Mission',
+                                style: const TextStyle(
+                                  color: Color(0xFFFFB74D),
+                                  fontSize: 12,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      trailing: Switch(
-                        value: alarm.enabled,
-                        thumbColor: const WidgetStatePropertyAll(
-                          Color(0xFF7C4DFF),
-                        ),
-                        onChanged: (_) => _toggleAlarm(alarm),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              size: 20,
+                              color: Colors.white54,
+                            ),
+                            tooltip: 'Edit Mission',
+                            onPressed: () => _showAlarmEditor(alarm: alarm),
+                          ),
+                          Switch(
+                            value: alarm.enabled,
+                            thumbColor: const WidgetStatePropertyAll(
+                              Color(0xFF7C4DFF),
+                            ),
+                            onChanged: (_) => _toggleAlarm(alarm),
+                          ),
+                        ],
                       ),
-                      onTap: _navigateToTranscript,
+                      onTap: () =>
+                          _navigateToTranscript(missionName: alarm.missionName),
                     ),
                   ),
                 );

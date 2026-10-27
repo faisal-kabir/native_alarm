@@ -10,6 +10,7 @@ class AlarmModel extends Equatable {
   final String audioTrackId;
   final String ringtoneId;
   final String? label;
+  final String? missionName;
 
   const AlarmModel({
     required this.id,
@@ -19,6 +20,7 @@ class AlarmModel extends Equatable {
     required this.audioTrackId,
     required this.ringtoneId,
     this.label,
+    this.missionName,
   });
 
   @override
@@ -30,6 +32,7 @@ class AlarmModel extends Equatable {
     audioTrackId,
     ringtoneId,
     label,
+    missionName,
   ];
 
   factory AlarmModel.fromJson(Map<String, dynamic> json) => AlarmModel(
@@ -40,6 +43,7 @@ class AlarmModel extends Equatable {
     audioTrackId: json['audioTrackId'] as String,
     ringtoneId: json['ringtoneId'] as String,
     label: json['label'] as String?,
+    missionName: json['missionName'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -50,5 +54,6 @@ class AlarmModel extends Equatable {
     'audioTrackId': audioTrackId,
     'ringtoneId': ringtoneId,
     if (label != null) 'label': label,
+    if (missionName != null) 'missionName': missionName,
   };
 }

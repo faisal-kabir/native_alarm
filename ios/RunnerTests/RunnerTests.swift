@@ -9,11 +9,13 @@ class RunnerTests: XCTestCase {
         super.setUp()
         PendingPlaybackManager.shared.clear()
         AlarmFlowLogger.shared.clear()
+        BackupAlarmManager.shared.clear()
     }
 
     override func tearDown() {
         PendingPlaybackManager.shared.clear()
         AlarmFlowLogger.shared.clear()
+        BackupAlarmManager.shared.clear()
         super.tearDown()
     }
 
@@ -58,5 +60,62 @@ class RunnerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(logs.count, 2)
         XCTAssertTrue(logs.contains(where: { $0.contains("Test log entry 1") }))
         XCTAssertTrue(logs.contains(where: { $0.contains("Test log entry 2") }))
+    }
+
+    // Test 5: BackupAlarmManager persists mapping and reverse mapping
+    func testBackupAlarmMappingPersistence() {
+        let mainId = "main_alarm_001"
+        let backup1 = UUID().uuidString
+        let backup2 = UUID().uuidString
+
+        BackupAlarmManager.shared.recordMapping(mainAlarmId: mainId, backupIds: [backup1, backup2])
+
+        let mapping = BackupAlarmManager.shared.getMapping()
+        XCTAssertEqual(mapping[mainId]?.count, 2)
+        XCTAssertEqual(mapping[mainId], [backup1, backup2])
+
+        // Reverse lookup
+        XCTAssertEqual(BackupAlarmManager.shared.mainAlarmId(for: backup1), mainId)
+        XCTAssertEqual(BackupAlarmManager.shared.mainAlarmId(for: backup2), mainId)
+    }
+
+    // Test 6: BackupAlarmManager idempotent cancellation
+    func testBackupAlarmCancellationIdempotence() {
+        let mainId = "main_alarm_002"
+        let backup1 = UUID().uuidString
+        let backup2 = UUID().uuidString
+
+        BackupAlarmManager.shared.recordMapping(mainAlarmId: mainId, backupIds: [backup1, backup2])
+
+        // First cancellation clears mapping
+        BackupAlarmManager.shared.cancelBackupAlarms(for: mainId)
+        let mappingAfter = BackupAlarmManager.shared.getMapping()
+        XCTAssertNil(mappingAfter[mainId])
+        XCTAssertNil(BackupAlarmManager.shared.mainAlarmId(for: backup1))
+
+        // Second cancellation is a safe no-op (idempotent)
+        BackupAlarmManager.shared.cancelBackupAlarms(for: mainId)
+        XCTAssertNil(BackupAlarmManager.shared.getMapping()[mainId])
+    }
+
+    // Test 7: BackupAlarmManager cancellation via backup UUID
+    func testBackupAlarmCancellationViaBackupId() {
+        let mainId = "main_alarm_003"
+        let backup1 = UUID().uuidString
+        let backup2 = UUID().uuidString
+
+        BackupAlarmManager.shared.recordMapping(mainAlarmId: mainId, backupIds: [backup1, backup2])
+
+        // Cancel using one of the backup IDs should cancel parent and siblings
+        BackupAlarmManager.shared.cancelBackupAlarms(for: backup1)
+        XCTAssertNil(BackupAlarmManager.shared.getMapping()[mainId])
+        XCTAssertNil(BackupAlarmManager.shared.mainAlarmId(for: backup2))
+    }
+
+    // Test 8: Backup alarm offsets are bounded to 6 intervals
+    func testBackupAlarmOffsetsCount() {
+        let offsets = BackupAlarmManager.shared.backupOffsets
+        XCTAssertEqual(offsets.count, 6)
+        XCTAssertEqual(offsets, [30, 60, 90, 120, 180, 300])
     }
 }

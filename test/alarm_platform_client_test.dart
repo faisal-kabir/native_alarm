@@ -104,5 +104,25 @@ void main() {
         );
       },
     );
+
+    test('scheduleAlarm passes missionName and alarm parameters through MethodChannel', () async {
+      final alarmData = {
+        'alarmId': 'mission_alarm_456',
+        'timeMs': 1700000000000,
+        'audioTrackId': 'morning_message',
+        'missionName': 'Start Morning Mission',
+      };
+
+      await client.scheduleAlarm(alarmData);
+
+      final scheduleCall = methodCalls.firstWhere(
+        (call) => call.method == 'scheduleAlarm',
+      );
+      expect(scheduleCall, isNotNull);
+      final args = scheduleCall.arguments as Map;
+      expect(args['alarmId'], 'mission_alarm_456');
+      expect(args['missionName'], 'Start Morning Mission');
+      expect(args['audioTrackId'], 'morning_message');
+    });
   });
 }

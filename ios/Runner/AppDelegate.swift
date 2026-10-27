@@ -26,6 +26,9 @@ import UserNotifications
         // Hook up AudioPlaybackManager callbacks to send events to Flutter
         setupAudioCallbacks()
 
+        // Start observing AlarmKit alarmUpdates for logging state transitions
+        AlarmScheduler.shared.startObservingAlarmUpdates()
+
         // Check for pending playback request recorded by Stop intent
         checkAndHandlePendingPlayback()
 
@@ -43,6 +46,7 @@ import UserNotifications
             AlarmFlowLogger.shared.log("AppDelegate: Handling valid pending request for alarmId=\(alarmId), trackId=\(trackId)")
             AppDelegate.launchedFromAlarm = true
             self.currentAlarmId = alarmId
+            BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
             AudioPlaybackManager.shared.start(audioTrackId: trackId)
             sendEvent([
                 "event": "customAudioStarted",
@@ -146,6 +150,9 @@ import UserNotifications
             let launched = AppDelegate.launchedFromAlarm
             AppDelegate.launchedFromAlarm = false
             let trackId = AudioPlaybackManager.shared.currentTrackId ?? "demo_alarm_message"
+            if !self.currentAlarmId.isEmpty {
+                BackupAlarmManager.shared.cancelBackupAlarms(for: self.currentAlarmId)
+            }
             AlarmFlowLogger.shared.log("AppDelegate: consumeAlarmLaunch returning launchedFromAlarm=\(launched), trackId=\(trackId)")
             result([
                 "launchedFromAlarm": launched,
@@ -163,8 +170,9 @@ import UserNotifications
                let alarmId = args["alarmId"] as? String {
                 let timeMs = (args["timeMs"] as? NSNumber)?.int64Value ?? Int64(Date().timeIntervalSince1970 * 1000 + 5000)
                 let audioTrackId = args["audioTrackId"] as? String ?? "morning_message"
+                let missionName = args["missionName"] as? String
                 self.currentAlarmId = alarmId
-                AlarmScheduler.shared.schedule(alarmId: alarmId, timeMs: timeMs, audioTrackId: audioTrackId)
+                AlarmScheduler.shared.schedule(alarmId: alarmId, timeMs: timeMs, audioTrackId: audioTrackId, missionName: missionName)
                 self.sendEvent([
                     "event": "alarmScheduled",
                     "alarmId": alarmId,
