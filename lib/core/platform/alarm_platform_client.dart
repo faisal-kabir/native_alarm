@@ -65,6 +65,25 @@ class AlarmPlatformClient {
     return result ?? true;
   }
 
+  /// Android only: which permissions the alarm screen still needs
+  /// (`notifications`, `fullScreenIntent`, `overlay`, `exactAlarm`).
+  /// Everything is reported as granted on iOS.
+  Future<Map<String, bool>> getAlarmScreenPermissions() async {
+    try {
+      final result = await _methodChannel.invokeMethod('getAlarmScreenPermissions');
+      return Map<String, bool>.from(result ?? {});
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Android only: opens the settings page of the next missing permission.
+  Future<void> requestAlarmScreenPermissions() async {
+    try {
+      await _methodChannel.invokeMethod('requestAlarmScreenPermissions');
+    } catch (_) {}
+  }
+
   Future<void> stopAlarm({String audioTrackId = 'morning_message'}) async {
     await _methodChannel.invokeMethod('stopAlarm', {
       'audioTrackId': audioTrackId,

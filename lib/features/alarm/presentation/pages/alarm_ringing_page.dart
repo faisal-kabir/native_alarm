@@ -7,7 +7,8 @@ import '../../../../core/platform/alarm_platform_client.dart';
 import '../../data/audio_track_repository.dart';
 import '../../domain/entities/audio_track.dart';
 import 'synchronized_transcript_page.dart';
-import 'alarm_list_page.dart';
+import '../../../../core/router/route_names.dart';
+import 'package:go_router/go_router.dart';
 
 class AlarmRingingPage extends StatefulWidget {
   final AlarmPlatformClient platformClient;
@@ -61,9 +62,9 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
           if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           } else {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const AlarmListPage()),
-            );
+            // Back to the existing home route; never stack a second AlarmListPage
+              // (each instance listens to alarm events and would navigate again).
+              GoRouter.of(context).go(RouteNames.alarmListPath);
           }
         }
       }
@@ -73,7 +74,7 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
   bool _isNavigating = false;
 
   void _navigateToTranscript() {
-    if (!mounted || _isNavigating) return;
+    if (!mounted || _isNavigating || SynchronizedTranscriptPage.isOpen) return;
     _isNavigating = true;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -101,15 +102,16 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
       'alarmId': 'snooze_${DateTime.now().millisecondsSinceEpoch}',
       'timeMs': snoozeTime.millisecondsSinceEpoch,
       'audioTrackId': widget.audioTrack?.id ?? 'morning_message',
+      'repeatCount': 0,
     });
     widget.platformClient.dismissAlarm();
     if (mounted) {
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AlarmListPage()),
-        );
+        // Back to the existing home route; never stack a second AlarmListPage
+              // (each instance listens to alarm events and would navigate again).
+              GoRouter.of(context).go(RouteNames.alarmListPath);
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

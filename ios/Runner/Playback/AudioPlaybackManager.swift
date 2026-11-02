@@ -71,7 +71,7 @@ final class PendingPlaybackManager {
         AlarmFlowLogger.shared.log("PendingPlaybackManager: Recorded request for alarmId=\(alarmId), trackId=\(trackId)")
     }
 
-    func consumePendingRequestIfValid(maxAgeSeconds: TimeInterval = 600) -> (alarmId: String, trackId: String)? {
+    func consumePendingRequestIfValid(maxAgeSeconds: TimeInterval = 45) -> (alarmId: String, trackId: String)? {
         lock.lock()
         defer { lock.unlock() }
 
@@ -317,6 +317,7 @@ final class AudioPlaybackManager: NSObject {
         currentTrackId = nil
         if had {
             AlarmFlowLogger.shared.log("AudioPlaybackManager: Stopped playback.")
+            PendingPlaybackManager.shared.clear()
             onPlaybackStopped?()
         }
     }
@@ -391,6 +392,7 @@ extension AudioPlaybackManager: AVAudioPlayerDelegate {
         stopTicker()
         let trackId = currentTrackId ?? ""
         currentTrackId = nil
+        PendingPlaybackManager.shared.clear()
         onPlaybackCompleted?(trackId)
     }
 }

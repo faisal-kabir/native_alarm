@@ -7,19 +7,29 @@ import '../../data/audio_track_repository.dart';
 import '../../domain/entities/audio_track.dart';
 import '../../domain/entities/transcript.dart';
 import '../../domain/entities/transcript_word.dart';
-import 'alarm_list_page.dart';
+import '../../../../core/router/route_names.dart';
+import 'package:go_router/go_router.dart';
 
 class SynchronizedTranscriptPage extends StatefulWidget {
   final AudioTrack? initialTrack;
   final AlarmPlatformClient platformClient;
   final String? missionName;
 
+  /// Identity of the alarm whose message this page shows.
+  final String? alarmId;
+
   const SynchronizedTranscriptPage({
     super.key,
     this.initialTrack,
     required this.platformClient,
     this.missionName,
+    this.alarmId,
   });
+
+  /// Number of message pages currently on the navigator stack. Every navigation source
+  /// (native events, alarm launch, resume) checks this so the page is never pushed twice.
+  static int openCount = 0;
+  static bool get isOpen => openCount > 0;
 
   @override
   State<SynchronizedTranscriptPage> createState() =>
@@ -45,6 +55,7 @@ class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
   @override
   void initState() {
     super.initState();
+    SynchronizedTranscriptPage.openCount++;
     WidgetsBinding.instance.addObserver(this);
     _track = widget.initialTrack ?? AudioTrackRepository.predefinedTracks.first;
     _loadTranscript();
@@ -206,9 +217,16 @@ class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
 
   @override
   void dispose() {
+    SynchronizedTranscriptPage.openCount--;
     WidgetsBinding.instance.removeObserver(this);
     _stopPolling();
     _stopListeningEvents();
+    // Leaving the message page ends the message, so nothing keeps playing in the
+    // background and re-opens this page.
+    if (_playbackState == 'customAudioPlaying' ||
+        _playbackState == 'customAudioPaused') {
+      widget.platformClient.stopCustomAudio();
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -232,9 +250,9 @@ class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const AlarmListPage()),
-              );
+              // Back to the existing home route; never stack a second AlarmListPage
+              // (each instance listens to alarm events and would navigate again).
+              GoRouter.of(context).go(RouteNames.alarmListPath);
             }
           },
         ),

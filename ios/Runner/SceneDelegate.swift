@@ -10,6 +10,7 @@ class SceneDelegate: FlutterSceneDelegate {
         if let (alarmId, trackId) = PendingPlaybackManager.shared.consumePendingRequestIfValid() {
             AlarmFlowLogger.shared.log("SceneDelegate: Found valid pending request for alarmId=\(alarmId), trackId=\(trackId)")
             AppDelegate.launchedFromAlarm = true
+            AppDelegate.launchAlarmId = alarmId
             AudioPlaybackManager.shared.start(audioTrackId: trackId)
         }
     }

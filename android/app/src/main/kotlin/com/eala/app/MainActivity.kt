@@ -62,23 +62,13 @@ class MainActivity : FlutterActivity() {
             AlarmPlugin.sendEvent(
                 mapOf(
                     "event" to "openTranscript",
+                    "alarmId" to alarmId,
                     "audioTrackId" to audioTrackId
                 )
             )
             intent.removeExtra("action")
         } else if (route == "/alarm" || action == "alarm_ringing") {
-            val service = AlarmAudioService.currentService
-            val isRingingNow = service?.isRingingNow() ?: false
-            if (isRingingNow) {
-                unlockAndShowIfLocked()
-                AlarmPlugin.sendEvent(
-                    mapOf(
-                        "event" to "alarmRinging",
-                        "alarmId" to alarmId,
-                        "audioTrackId" to audioTrackId
-                    )
-                )
-            }
+            // The native AlarmActivity shows the ringing alarm; nothing to do in Flutter.
             intent.removeExtra("route")
             intent.removeExtra("action")
         } else if (route == "/transcript") {
@@ -109,6 +99,65 @@ class MainActivity : FlutterActivity() {
                     startActivity(intent)
                 } catch (_: Exception) {}
             }
+        }
+    }
+
+    /** What the alarm screen needs to appear over the lock screen and over other apps. */
+    private fun alarmScreenPermissions(): Map<String, Boolean> {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        return mapOf(
+            "notifications" to hasNotificationPermission(),
+            "fullScreenIntent" to fullScreenIntentAllowed(nm),
+            "overlay" to overlayAllowed(),
+            "exactAlarm" to AlarmScheduler.canScheduleExact(this),
+        )
+    }
+
+    /**
+     * On Android 14+ the manifest grant alone is not enough: some devices keep the app-op at
+     * "default" (not confirmed by the user) and then silently refuse full-screen intents.
+     * Only an explicit "allowed" counts.
+     */
+    private fun fullScreenIntentAllowed(nm: android.app.NotificationManager): Boolean {
+        if (Build.VERSION.SDK_INT < 34) return true
+        if (!nm.canUseFullScreenIntent()) return false
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = appOps.unsafeCheckOpNoThrow(
+            "android:use_full_screen_intent",
+            android.os.Process.myUid(),
+            packageName,
+        )
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun overlayAllowed(): Boolean {
+        if (android.provider.Settings.canDrawOverlays(this)) return true
+        // Some vendor builds report false here although the user allowed it in settings.
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = appOps.unsafeCheckOpNoThrow(
+            "android:system_alert_window",
+            android.os.Process.myUid(),
+            packageName,
+        )
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
+    /** Opens the settings screen of the first missing permission (one per call). */
+    private fun requestMissingAlarmScreenPermission() {
+        val p = alarmScreenPermissions()
+        val uri = android.net.Uri.parse("package:$packageName")
+        try {
+            when {
+                p["notifications"] == false -> requestNotificationPermission()
+                p["fullScreenIntent"] == false ->
+                    startActivity(Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, uri))
+                p["overlay"] == false ->
+                    startActivity(Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, uri))
+                p["exactAlarm"] == false && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+                    startActivity(Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, uri))
+            }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "Could not open permission settings", e)
         }
     }
 
@@ -149,14 +198,42 @@ class MainActivity : FlutterActivity() {
                 "scheduleAlarm" -> {
                     val alarmId = call.argument<String>("alarmId") ?: "default"
                     val timeMs = (call.argument<Number>("timeMs"))?.toLong() ?: (System.currentTimeMillis() + 5000)
-                    val audioTrackId = call.argument<String>("audioTrackId") ?: "morning_message"
-                    scheduleAlarm(alarmId, timeMs, audioTrackId)
+                    val config = AlarmConfig(
+                        alarmId = alarmId,
+                        audioTrackId = call.argument<String>("audioTrackId") ?: "morning_message",
+                        missionName = call.argument<String>("missionName")?.takeIf { it.isNotEmpty() }
+                            ?: "Start Morning Mission",
+                        title = call.argument<String>("title")?.takeIf { it.isNotEmpty() },
+                        subtitle = call.argument<String>("subtitle")?.takeIf { it.isNotEmpty() },
+                        stopHintText = call.argument<String>("stopHintText")?.takeIf { it.isNotEmpty() }
+                            ?: "slide to stop",
+                        repeatCount = call.argument<Number>("repeatCount")?.toInt() ?: 0,
+                        repeatIntervalSec = call.argument<Number>("repeatIntervalSec")?.toInt() ?: 10,
+                        tuneAsset = call.argument<String>("tuneAsset")?.takeIf { it.isNotEmpty() },
+                    )
+                    scheduleAlarm(config, timeMs)
                     result.success(null)
                 }
                 "cancelAlarm" -> {
                     val alarmId = call.argument<String>("alarmId") ?: "default"
                     cancelAlarm(alarmId)
                     result.success(null)
+                }
+                "getAlarmScreenPermissions" -> {
+                    result.success(alarmScreenPermissions())
+                }
+                "requestAlarmScreenPermissions" -> {
+                    requestMissingAlarmScreenPermission()
+                    result.success(null)
+                }
+                "consumeAlarmLaunch" -> {
+                    val launchAlarmId = AlarmLaunchState.consume()
+                    result.success(
+                        mapOf(
+                            "launchedFromAlarm" to (launchAlarmId != null),
+                            "alarmId" to (launchAlarmId ?: ""),
+                        )
+                    )
                 }
                 "dismissAlarm" -> {
                     dismissAlarm()
@@ -209,41 +286,14 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LEGACY_METHOD_CHANNEL).setMethodCallHandler(methodHandler)
     }
 
-    private fun scheduleAlarm(alarmId: String, timeMs: Long, audioTrackId: String) {
-        val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "com.eala.app.ACTION_TRIGGER_ALARM"
-            putExtra(AlarmAudioService.EXTRA_ALARM_ID, alarmId)
-            putExtra(AlarmAudioService.EXTRA_AUDIO_TRACK_ID, audioTrackId)
-        }
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
-        val pendingIntent = PendingIntent.getBroadcast(this, alarmId.hashCode(), intent, flags)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmMgr.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMs, pendingIntent)
-        } else {
-            alarmMgr.setExact(AlarmManager.RTC_WAKEUP, timeMs, pendingIntent)
-        }
-
-        Log.d("MainActivity", "Alarm scheduled: $alarmId at $timeMs")
-        AlarmPlugin.sendEvent(mapOf("event" to "alarmScheduled", "alarmId" to alarmId, "timeMs" to timeMs))
+    private fun scheduleAlarm(config: AlarmConfig, timeMs: Long) {
+        AlarmScheduler.schedule(this, config, timeMs)
+        AlarmPlugin.sendEvent(mapOf("event" to "alarmScheduled", "alarmId" to config.alarmId, "timeMs" to timeMs))
     }
 
     private fun cancelAlarm(alarmId: String) {
-        val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(this, AlarmReceiver::class.java)
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
-        val pendingIntent = PendingIntent.getBroadcast(this, alarmId.hashCode(), intent, flags)
-        alarmMgr.cancel(pendingIntent)
-        Log.d("MainActivity", "Alarm cancelled: $alarmId")
+        AlarmScheduler.cancelAll(this, alarmId)
+        AlarmConfigStore.remove(this, alarmId)
         AlarmPlugin.sendEvent(mapOf("event" to "alarmCancelled", "alarmId" to alarmId))
     }
 

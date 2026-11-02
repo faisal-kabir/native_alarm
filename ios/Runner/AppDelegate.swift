@@ -7,6 +7,8 @@ import UserNotifications
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
 
     static var launchedFromAlarm: Bool = false
+    /// Identity of the alarm that opened the app; handed to Flutter once by consumeAlarmLaunch.
+    static var launchAlarmId: String = ""
 
     private var eventSink: FlutterEventSink?
     private var currentAlarmId: String = ""
@@ -45,6 +47,7 @@ import UserNotifications
         if let (alarmId, trackId) = PendingPlaybackManager.shared.consumePendingRequestIfValid() {
             AlarmFlowLogger.shared.log("AppDelegate: Handling valid pending request for alarmId=\(alarmId), trackId=\(trackId)")
             AppDelegate.launchedFromAlarm = true
+            AppDelegate.launchAlarmId = alarmId
             self.currentAlarmId = alarmId
             BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
             AudioPlaybackManager.shared.start(audioTrackId: trackId)
@@ -152,14 +155,20 @@ import UserNotifications
         switch call.method {
         case "consumeAlarmLaunch":
             let launched = AppDelegate.launchedFromAlarm
+            let launchAlarmId = AppDelegate.launchAlarmId
+            // One-shot: a later cold start must never replay this launch.
             AppDelegate.launchedFromAlarm = false
+            AppDelegate.launchAlarmId = ""
+            PendingPlaybackManager.shared.clear()
             let trackId = AudioPlaybackManager.shared.currentTrackId ?? "demo_alarm_message"
-            if !self.currentAlarmId.isEmpty {
-                BackupAlarmManager.shared.cancelBackupAlarms(for: self.currentAlarmId)
+            if !launchAlarmId.isEmpty {
+                self.currentAlarmId = launchAlarmId
+                BackupAlarmManager.shared.cancelBackupAlarms(for: launchAlarmId)
             }
-            AlarmFlowLogger.shared.log("AppDelegate: consumeAlarmLaunch returning launchedFromAlarm=\(launched), trackId=\(trackId)")
+            AlarmFlowLogger.shared.log("AppDelegate: consumeAlarmLaunch returning launchedFromAlarm=\(launched), alarmId=\(launchAlarmId), trackId=\(trackId)")
             result([
                 "launchedFromAlarm": launched,
+                "alarmId": launchAlarmId,
                 "trackId": trackId,
                 "isPlaying": AudioPlaybackManager.shared.isPlaying,
                 "positionMs": AudioPlaybackManager.shared.positionMs,
@@ -173,10 +182,18 @@ import UserNotifications
             if let args = call.arguments as? [String: Any],
                let alarmId = args["alarmId"] as? String {
                 let timeMs = (args["timeMs"] as? NSNumber)?.int64Value ?? Int64(Date().timeIntervalSince1970 * 1000 + 5000)
-                let audioTrackId = args["audioTrackId"] as? String ?? "morning_message"
-                let missionName = args["missionName"] as? String
+                let missionName = (args["missionName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Start Morning Mission"
+                let config = AlarmConfig(
+                    alarmId: alarmId,
+                    audioTrackId: args["audioTrackId"] as? String ?? "morning_message",
+                    missionName: missionName,
+                    repeatCount: (args["repeatCount"] as? NSNumber)?.intValue ?? 0,
+                    repeatIntervalSec: (args["repeatIntervalSec"] as? NSNumber)?.intValue ?? 10,
+                    tuneName: installTune(assetPath: args["tuneAsset"] as? String),
+                    title: (args["title"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+                )
                 self.currentAlarmId = alarmId
-                AlarmScheduler.shared.schedule(alarmId: alarmId, timeMs: timeMs, audioTrackId: audioTrackId, missionName: missionName)
+                AlarmScheduler.shared.schedule(config: config, timeMs: timeMs)
                 self.sendEvent([
                     "event": "alarmScheduled",
                     "alarmId": alarmId,
@@ -254,6 +271,30 @@ import UserNotifications
         }
     }
 
+    /// Copies a Flutter asset into Library/Sounds so AlarmKit / notifications can play it by name.
+    private func installTune(assetPath: String?) -> String? {
+        guard let assetPath = assetPath, !assetPath.isEmpty else { return nil }
+        let key = FlutterDartProject.lookupKey(forAsset: assetPath)
+        guard let source = Bundle.main.path(forResource: key, ofType: nil) else {
+            AlarmFlowLogger.shared.log("AppDelegate: tune asset not found: \(assetPath)")
+            return nil
+        }
+        let name = (assetPath as NSString).lastPathComponent
+        let fm = FileManager.default
+        guard let library = fm.urls(for: .libraryDirectory, in: .userDomainMask).first else { return nil }
+        let soundsDir = library.appendingPathComponent("Sounds", isDirectory: true)
+        let target = soundsDir.appendingPathComponent(name)
+        do {
+            try fm.createDirectory(at: soundsDir, withIntermediateDirectories: true)
+            if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
+            try fm.copyItem(atPath: source, toPath: target.path)
+            return name
+        } catch {
+            AlarmFlowLogger.shared.log("AppDelegate: tune install failed: \(error)")
+            return nil
+        }
+    }
+
     private func getPlaybackState() -> [String: Any] {
         let isPlaying = AudioPlaybackManager.shared.isPlaying
         let trackId = AudioPlaybackManager.shared.currentTrackId
@@ -316,6 +357,8 @@ import UserNotifications
         AlarmFlowLogger.shared.log("AppDelegate: Received notification response for alarmId=\(alarmId), trackId=\(audioTrackId)")
 
         AppDelegate.launchedFromAlarm = true
+        AppDelegate.launchAlarmId = alarmId
+        BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
         AudioPlaybackManager.shared.start(audioTrackId: audioTrackId)
 
         sendEvent([

@@ -18,6 +18,12 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.graphics.PixelFormat
+import android.provider.Settings
+import android.view.View
+import android.view.WindowManager
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.core.app.NotificationCompat
 
@@ -25,6 +31,10 @@ class AlarmAudioService : Service() {
     companion object {
         const val CHANNEL_ID = "alarm_notification_v5"
         const val NOTIFICATION_ID = 1001
+        // Separate id so every ring is posted as a NEW notification. Android only fires the
+        // full-screen intent (alarm screen over the lock screen) for a new notification,
+        // never for an update of the service's existing one.
+        const val RING_NOTIFICATION_ID = 1002
 
         const val ACTION_TRIGGER_ALARM = "com.eala.app.ACTION_TRIGGER_ALARM"
         const val ACTION_STOP_ALARM = "com.eala.app.ACTION_STOP_ALARM"
@@ -38,6 +48,7 @@ class AlarmAudioService : Service() {
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val EXTRA_AUDIO_TRACK_ID = "extra_audio_track_id"
         const val EXTRA_SEEK_MS = "extra_seek_ms"
+        const val EXTRA_RUN_INDEX = "extra_run_index"
 
         var currentService: AlarmAudioService? = null
     }
@@ -50,6 +61,8 @@ class AlarmAudioService : Service() {
     private var isRinging = false
     private var currentAlarmId: String = ""
     private var currentAudioTrackId: String = "morning_message"
+    private var currentRunIndex: Int = 0
+    private var vibrator: Vibrator? = null
 
     private val tickerRunnable = object : Runnable {
         override fun run() {
@@ -95,6 +108,7 @@ class AlarmAudioService : Service() {
         val audioTrackId = intent.getStringExtra(EXTRA_AUDIO_TRACK_ID) ?: currentAudioTrackId
         currentAlarmId = alarmId
         currentAudioTrackId = audioTrackId
+        currentRunIndex = intent.getIntExtra(EXTRA_RUN_INDEX, currentRunIndex)
 
         when (action) {
             ACTION_TRIGGER_ALARM -> handleTriggerAlarm(alarmId, audioTrackId)
@@ -113,15 +127,25 @@ class AlarmAudioService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startForegroundWithCompat(notification: Notification) {
+    /** Drops the foreground notification; the service keeps playing while the app is open. */
+    private fun hideServiceNotification() {
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.cancel(NOTIFICATION_ID)
+            manager?.cancel(RING_NOTIFICATION_ID)
+        } catch (e: Exception) {
+            Log.w("AlarmAudioService", "Could not hide notification", e)
+        }
+    }
+
+    private fun startForegroundWithCompat(notification: Notification, id: Int = NOTIFICATION_ID) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                startForeground(id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
             } else {
-                startForeground(NOTIFICATION_ID, notification)
+                startForeground(id, notification)
             }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
             Log.e("AlarmAudioService", "Error in startForeground", e)
         }
@@ -146,11 +170,15 @@ class AlarmAudioService : Service() {
     }
 
     private fun createNotification(title: String, text: String, isRinging: Boolean): Notification {
-        val openAppIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("route", if (isRinging) "/alarm" else "/transcript")
-            putExtra(EXTRA_AUDIO_TRACK_ID, currentAudioTrackId)
-            putExtra(EXTRA_ALARM_ID, currentAlarmId)
+        val openAppIntent = if (isRinging) {
+            alarmScreenIntent()
+        } else {
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("route", "/transcript")
+                putExtra(EXTRA_AUDIO_TRACK_ID, currentAudioTrackId)
+                putExtra(EXTRA_ALARM_ID, currentAlarmId)
+            }
         }
         val openPendingIntent = PendingIntent.getActivity(
             this,
@@ -171,38 +199,14 @@ class AlarmAudioService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         if (isRinging) {
-            // Full Screen Intent to display the default alarm screen (screenshot view) on lock screen
-            val fullScreenIntent = Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_NO_USER_ACTION or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                putExtra("route", "/alarm")
-                putExtra("action", "alarm_ringing")
-                putExtra(EXTRA_AUDIO_TRACK_ID, currentAudioTrackId)
-                putExtra(EXTRA_ALARM_ID, currentAlarmId)
-            }
+            // Full-screen intent shows the alarm screen over the lock screen.
             val fullScreenPending = PendingIntent.getActivity(
                 this,
                 2,
-                fullScreenIntent,
+                alarmScreenIntent(),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             builder.setFullScreenIntent(fullScreenPending, true)
-
-            // Single Action: "Stop" - opens the app, stops ringtone, and plays custom audio
-            val stopAndOpenIntent = Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("action", "stop_alarm_and_open_transcript")
-                putExtra(EXTRA_AUDIO_TRACK_ID, currentAudioTrackId)
-                putExtra(EXTRA_ALARM_ID, currentAlarmId)
-            }
-            val stopAndOpenPending = PendingIntent.getActivity(
-                this,
-                1,
-                stopAndOpenIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(R.drawable.ic_alarm_white, "Stop", stopAndOpenPending)
         } else if (isPlayingCustomAudio) {
             // Action 1: Pause / Resume
             val pauseIntent = Intent(this, AlarmAudioService::class.java).apply {
@@ -244,35 +248,122 @@ class AlarmAudioService : Service() {
         return builder.build()
     }
 
+    private fun alarmScreenIntent(): Intent =
+        Intent(this, AlarmActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_NO_USER_ACTION or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_ALARM_ID, currentAlarmId)
+            putExtra(EXTRA_AUDIO_TRACK_ID, currentAudioTrackId)
+            putExtra(EXTRA_RUN_INDEX, currentRunIndex)
+        }
+
+    private var overlayAnchor: View? = null
+
+    /**
+     * Opens the alarm screen from the background. Newer Android versions only allow that for
+     * an app that currently shows an overlay window, so a 1px invisible overlay is shown for
+     * a moment first. The full-screen intent on the notification is the second path.
+     */
+    private fun launchAlarmScreen() {
+        val intent = alarmScreenIntent()
+        if (Settings.canDrawOverlays(this)) {
+            try {
+                val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                val anchor = View(this)
+                @Suppress("DEPRECATION")
+                val params = WindowManager.LayoutParams(
+                    1, 1,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED,
+                    PixelFormat.TRANSLUCENT
+                )
+                removeOverlayAnchor()
+                wm.addView(anchor, params)
+                overlayAnchor = anchor
+                handler.postDelayed({ removeOverlayAnchor() }, 4000)
+            } catch (e: Exception) {
+                Log.w("AlarmAudioService", "Overlay anchor failed", e)
+            }
+        }
+        handler.postDelayed({
+            try {
+                startActivity(intent)
+                Log.d("AlarmAudioService", "Alarm screen start requested")
+            } catch (e: Exception) {
+                Log.w("AlarmAudioService", "Could not start alarm screen directly", e)
+            }
+        }, 200)
+    }
+
+    private fun removeOverlayAnchor() {
+        val v = overlayAnchor ?: return
+        overlayAnchor = null
+        try {
+            (getSystemService(Context.WINDOW_SERVICE) as WindowManager).removeView(v)
+        } catch (_: Exception) {}
+    }
+
     private fun handleTriggerAlarm(alarmId: String, audioTrackId: String) {
         isRinging = true
         isPlayingCustomAudio = false
-        val notification = createNotification("Alarm Ringing", "Tap to open, play audio message, or dismiss.", isRinging = true)
-        startForegroundWithCompat(notification)
-        playRingtone()
-        AlarmPlugin.sendEvent(
-            mapOf(
-                "event" to "alarmRinging",
-                "alarmId" to alarmId,
-                "audioTrackId" to audioTrackId
-            )
+        val config = AlarmConfigStore.load(this, alarmId)
+        val notification = createNotification(
+            config?.title ?: config?.missionName ?: "Alarm",
+            "Alarm ringing",
+            isRinging = true
         )
+        val manager = getSystemService(NotificationManager::class.java)
+        // Drop any previous ring so this one is posted fresh (required for the full-screen intent).
+        manager?.cancel(RING_NOTIFICATION_ID)
+        startForegroundWithCompat(notification, RING_NOTIFICATION_ID)
+        manager?.cancel(NOTIFICATION_ID)
+        playRingtone(config?.tuneAsset)
+        startVibration()
+
+        launchAlarmScreen()
     }
 
-    private fun playRingtone() {
+    private fun playRingtone(tuneAsset: String? = null) {
         stopRingtone()
+        val alarmAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        // 1) Custom tune chosen in Flutter
+        if (!tuneAsset.isNullOrEmpty()) {
+            val afd = findAssetFileDescriptor(tuneAsset)
+            if (afd != null) {
+                try {
+                    ringtonePlayer = MediaPlayer().apply {
+                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                        afd.close()
+                        setAudioAttributes(alarmAttributes)
+                        isLooping = true
+                        prepare()
+                        start()
+                    }
+                    return
+                } catch (e: Exception) {
+                    Log.e("AlarmAudioService", "Custom tune failed, using default", e)
+                    ringtonePlayer?.release()
+                    ringtonePlayer = null
+                }
+            }
+        }
+
+        // 2) System default alarm sound
         try {
             val alertUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
             ringtonePlayer = MediaPlayer().apply {
                 setDataSource(applicationContext, alertUri)
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
+                setAudioAttributes(alarmAttributes)
                 isLooping = true
                 prepare()
                 start()
@@ -282,12 +373,47 @@ class AlarmAudioService : Service() {
         }
     }
 
+    /** Strong repeating vibration (full amplitude) for as long as the alarm rings. */
+    private fun startVibration() {
+        stopVibration()
+        val v = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+        if (!v.hasVibrator()) return
+        vibrator = v
+        val timings = longArrayOf(0, 900, 300)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val effect = VibrationEffect.createWaveform(timings, intArrayOf(0, 255, 0), 0)
+                @Suppress("DEPRECATION")
+                v.vibrate(
+                    effect,
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(timings, 0)
+            }
+        } catch (e: Exception) {
+            Log.e("AlarmAudioService", "Vibration failed", e)
+        }
+    }
+
+    private fun stopVibration() {
+        try {
+            vibrator?.cancel()
+        } catch (_: Exception) {}
+        vibrator = null
+    }
+
     fun isRingingNow(): Boolean {
         return isRinging && ringtonePlayer?.isPlaying == true
     }
 
     private fun stopRingtone() {
         isRinging = false
+        stopVibration()
         try {
             ringtonePlayer?.stop()
             ringtonePlayer?.release()
@@ -316,6 +442,7 @@ class AlarmAudioService : Service() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         val manager = getSystemService(NotificationManager::class.java)
         manager?.cancel(NOTIFICATION_ID)
+        manager?.cancel(RING_NOTIFICATION_ID)
         stopSelf()
 
         AlarmPlugin.sendEvent(
@@ -362,8 +489,8 @@ class AlarmAudioService : Service() {
 
             isPlayingCustomAudio = true
             val dur = customAudioPlayer?.duration ?: 0
-            val notification = createNotification("Playing Message", "Morning Motivation", isRinging = false)
-            startForegroundWithCompat(notification)
+            // The message page has its own controls: no notification while the message plays.
+            hideServiceNotification()
 
             AlarmPlugin.sendEvent(
                 mapOf(
@@ -399,9 +526,6 @@ class AlarmAudioService : Service() {
         if (customAudioPlayer?.isPlaying == true) {
             customAudioPlayer?.pause()
             isPlayingCustomAudio = false
-            val notification = createNotification("Audio Paused", "Morning Motivation", isRinging = false)
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.notify(NOTIFICATION_ID, notification)
 
             AlarmPlugin.sendEvent(
                 mapOf(
@@ -418,9 +542,6 @@ class AlarmAudioService : Service() {
             customAudioPlayer?.start()
             isPlayingCustomAudio = true
             handler.post(tickerRunnable)
-            val notification = createNotification("Playing Message", "Morning Motivation", isRinging = false)
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.notify(NOTIFICATION_ID, notification)
 
             AlarmPlugin.sendEvent(
                 mapOf(
@@ -479,6 +600,7 @@ class AlarmAudioService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        removeOverlayAnchor()
         currentService = null
         stopAll()
     }

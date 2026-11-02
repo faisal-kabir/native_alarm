@@ -10,8 +10,9 @@ import android.util.Log
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val alarmId = intent.getStringExtra(AlarmAudioService.EXTRA_ALARM_ID) ?: "default_alarm"
-        val audioTrackId = intent.getStringExtra(AlarmAudioService.EXTRA_AUDIO_TRACK_ID) ?: "morning_message"
-        Log.d("AlarmReceiver", "Alarm triggered for ID: $alarmId, Track: $audioTrackId")
+        val runIndex = intent.getIntExtra(AlarmAudioService.EXTRA_RUN_INDEX, 0)
+        val audioTrackId = AlarmConfigStore.load(context, alarmId)?.audioTrackId ?: "morning_message"
+        Log.d("AlarmReceiver", "Alarm triggered for ID: $alarmId, run: $runIndex")
 
         // 1. Wake the physical screen from black standby
         try {
@@ -33,6 +34,7 @@ class AlarmReceiver : BroadcastReceiver() {
             action = AlarmAudioService.ACTION_TRIGGER_ALARM
             putExtra(AlarmAudioService.EXTRA_ALARM_ID, alarmId)
             putExtra(AlarmAudioService.EXTRA_AUDIO_TRACK_ID, audioTrackId)
+            putExtra(AlarmAudioService.EXTRA_RUN_INDEX, runIndex)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
