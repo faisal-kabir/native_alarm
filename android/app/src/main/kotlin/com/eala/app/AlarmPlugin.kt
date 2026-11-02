@@ -1,4 +1,4 @@
-package com.example.native_alerm
+package com.eala.app
 
 import android.os.Handler
 import android.os.Looper
@@ -48,3 +48,4 @@ object AlarmPlugin {
         }
     }
 }
+

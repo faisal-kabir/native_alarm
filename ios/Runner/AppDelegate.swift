@@ -125,12 +125,15 @@ import UserNotifications
 
     private func setupChannels(binaryMessenger: FlutterBinaryMessenger) {
         let appAlarmChannel = FlutterMethodChannel(name: "app/alarm", binaryMessenger: binaryMessenger)
+        let ealaChannel = FlutterMethodChannel(name: "com.eala.app/alarm", binaryMessenger: binaryMessenger)
         let legacyChannel = FlutterMethodChannel(name: "com.native_alarm/alarm", binaryMessenger: binaryMessenger)
 
         let appAlarmEventChannel = FlutterEventChannel(name: "app/alarm_events", binaryMessenger: binaryMessenger)
+        let ealaEventChannel = FlutterEventChannel(name: "com.eala.app/alarm_events", binaryMessenger: binaryMessenger)
         let legacyEventChannel = FlutterEventChannel(name: "com.native_alarm/alarm_events", binaryMessenger: binaryMessenger)
 
         appAlarmEventChannel.setStreamHandler(self)
+        ealaEventChannel.setStreamHandler(self)
         legacyEventChannel.setStreamHandler(self)
 
         let handler: FlutterMethodCallHandler = { [weak self] (call, result) in
@@ -139,6 +142,7 @@ import UserNotifications
         }
 
         appAlarmChannel.setMethodCallHandler(handler)
+        ealaChannel.setMethodCallHandler(handler)
         legacyChannel.setMethodCallHandler(handler)
     }
 

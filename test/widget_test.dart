@@ -6,13 +6,13 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:native_alarm/main.dart';
+import 'package:eala/main.dart';
 
 void main() {
-  testWidgets('Alarm app smoke test displays Native Alarms title', (
+  testWidgets('Alarm app smoke test displays Eala title', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const MyApp());
-    expect(find.text('Native Alarms'), findsOneWidget);
+    expect(find.text('Eala'), findsOneWidget);
   });
 }

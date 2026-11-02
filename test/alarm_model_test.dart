@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:native_alarm/features/alarm/data/models/alarm_model.dart';
-import 'package:native_alarm/features/alarm/domain/entities/alarm.dart';
+import 'package:eala/features/alarm/data/models/alarm_model.dart';
+import 'package:eala/features/alarm/domain/entities/alarm.dart';
 
 void main() {
   group('Alarm & AlarmModel Tests', () {

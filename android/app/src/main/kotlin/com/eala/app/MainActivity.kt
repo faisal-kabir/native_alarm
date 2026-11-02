@@ -1,4 +1,4 @@
-package com.example.native_alerm
+package com.eala.app
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -14,8 +14,10 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val METHOD_CHANNEL = "com.native_alarm/alarm"
-    private val EVENT_CHANNEL = "com.native_alarm/alarm_events"
+    private val METHOD_CHANNEL = "com.eala.app/alarm"
+    private val EVENT_CHANNEL = "com.eala.app/alarm_events"
+    private val LEGACY_METHOD_CHANNEL = "com.native_alarm/alarm"
+    private val LEGACY_EVENT_CHANNEL = "com.native_alarm/alarm_events"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,21 +123,21 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(
-            object : EventChannel.StreamHandler {
-                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
-                    AlarmPlugin.eventSink = events
-                    // Check if intent triggered while engine was initializing
-                    intent?.let { handleIntent(it) }
-                }
-
-                override fun onCancel(arguments: Any?) {
-                    AlarmPlugin.eventSink = null
-                }
+        val streamHandler = object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                AlarmPlugin.eventSink = events
+                // Check if intent triggered while engine was initializing
+                intent?.let { handleIntent(it) }
             }
-        )
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
+            override fun onCancel(arguments: Any?) {
+                AlarmPlugin.eventSink = null
+            }
+        }
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(streamHandler)
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, LEGACY_EVENT_CHANNEL).setStreamHandler(streamHandler)
+
+        val methodHandler: MethodChannel.MethodCallHandler = MethodChannel.MethodCallHandler { call, result ->
             when (call.method) {
                 "requestNotificationPermission" -> {
                     requestNotificationPermission()
@@ -203,12 +205,14 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler(methodHandler)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LEGACY_METHOD_CHANNEL).setMethodCallHandler(methodHandler)
     }
 
     private fun scheduleAlarm(alarmId: String, timeMs: Long, audioTrackId: String) {
         val alarmMgr = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AlarmReceiver::class.java).apply {
-            action = "com.native_alarm.ALARM_TRIGGER"
+            action = "com.eala.app.ACTION_TRIGGER_ALARM"
             putExtra(AlarmAudioService.EXTRA_ALARM_ID, alarmId)
             putExtra(AlarmAudioService.EXTRA_AUDIO_TRACK_ID, audioTrackId)
         }

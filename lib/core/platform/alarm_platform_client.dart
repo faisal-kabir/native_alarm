@@ -19,10 +19,10 @@ enum AlarmState {
 /// A thin wrapper around platform channels to communicate with native code.
 class AlarmPlatformClient {
   static final MethodChannel _methodChannel = MethodChannel(
-    Platform.isIOS ? 'app/alarm' : 'com.native_alarm/alarm',
+    Platform.isIOS ? 'app/alarm' : 'com.eala.app/alarm',
   );
   static final EventChannel _eventChannel = EventChannel(
-    Platform.isIOS ? 'app/alarm_events' : 'com.native_alarm/alarm_events',
+    Platform.isIOS ? 'app/alarm_events' : 'com.eala.app/alarm_events',
   );
 
   final StreamController<Map<String, dynamic>> _eventController =

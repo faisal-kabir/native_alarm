@@ -1,4 +1,4 @@
-package com.example.native_alerm
+package com.eala.app
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -21,7 +21,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
                 PowerManager.ACQUIRE_CAUSES_WAKEUP or
                 PowerManager.ON_AFTER_RELEASE,
-                "NativeAlarm:ScreenWakeLock"
+                "Eala:ScreenWakeLock"
             )
             screenWakeLock.acquire(15000L) // 15 seconds
         } catch (e: Exception) {
@@ -42,3 +42,4 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 }
+

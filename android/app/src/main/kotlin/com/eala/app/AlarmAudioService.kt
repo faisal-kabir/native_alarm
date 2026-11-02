@@ -1,4 +1,4 @@
-package com.example.native_alerm
+package com.eala.app
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -26,14 +26,14 @@ class AlarmAudioService : Service() {
         const val CHANNEL_ID = "alarm_notification_v5"
         const val NOTIFICATION_ID = 1001
 
-        const val ACTION_TRIGGER_ALARM = "com.native_alarm.ACTION_TRIGGER_ALARM"
-        const val ACTION_STOP_ALARM = "com.native_alarm.ACTION_STOP_ALARM"
-        const val ACTION_START_CUSTOM_AUDIO = "com.native_alarm.ACTION_START_CUSTOM_AUDIO"
-        const val ACTION_PAUSE_CUSTOM_AUDIO = "com.native_alarm.ACTION_PAUSE_CUSTOM_AUDIO"
-        const val ACTION_RESUME_CUSTOM_AUDIO = "com.native_alarm.ACTION_RESUME_CUSTOM_AUDIO"
-        const val ACTION_SEEK_CUSTOM_AUDIO = "com.native_alarm.ACTION_SEEK_CUSTOM_AUDIO"
-        const val ACTION_STOP_CUSTOM_AUDIO = "com.native_alarm.ACTION_STOP_CUSTOM_AUDIO"
-        const val ACTION_DISMISS_ALARM = "com.native_alarm.ACTION_DISMISS_ALARM"
+        const val ACTION_TRIGGER_ALARM = "com.eala.app.ACTION_TRIGGER_ALARM"
+        const val ACTION_STOP_ALARM = "com.eala.app.ACTION_STOP_ALARM"
+        const val ACTION_START_CUSTOM_AUDIO = "com.eala.app.ACTION_START_CUSTOM_AUDIO"
+        const val ACTION_PAUSE_CUSTOM_AUDIO = "com.eala.app.ACTION_PAUSE_CUSTOM_AUDIO"
+        const val ACTION_RESUME_CUSTOM_AUDIO = "com.eala.app.ACTION_RESUME_CUSTOM_AUDIO"
+        const val ACTION_SEEK_CUSTOM_AUDIO = "com.eala.app.ACTION_SEEK_CUSTOM_AUDIO"
+        const val ACTION_STOP_CUSTOM_AUDIO = "com.eala.app.ACTION_STOP_CUSTOM_AUDIO"
+        const val ACTION_DISMISS_ALARM = "com.eala.app.ACTION_DISMISS_ALARM"
 
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val EXTRA_AUDIO_TRACK_ID = "extra_audio_track_id"
@@ -80,7 +80,7 @@ class AlarmAudioService : Service() {
         createNotificationChannel()
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "NativeAlarm:AudioWakeLock")
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Eala:AudioWakeLock")
         wakeLock?.acquire(30 * 60 * 1000L /* 30 minutes */)
 
         // Immediately start foreground with initial notification to satisfy Android foreground service requirement

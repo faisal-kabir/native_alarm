@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:native_alarm/features/alarm/presentation/pages/alarm_list_page.dart';
+import 'package:eala/features/alarm/presentation/pages/alarm_list_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Native Alarm',
+      title: 'Eala',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

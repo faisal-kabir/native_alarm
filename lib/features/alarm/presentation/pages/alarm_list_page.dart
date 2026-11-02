@@ -555,7 +555,7 @@ class _AlarmListPageState extends State<AlarmListPage>
       backgroundColor: const Color(0xFF13131A),
       appBar: AppBar(
         title: const Text(
-          'Native Alarms',
+          'Eala',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -715,7 +715,7 @@ class _AlarmListPageState extends State<AlarmListPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Test Native Alarm',
+                        'Test Eala Alarm',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,

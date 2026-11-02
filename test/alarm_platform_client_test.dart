@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:native_alarm/core/platform/alarm_platform_client.dart';
+import 'package:eala/core/platform/alarm_platform_client.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -11,8 +11,12 @@ void main() {
 
     setUp(() {
       methodCalls.clear();
-      // Intercept calls on both possible channel names
-      for (final channelName in ['app/alarm', 'com.native_alarm/alarm']) {
+      // Intercept calls on all possible channel names
+      for (final channelName in [
+        'app/alarm',
+        'com.eala.app/alarm',
+        'com.native_alarm/alarm',
+      ]) {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(MethodChannel(channelName), (
               MethodCall call,
@@ -43,7 +47,11 @@ void main() {
     });
 
     tearDown(() {
-      for (final channelName in ['app/alarm', 'com.native_alarm/alarm']) {
+      for (final channelName in [
+        'app/alarm',
+        'com.eala.app/alarm',
+        'com.native_alarm/alarm',
+      ]) {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(MethodChannel(channelName), null);
       }

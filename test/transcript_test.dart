@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:native_alarm/features/alarm/domain/entities/transcript.dart';
-import 'package:native_alarm/features/alarm/domain/entities/transcript_word.dart';
+import 'package:eala/features/alarm/domain/entities/transcript.dart';
+import 'package:eala/features/alarm/domain/entities/transcript_word.dart';
 
 void main() {
   group('Transcript and TranscriptWord Model Tests', () {

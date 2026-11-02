@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
 
     <application
-        android:label="Native Alarm"
+        android:label="Eala"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -45,6 +45,7 @@
             android:name=".AlarmReceiver"
             android:exported="false">
             <intent-filter>
+                <action android:name="com.eala.app.ACTION_TRIGGER_ALARM"/>
                 <action android:name="com.native_alarm.ALARM_TRIGGER"/>
             </intent-filter>
         </receiver>
