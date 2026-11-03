@@ -26,8 +26,8 @@ final class AlarmFlowLogger {
 
         var logs = UserDefaults.standard.stringArray(forKey: userDefaultsKey) ?? []
         logs.append(entry)
-        if logs.count > 50 {
-            logs = Array(logs.suffix(50))
+        if logs.count > 300 {
+            logs = Array(logs.suffix(300))
         }
         UserDefaults.standard.set(logs, forKey: userDefaultsKey)
     }

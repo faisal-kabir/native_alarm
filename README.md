@@ -238,7 +238,15 @@ User taps button
 Use the following packages for local data management:
 
 - **flutter_secure_storage:** For storing sensitive and internal application data securely.
-- **isar:** For managing the application's internal local database.
+- **isar:** For managing the application's internal local database. The project uses **`isar_community`** (the maintained drop-in fork of Isar 3; original `isar 3.1.0` is unmaintained and does not build with this project's AGP 9). Import it as `package:isar_community/isar.dart`.
+
+### Isar Setup
+
+- The database is opened once in `lib/core/database/database_module.dart` (an injectable `@module`, `@preResolve`), so `Isar` is injected into local DataSources.
+- Every new `@collection` schema must be added to the `Isar.open([...])` list there.
+- Collections live in the feature's `data/models/` (e.g. `alarm_isar_model.dart`) with `fromEntity()` / `toEntity()` mapping; Domain never sees Isar types.
+- `lib/core/di/injection.dart` defines `instance` and `configureDependencies()`, awaited in `main()` before `runApp`.
+- After changing a collection or an injectable class, run `dart run build_runner build` (the `--delete-conflicting-outputs` flag is accepted but ignored by the current build_runner).
 
 ### Local-First Data Management
 

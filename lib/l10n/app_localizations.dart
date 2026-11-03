@@ -99,6 +99,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eala'**
   String get app_name;
+
+  /// No description provided for @alarm_list_empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No alarms yet. Tap + to add one.'**
+  String get alarm_list_empty;
 }
 
 class _AppLocalizationsDelegate

@@ -1,3 +1,4 @@
 {
-  "app_name": "Eala"
+  "app_name": "Eala",
+  "alarm_list_empty": "No alarms yet. Tap + to add one."
 }

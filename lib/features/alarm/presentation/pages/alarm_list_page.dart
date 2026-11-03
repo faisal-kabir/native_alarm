@@ -2,27 +2,45 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection.dart';
 import '../../../../core/platform/alarm_platform_client.dart';
 import '../../../../core/platform/alarm_schedule_options.dart';
+import '../../../../main.dart';
 import '../../data/audio_track_repository.dart';
 import '../../domain/entities/alarm.dart';
+import '../bloc/alarm_list_bloc.dart';
+import '../bloc/alarm_list_event.dart';
+import '../bloc/alarm_list_state.dart';
 import 'alarm_ringing_page.dart';
 import 'synchronized_transcript_page.dart';
 
-class AlarmListPage extends StatefulWidget {
+class AlarmListPage extends StatelessWidget {
   const AlarmListPage({super.key});
 
   @override
-  State<AlarmListPage> createState() => _AlarmListPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (BuildContext context) =>
+          instance<AlarmListBloc>()..add(const LoadAlarmsEvent()),
+      child: const _AlarmListView(),
+    );
+  }
 }
 
-class _AlarmListPageState extends State<AlarmListPage>
+class _AlarmListView extends StatefulWidget {
+  const _AlarmListView();
+
+  @override
+  State<_AlarmListView> createState() => _AlarmListPageState();
+}
+
+class _AlarmListPageState extends State<_AlarmListView>
     with WidgetsBindingObserver {
   final AlarmPlatformClient _platformClient = AlarmPlatformClient();
   // Repeat count / interval / tune sent with every alarm (0 repeats = none).
   static const AlarmScheduleOptions _scheduleOptions = AlarmScheduleOptions();
-  late List<Alarm> _alarms;
   StreamSubscription? _eventSubscription;
   bool _hasNotificationPermission = true;
   bool _isRinging = false;
@@ -33,24 +51,6 @@ class _AlarmListPageState extends State<AlarmListPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _alarms = [
-      Alarm(
-        id: 'alarm_1',
-        enabled: true,
-        time: DateTime.now().add(const Duration(minutes: 30)),
-        audioTrackId: 'morning_message',
-        ringtoneId: 'default',
-        label: 'Morning Awakening',
-      ),
-      Alarm(
-        id: 'alarm_2',
-        enabled: false,
-        time: DateTime.now().add(const Duration(hours: 2)),
-        audioTrackId: 'morning_message',
-        ringtoneId: 'default',
-        label: 'Afternoon Focus',
-      ),
-    ];
 
     _checkNotificationPermission();
     _checkAlarmLaunch();
@@ -70,7 +70,8 @@ class _AlarmListPageState extends State<AlarmListPage>
         });
         _navigateToRingingPage(alarmId: eventAlarmId);
       } else if (type == 'openTranscript' ||
-          (type == 'customAudioStarted' && (eventAlarmId?.isNotEmpty ?? false))) {
+          (type == 'customAudioStarted' &&
+              (eventAlarmId?.isNotEmpty ?? false))) {
         // Only alarm-originated starts open the page (they carry an alarmId);
         // replaying inside the message page must not push it again.
         setState(() {
@@ -88,6 +89,8 @@ class _AlarmListPageState extends State<AlarmListPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Re-read so alarms that rang while the app was in the background show as off.
+      context.read<AlarmListBloc>().add(const LoadAlarmsEvent());
       _checkAlarmLaunch();
       _ensureAlarmScreenPermissions();
     }
@@ -95,10 +98,8 @@ class _AlarmListPageState extends State<AlarmListPage>
 
   static const Map<String, String> _permissionExplanations = {
     'notifications': 'Allow notifications so the alarm can alert you.',
-    'fullScreenIntent':
-        'Allow full-screen alarms so the alarm screen can appear over the lock screen.',
-    'overlay':
-        'Allow "Display over other apps" so the alarm screen can open while you are using the phone.',
+    'fullScreenIntent': 'Allow full-screen alarms so the alarm screen can appear over the lock screen.',
+    'overlay': 'Allow "Display over other apps" so the alarm screen can open while you are using the phone.',
     'exactAlarm': 'Allow exact alarms so the alarm rings on time.',
   };
   // Static: a permission is asked once per app start, not once per page instance.
@@ -250,14 +251,15 @@ class _AlarmListPageState extends State<AlarmListPage>
       _requestNotificationPermission();
     }
 
-    final updated = alarm.copyWith(enabled: !alarm.enabled);
+    final enabling = !alarm.enabled;
+    // A switched-off alarm usually has a time that already passed; turning it back on
+    // means its next occurrence, otherwise the native side would ring immediately.
+    final updated = alarm.copyWith(
+      enabled: enabling,
+      time: enabling ? _nextOccurrence(alarm.time) : alarm.time,
+    );
 
-    setState(() {
-      final index = _alarms.indexWhere((a) => a.id == alarm.id);
-      if (index != -1) {
-        _alarms[index] = updated;
-      }
-    });
+    context.read<AlarmListBloc>().add(SaveAlarmEvent(updated));
 
     if (updated.enabled) {
       _platformClient.scheduleAlarm({
@@ -291,8 +293,17 @@ class _AlarmListPageState extends State<AlarmListPage>
     }
 
     final isEditing = alarm != null;
+    final defaultDt = DateTime.now().add(const Duration(minutes: 5));
+    // Whole minutes only: the alarm rings at hh:mm:00, as the list shows it.
     DateTime scheduledDt =
-        alarm?.time ?? DateTime.now().add(const Duration(minutes: 5));
+        alarm?.time ??
+        DateTime(
+          defaultDt.year,
+          defaultDt.month,
+          defaultDt.day,
+          defaultDt.hour,
+          defaultDt.minute,
+        );
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(scheduledDt);
     final labelController = TextEditingController(
       text: alarm?.label ?? (isEditing ? 'Alarm' : 'Morning Alarm'),
@@ -511,7 +522,7 @@ class _AlarmListPageState extends State<AlarmListPage>
                               alarm?.id ??
                               'alarm_${DateTime.now().millisecondsSinceEpoch}',
                           enabled: true,
-                          time: scheduledDt,
+                          time: _nextOccurrence(scheduledDt),
                           audioTrackId:
                               alarm?.audioTrackId ?? 'morning_message',
                           ringtoneId: alarm?.ringtoneId ?? 'default',
@@ -519,18 +530,9 @@ class _AlarmListPageState extends State<AlarmListPage>
                           missionName: resolvedMission,
                         );
 
-                        setState(() {
-                          if (isEditing) {
-                            final idx = _alarms.indexWhere(
-                              (a) => a.id == alarm.id,
-                            );
-                            if (idx != -1) {
-                              _alarms[idx] = savedAlarm;
-                            }
-                          } else {
-                            _alarms.add(savedAlarm);
-                          }
-                        });
+                        this.context.read<AlarmListBloc>().add(
+                          SaveAlarmEvent(savedAlarm),
+                        );
 
                         _platformClient.scheduleAlarm({
                           'alarmId': savedAlarm.id,
@@ -606,6 +608,20 @@ class _AlarmListPageState extends State<AlarmListPage>
         ),
       );
     }
+  }
+
+  /// [time] if it is still ahead, otherwise the next time that clock time comes round.
+  DateTime _nextOccurrence(DateTime time) {
+    final now = DateTime.now();
+    if (time.isAfter(now)) return time;
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    return today.isAfter(now) ? today : today.add(const Duration(days: 1));
   }
 
   String _formatTime(DateTime dt) {
@@ -820,116 +836,25 @@ class _AlarmListPageState extends State<AlarmListPage>
 
           // Alarm List
           Expanded(
-            child: ListView.builder(
-              itemCount: _alarms.length,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemBuilder: (context, index) {
-                final alarm = _alarms[index];
-                return Dismissible(
-                  key: Key(alarm.id),
-                  direction: DismissDirection.endToStart,
-                  onDismissed: (_) {
-                    _platformClient.cancelAlarm(alarm.id);
-                    setState(() {
-                      _alarms.removeAt(index);
-                    });
-                  },
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade900,
-                      borderRadius: BorderRadius.circular(16),
+            child: BlocBuilder<AlarmListBloc, AlarmListState>(
+              builder: (context, state) {
+                final alarms = switch (state) {
+                  AlarmListLoaded(:final alarms) => alarms,
+                  AlarmListFailure(:final alarms) => alarms,
+                  _ => const <Alarm>[],
+                };
+                if (state is AlarmListLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (alarms.isEmpty) {
+                  return Center(
+                    child: Text(
+                      appLanguage(context).alarm_list_empty,
+                      style: appTheme(context).textTheme.bodyLarge,
                     ),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  child: Card(
-                    color: const Color(0xFF1E1E2C),
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: alarm.enabled
-                            ? const Color(0xFF7C4DFF).withValues(alpha: 0.5)
-                            : Colors.white10,
-                      ),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      title: Text(
-                        _formatTime(alarm.time),
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: alarm.enabled ? Colors.white : Colors.white38,
-                        ),
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Row(
-                          children: [
-                            Text(
-                              alarm.label ?? 'Alarm',
-                              style: TextStyle(
-                                color: alarm.enabled
-                                    ? Colors.white70
-                                    : Colors.white24,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              '•',
-                              style: TextStyle(color: Colors.white24),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.flag,
-                              size: 13,
-                              color: Color(0xFFFF9800),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                alarm.missionName ?? 'Start Morning Mission',
-                                style: const TextStyle(
-                                  color: Color(0xFFFFB74D),
-                                  fontSize: 12,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.edit_outlined,
-                              size: 20,
-                              color: Colors.white54,
-                            ),
-                            tooltip: 'Edit Mission',
-                            onPressed: () => _showAlarmEditor(alarm: alarm),
-                          ),
-                          Switch(
-                            value: alarm.enabled,
-                            thumbColor: const WidgetStatePropertyAll(
-                              Color(0xFF7C4DFF),
-                            ),
-                            onChanged: (_) => _toggleAlarm(alarm),
-                          ),
-                        ],
-                      ),
-                      onTap: () =>
-                          _navigateToTranscript(missionName: alarm.missionName),
-                    ),
-                  ),
-                );
+                  );
+                }
+                return _buildAlarmList(alarms);
               },
             ),
           ),
@@ -942,6 +867,108 @@ class _AlarmListPageState extends State<AlarmListPage>
         label: const Text('Live Transcript'),
         onPressed: _navigateToTranscript,
       ),
+    );
+  }
+
+  Widget _buildAlarmList(List<Alarm> alarms) {
+    return ListView.builder(
+      itemCount: alarms.length,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemBuilder: (context, index) {
+        final alarm = alarms[index];
+        return Dismissible(
+          key: Key(alarm.id),
+          direction: DismissDirection.endToStart,
+          onDismissed: (_) {
+            _platformClient.cancelAlarm(alarm.id);
+            context.read<AlarmListBloc>().add(DeleteAlarmEvent(alarm.id));
+          },
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade900,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          child: Card(
+            color: const Color(0xFF1E1E2C),
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: alarm.enabled
+                    ? const Color(0xFF7C4DFF).withValues(alpha: 0.5)
+                    : Colors.white10,
+              ),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 8,
+              ),
+              title: Text(
+                _formatTime(alarm.time),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: alarm.enabled ? Colors.white : Colors.white38,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      alarm.label ?? 'Alarm',
+                      style: TextStyle(
+                        color: alarm.enabled ? Colors.white70 : Colors.white24,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('•', style: TextStyle(color: Colors.white24)),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.flag, size: 13, color: Color(0xFFFF9800)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        alarm.missionName ?? 'Start Morning Mission',
+                        style: const TextStyle(
+                          color: Color(0xFFFFB74D),
+                          fontSize: 12,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: Colors.white54,
+                    ),
+                    tooltip: 'Edit Mission',
+                    onPressed: () => _showAlarmEditor(alarm: alarm),
+                  ),
+                  Switch(
+                    value: alarm.enabled,
+                    thumbColor: const WidgetStatePropertyAll(Color(0xFF7C4DFF)),
+                    onChanged: (_) => _toggleAlarm(alarm),
+                  ),
+                ],
+              ),
+              onTap: () =>
+                  _navigateToTranscript(missionName: alarm.missionName),
+            ),
+          ),
+        );
+      },
     );
   }
 }

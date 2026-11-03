@@ -150,7 +150,11 @@ import UserNotifications
     }
 
     private func handleMethodCall(call: FlutterMethodCall, result: @escaping FlutterResult) {
-        AlarmFlowLogger.shared.log("AppDelegate: MethodChannel call '\(call.method)'")
+        // getPlaybackState is polled every 120ms by the message page; logging it would
+        // push every useful entry out of the debug log.
+        if call.method != "getPlaybackState" {
+            AlarmFlowLogger.shared.log("AppDelegate: MethodChannel call '\(call.method)'")
+        }
 
         switch call.method {
         case "consumeAlarmLaunch":

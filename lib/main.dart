@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:eala/features/alarm/presentation/pages/alarm_list_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'l10n/app_localizations.dart';
 
@@ -23,9 +24,10 @@ class MyHttpOverrides extends HttpOverrides {
           (X509Certificate cert, String host, int port) => true;
   }
 }
-void main() {
+Future<void> main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
+  await configureDependencies();
   runApp(const MyApp());
 }
 

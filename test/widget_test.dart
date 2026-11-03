@@ -8,10 +8,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:eala/main.dart';
 
+import 'fakes/fake_alarm_repository.dart';
+
 void main() {
   testWidgets('Alarm app smoke test displays Eala title', (
     WidgetTester tester,
   ) async {
+    await registerFakeAlarmDependencies(FakeAlarmRepository());
     await tester.pumpWidget(const MyApp());
     expect(find.text('Eala'), findsOneWidget);
   });

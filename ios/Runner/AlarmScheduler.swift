@@ -12,10 +12,13 @@ import SwiftUI
 // AlarmKit AppIntents (iOS 26+)
 // ---------------------------------------------------------------------------
 
+/// "Slide to stop". Runs in the background first, so the next internal alarm is set
+/// the moment the user slides, even if the phone stays locked. Then it asks iOS to
+/// unlock and open the app; only an unlock cancels that repeat and opens the message.
 @available(iOS 26.0, *)
 public struct StopAndPlayIntent: LiveActivityIntent {
     public static var title: LocalizedStringResource = "Stop & Play"
-    public static var openAppWhenRun: Bool = true
+    public static var supportedModes: IntentModes { [.background, .foreground(.dynamic)] }
 
     @Parameter(title: "Alarm ID")
     public var alarmId: String
@@ -23,27 +26,43 @@ public struct StopAndPlayIntent: LiveActivityIntent {
     @Parameter(title: "Audio Track ID")
     public var audioTrackId: String
 
+    /// 0 = main alarm, 1...N = internal repeat number.
+    @Parameter(title: "Run Index")
+    public var runIndex: Int
+
     public init() {
         self.alarmId = ""
         self.audioTrackId = "morning_message"
+        self.runIndex = 0
     }
 
-    public init(alarmId: String, audioTrackId: String) {
+    public init(alarmId: String, audioTrackId: String, runIndex: Int) {
         self.alarmId = alarmId
         self.audioTrackId = audioTrackId
+        self.runIndex = runIndex
     }
 
     public func perform() async throws -> some IntentResult {
-        AlarmFlowLogger.shared.log("StopAndPlayIntent.perform() entered for alarmId=\(alarmId), trackId=\(audioTrackId), bundle=\(Bundle.main.bundlePath)")
-        await AlarmUnlockCoordinator.handleUnlocked(alarmId: alarmId, audioTrackId: audioTrackId, source: "StopAndPlayIntent")
+        AlarmFlowLogger.shared.log("StopAndPlayIntent.perform() entered for alarmId=\(alarmId), run=\(runIndex)")
+        let stoppedAt = Date()
+        // iOS already silenced this alarm. Ring again after the interval unless unlocked.
+        await BackupAlarmManager.shared.scheduleNextRepeat(alarmId: alarmId, afterRun: runIndex)
+        do {
+            try await continueInForeground(nil, alwaysConfirm: false)
+        } catch {
+            AlarmFlowLogger.shared.log("StopAndPlayIntent: not unlocked (\(error)); next repeat stays scheduled")
+            return .result()
+        }
+        await AlarmUnlockCoordinator.handleUnlocked(alarmId: alarmId, audioTrackId: audioTrackId, source: "StopAndPlayIntent", requestedAt: stoppedAt)
         return .result()
     }
 }
 
+/// "Start Morning Mission". The alarm keeps ringing until the user unlocks.
 @available(iOS 26.0, *)
 public struct OpenAndPlayIntent: LiveActivityIntent {
     public static var title: LocalizedStringResource = "Open & Play"
-    public static var openAppWhenRun: Bool = true
+    public static var supportedModes: IntentModes { [.background, .foreground(.dynamic)] }
 
     @Parameter(title: "Alarm ID")
     public var alarmId: String
@@ -51,19 +70,36 @@ public struct OpenAndPlayIntent: LiveActivityIntent {
     @Parameter(title: "Audio Track ID")
     public var audioTrackId: String
 
+    @Parameter(title: "Run Index")
+    public var runIndex: Int
+
     public init() {
         self.alarmId = ""
         self.audioTrackId = "morning_message"
+        self.runIndex = 0
     }
 
-    public init(alarmId: String, audioTrackId: String) {
+    public init(alarmId: String, audioTrackId: String, runIndex: Int) {
         self.alarmId = alarmId
         self.audioTrackId = audioTrackId
+        self.runIndex = runIndex
     }
 
     public func perform() async throws -> some IntentResult {
-        AlarmFlowLogger.shared.log("OpenAndPlayIntent.perform() entered for alarmId=\(alarmId), trackId=\(audioTrackId), bundle=\(Bundle.main.bundlePath)")
-        await AlarmUnlockCoordinator.handleUnlocked(alarmId: alarmId, audioTrackId: audioTrackId, source: "OpenAndPlayIntent")
+        AlarmFlowLogger.shared.log("OpenAndPlayIntent.perform() entered for alarmId=\(alarmId), run=\(runIndex)")
+        let requestedAt = Date()
+        do {
+            try await continueInForeground(nil, alwaysConfirm: false)
+        } catch {
+            AlarmFlowLogger.shared.log("OpenAndPlayIntent: not unlocked (\(error))")
+            // If iOS dismissed the alert anyway, behave like Slide to stop.
+            let stillRinging = (try? AlarmManager.shared.alarms)?.contains { $0.state == .alerting } ?? false
+            if !stillRinging {
+                await BackupAlarmManager.shared.scheduleNextRepeat(alarmId: alarmId, afterRun: runIndex)
+            }
+            return .result()
+        }
+        await AlarmUnlockCoordinator.handleUnlocked(alarmId: alarmId, audioTrackId: audioTrackId, source: "OpenAndPlayIntent", requestedAt: requestedAt)
         return .result()
     }
 }
@@ -144,20 +180,41 @@ final class AlarmConfigStore {
 /// Stops the ringing alarm, cancels every internal repeat (alarms + notifications),
 /// and hands the alarm id to Flutter exactly once.
 enum AlarmUnlockCoordinator {
-    static func handleUnlocked(alarmId: String, audioTrackId: String, source: String) async {
+    /// An unlock that comes this long after the alarm was acted on is not an answer to
+    /// it (iOS can deliver a waiting intent at a much later unlock); it only cleans up.
+    static let maxUnlockDelay: TimeInterval = 180
+
+    static func handleUnlocked(alarmId: String, audioTrackId: String, source: String, requestedAt: Date = Date()) async {
         #if canImport(AlarmKit)
         if #available(iOS 26.0, *) {
-            let uuid = AlarmIdMapper.uuid(for: alarmId)
-            do {
-                try AlarmManager.shared.stop(id: uuid)
-                AlarmFlowLogger.shared.log("\(source): AlarmManager.stop succeeded for \(uuid)")
-            } catch {
-                AlarmFlowLogger.shared.log("\(source): AlarmManager.stop threw: \(error)")
+            // The ringing alarm may be the main alarm or an internal repeat (which has its
+            // own random UUID). Stopping only the main UUID left a repeat stuck in
+            // "alerting", and iOS rang it again hours later. Stop everything that rings.
+            let mainUUID = AlarmIdMapper.uuid(for: alarmId)
+            var toStop: Set<UUID> = [mainUUID]
+            if let alarms = try? AlarmManager.shared.alarms {
+                for alarm in alarms where alarm.state == .alerting {
+                    toStop.insert(alarm.id)
+                }
+            }
+            for uuid in toStop {
+                do {
+                    try AlarmManager.shared.stop(id: uuid)
+                    AlarmFlowLogger.shared.log("\(source): AlarmManager.stop succeeded for \(uuid)")
+                } catch {
+                    AlarmFlowLogger.shared.log("\(source): AlarmManager.stop(\(uuid)) note: \(error)")
+                }
             }
         }
         #endif
 
         BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
+
+        let delay = Date().timeIntervalSince(requestedAt)
+        guard delay <= maxUnlockDelay else {
+            AlarmFlowLogger.shared.log("\(source): unlock came \(Int(delay))s late; not starting the message")
+            return
+        }
         PendingPlaybackManager.shared.recordRequest(alarmId: alarmId, trackId: audioTrackId)
 
         await MainActor.run {
@@ -171,9 +228,9 @@ enum AlarmUnlockCoordinator {
 // ---------------------------------------------------------------------------
 // BackupAlarmManager  –  internal repeat alarms (count/interval come from Flutter)
 //
-// iOS 26+  : extra AlarmKit alarms at trigger + interval * n, plus an info
-//            notification before each one.
-// iOS < 26 : extra time-sensitive notifications with the alarm sound.
+// iOS 26+  : one AlarmKit alarm at a time, set `interval` seconds after each
+//            "Slide to stop" (scheduleNextRepeat), plus an info notification.
+// iOS < 26 : time-sensitive notifications with the alarm sound, set up front.
 // All of them are cancelled together as soon as the user unlocks.
 // ---------------------------------------------------------------------------
 
@@ -281,45 +338,47 @@ final class BackupAlarmManager {
         // repeatCount == 0 from Flutter means: no internal alarms at all.
         guard config.safeRepeatCount > 0 else { return }
 
+        scheduleFallbackRepeats(config: config, timeMs: timeMs)
+    }
+
+    /// AlarmKit path: sets the single next internal alarm, `interval` seconds from now,
+    /// right after the user slid the alarm away. (Pre-scheduling them all at trigger time
+    /// made the repeats ring on top of the main alarm while it was still ringing.)
+    func scheduleNextRepeat(alarmId: String, afterRun runIndex: Int) async {
         #if canImport(AlarmKit)
         if #available(iOS 26.0, *) {
-            Task {
-                let baseDate = Date(timeIntervalSince1970: Double(timeMs) / 1000.0)
-                var scheduledBackupIds: [String] = []
-
-                for n in stride(from: 1, through: config.safeRepeatCount, by: 1) {
-                    let backupDate = baseDate.addingTimeInterval(TimeInterval(config.safeIntervalSec * n))
-                    if backupDate.timeIntervalSinceNow <= 0 { continue }
-
-                    let backupUUID = UUID()
-                    let config26 = AlarmScheduler.shared.makeConfiguration(
-                        config: config,
-                        fireDate: backupDate
-                    )
-
-                    do {
-                        _ = try await AlarmManager.shared.schedule(id: backupUUID, configuration: config26)
-                        scheduledBackupIds.append(backupUUID.uuidString)
-                        // Info notification right before this internal alarm rings.
-                        self.scheduleNotification(
-                            config: config,
-                            index: n,
-                            fireDate: backupDate.addingTimeInterval(-TimeInterval(config.safeIntervalSec)).addingTimeInterval(0.5),
-                            rings: false
-                        )
-                        AlarmFlowLogger.shared.log("BackupAlarmManager: Scheduled internal alarm #\(n) (id=\(backupUUID.uuidString)) for mainAlarmId=\(config.alarmId)")
-                    } catch {
-                        AlarmFlowLogger.shared.log("BackupAlarmManager: Failed to schedule internal alarm #\(n): \(error)")
-                    }
-                }
-
-                self.recordMapping(mainAlarmId: config.alarmId, backupIds: scheduledBackupIds)
+            guard let config = AlarmConfigStore.shared.load(alarmId) else { return }
+            let next = runIndex + 1
+            guard next <= config.safeRepeatCount else {
+                AlarmFlowLogger.shared.log("BackupAlarmManager: no repeats left for \(alarmId) after run \(runIndex)")
+                return
             }
-            return
+            let fireDate = Date().addingTimeInterval(TimeInterval(config.safeIntervalSec))
+            let uuid = UUID()
+            do {
+                _ = try await AlarmManager.shared.schedule(
+                    id: uuid,
+                    configuration: AlarmScheduler.shared.makeConfiguration(config: config, fireDate: fireDate, runIndex: next)
+                )
+                appendMapping(mainAlarmId: alarmId, backupId: uuid.uuidString)
+                scheduleNotification(config: config, index: next, fireDate: Date().addingTimeInterval(0.5), rings: false)
+                AlarmFlowLogger.shared.log("BackupAlarmManager: Scheduled internal alarm #\(next) (id=\(uuid)) for \(alarmId) at \(fireDate)")
+            } catch {
+                AlarmFlowLogger.shared.log("BackupAlarmManager: Failed to schedule internal alarm #\(next): \(error)")
+            }
         }
         #endif
+    }
 
-        scheduleFallbackRepeats(config: config, timeMs: timeMs)
+    private func appendMapping(mainAlarmId: String, backupId: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        var mapping = UserDefaults.standard.dictionary(forKey: mappingKey) as? [String: [String]] ?? [:]
+        mapping[mainAlarmId, default: []].append(backupId)
+        UserDefaults.standard.set(mapping, forKey: mappingKey)
+        var rev = UserDefaults.standard.dictionary(forKey: reverseMappingKey) as? [String: String] ?? [:]
+        rev[backupId] = mainAlarmId
+        UserDefaults.standard.set(rev, forKey: reverseMappingKey)
     }
 
     func cancelBackupAlarms(for alarmId: String) {
@@ -356,6 +415,8 @@ final class BackupAlarmManager {
         if #available(iOS 26.0, *) {
             for bId in backupIds {
                 if let uuid = UUID(uuidString: bId) {
+                    // A repeat that is ringing right now must be stopped, not only cancelled.
+                    try? AlarmManager.shared.stop(id: uuid)
                     do {
                         AlarmFlowLogger.shared.log("BackupAlarmManager: Calling AlarmManager.shared.cancel(id: \(uuid))")
                         try AlarmManager.shared.cancel(id: uuid)
@@ -408,6 +469,7 @@ final class AlarmScheduler {
         if #available(iOS 26.0, *) {
             guard !isObservingUpdates else { return }
             isObservingUpdates = true
+            cleanUpOrphanAlarms()
             Task {
                 AlarmFlowLogger.shared.log("AlarmScheduler: Starting AlarmManager.shared.alarmUpdates observer")
                 for await alarms in AlarmManager.shared.alarmUpdates {
@@ -427,6 +489,36 @@ final class AlarmScheduler {
         }
         #endif
     }
+
+    #if canImport(AlarmKit)
+    /// Logs every AlarmKit alarm the system holds for this app and cancels scheduled ones
+    /// that no Flutter alarm or internal repeat owns any more (leftovers of old runs).
+    @available(iOS 26.0, *)
+    private func cleanUpOrphanAlarms() {
+        guard let alarms = try? AlarmManager.shared.alarms else { return }
+        let configPrefix = "alarmflow.config."
+        var owners: [UUID: String] = [:]
+        for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix(configPrefix) {
+            let alarmId = String(key.dropFirst(configPrefix.count))
+            owners[AlarmIdMapper.uuid(for: alarmId)] = alarmId
+        }
+        for (mainId, backupIds) in BackupAlarmManager.shared.getMapping() {
+            for bId in backupIds {
+                if let uuid = UUID(uuidString: bId) { owners[uuid] = "\(mainId) (repeat)" }
+            }
+        }
+
+        AlarmFlowLogger.shared.log("AlarmScheduler: system holds \(alarms.count) AlarmKit alarm(s)")
+        for alarm in alarms {
+            let owner = owners[alarm.id]
+            AlarmFlowLogger.shared.log("AlarmScheduler: alarm \(alarm.id) state=\(alarm.state) owner=\(owner ?? "none") schedule=\(String(describing: alarm.schedule))")
+            if owner == nil && alarm.state == .scheduled {
+                try? AlarmManager.shared.cancel(id: alarm.id)
+                AlarmFlowLogger.shared.log("AlarmScheduler: cancelled orphan alarm \(alarm.id)")
+            }
+        }
+    }
+    #endif
 
     // MARK: – Notification Category Setup
 
@@ -472,7 +564,7 @@ final class AlarmScheduler {
 
     #if canImport(AlarmKit)
     @available(iOS 26.0, *)
-    func makeConfiguration(config: AlarmConfig, fireDate: Date) -> AlarmManager.AlarmConfiguration<NativeAlarmMetadata> {
+    func makeConfiguration(config: AlarmConfig, fireDate: Date, runIndex: Int = 0) -> AlarmManager.AlarmConfiguration<NativeAlarmMetadata> {
         let missionButton = AlarmButton(
             text: LocalizedStringResource(stringLiteral: config.missionName),
             textColor: .white,
@@ -510,8 +602,8 @@ final class AlarmScheduler {
         return AlarmManager.AlarmConfiguration.alarm(
             schedule: .fixed(fireDate),
             attributes: attributes,
-            stopIntent: StopAndPlayIntent(alarmId: config.alarmId, audioTrackId: config.audioTrackId),
-            secondaryIntent: OpenAndPlayIntent(alarmId: config.alarmId, audioTrackId: config.audioTrackId),
+            stopIntent: StopAndPlayIntent(alarmId: config.alarmId, audioTrackId: config.audioTrackId, runIndex: runIndex),
+            secondaryIntent: OpenAndPlayIntent(alarmId: config.alarmId, audioTrackId: config.audioTrackId, runIndex: runIndex),
             sound: sound
         )
     }
@@ -538,7 +630,8 @@ final class AlarmScheduler {
                     )
                     AlarmFlowLogger.shared.log("AlarmScheduler: Scheduled via AlarmKit alarmId=\(config.alarmId) uuid=\(uuid)")
 
-                    BackupAlarmManager.shared.scheduleBackupAlarms(config: config, timeMs: timeMs)
+                    // Repeats are set one by one after each Slide to stop (scheduleNextRepeat).
+                    BackupAlarmManager.shared.cancelBackupAlarms(for: config.alarmId)
                     return
                 } catch {
                     AlarmFlowLogger.shared.log("AlarmScheduler: AlarmKit failed (\(error)), falling back to notifications")
