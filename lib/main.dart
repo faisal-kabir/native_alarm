@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:eala/features/alarm/presentation/pages/alarm_list_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
@@ -34,7 +35,13 @@ Future<void> main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
   await configureDependencies();
-  runApp(const MyApp());
+  await LiquidGlassWidgets.initialize();
+  runApp(
+    LiquidGlassWidgets.wrap(
+      child: const MyApp(),
+      brightnessResolver: Theme.maybeBrightnessOf,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

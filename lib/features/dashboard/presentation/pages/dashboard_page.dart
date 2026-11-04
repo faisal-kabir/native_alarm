@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/theme/app_color.dart';
 import '../../../../core/widgets/app_tab_bar.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
@@ -64,9 +66,10 @@ class _DashboardViewState extends State<_DashboardView> {
     final strings = appLanguage(context);
     // Wraps the home screen so alarm unlocks open the message page from any tab.
     return AlarmEventListener(
-      child: Scaffold(
-        extendBody: true,
-        bottomNavigationBar: BlocBuilder<DashboardBloc, DashboardState>(
+      // GlassScaffold gives the tab bar's liquid glass a layer to refract the pages on.
+      child: GlassScaffold(
+        backgroundColor: AppColor.backgroundColor,
+        bottomBar: BlocBuilder<DashboardBloc, DashboardState>(
           builder: (context, state) => AppTabBar(
             selectedIndex: state.selectedIndex,
             onSelected: _onTabTapped,

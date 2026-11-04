@@ -675,10 +675,18 @@ Common widgets live in `lib/core/widgets/`:
 | Widget | Purpose |
 |---|---|
 | `AppSvgIcon` | Tinted square SVG icon from `Assets.icons` |
-| `AppTabBar` / `AppTabItem` | Floating glass bottom tab bar (`Scaffold.bottomNavigationBar` with `extendBody: true`) |
+| `AppTabBar` / `AppTabItem` | iOS 26 **liquid glass** bottom tab bar (wraps `GlassTabBar.bottom`); must be the `bottomBar` of a `GlassScaffold` |
 | `SectionHeader` | List heading: bold title + optional trailing control |
 | `PlaceholderView` | Centred text for a screen that is not built yet |
 | `AddCard` | Empty-state "add" card (gold plus, title, subtitle) shared by list screens |
+
+### Liquid Glass (iOS 26 look)
+
+- Package: **`liquid_glass_widgets`** (maintained, shader-based; works on iOS and Android with Impeller). It is initialised once in `main()` (`await LiquidGlassWidgets.initialize()` and `LiquidGlassWidgets.wrap(child: MyApp(), brightnessResolver: Theme.maybeBrightnessOf)`).
+- Use glass only for navigation chrome (tab bar, app bars). A screen that shows glass uses `GlassScaffold` (gives the glass a layer to draw on); the Dashboard is the only one today.
+- The tab bar is dark, mostly clear glass (`AppColor.glassTint` via `LiquidGlassSettings`) so it does not turn grey on the black background. The lens under the selected tab follows the selection with jelly physics, magnifies its icon, and can be dragged across tabs, like iOS 26.
+- Because the lens draws a second copy of the selected label, widget tests use `find.text('Alarms').first` / `findsWidgets` for tab labels.
+- Do not wrap ordinary content in glass; glass on glass degrades by design.
 
 ### App Shell: Dashboard
 

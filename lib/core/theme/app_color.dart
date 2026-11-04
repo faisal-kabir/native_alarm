@@ -24,6 +24,8 @@ abstract final class AppColor {
   // Floating tab bar (glass)
   static const Color tabIdle = Color(0xEBFFFFFF); // rgba(255,255,255,.92)
   static const Color tabBarFill = Color(0x611E1E20); // rgba(30,30,32,.38)
+  // Tint of the liquid glass tab bar: near-black and mostly clear.
+  static const Color glassTint = Color(0x1A101012);
   static const Color tabBarBorder = Color(0x1FFFFFFF);
   static const Color tabBarGlossTop = Color(0x12FFFFFF);
   static const Color tabBarGlossBottom = Color(0x05FFFFFF);

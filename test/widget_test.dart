@@ -17,9 +17,10 @@ void main() {
     expect(find.text('Up to 3'), findsOneWidget);
     expect(find.text('Set your first alarm'), findsOneWidget);
     expect(find.text('Pick a time and a reason.'), findsOneWidget);
-    expect(find.text('Alarms'), findsOneWidget);
-    expect(find.text('Reasons'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    // The glass lens draws a second copy of the selected tab's label.
+    expect(find.text('Alarms'), findsWidgets);
+    expect(find.text('Reasons'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
   });
 
   testWidgets('tapping the tabs moves between the pages', (
@@ -29,15 +30,15 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Reasons'));
+    await tester.tap(find.text('Reasons').first);
     await tester.pumpAndSettle();
     expect(find.text('Reasons screen will be here'), findsOneWidget);
 
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.text('Settings').first);
     await tester.pumpAndSettle();
     expect(find.text('Settings screen will be here'), findsOneWidget);
 
-    await tester.tap(find.text('Alarms'));
+    await tester.tap(find.text('Alarms').first);
     await tester.pumpAndSettle();
     expect(find.text('My Alarms'), findsOneWidget);
   });

@@ -1,11 +1,9 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../gen/assets.gen.dart';
 import '../../main.dart';
-import '../constants/app_constant.dart';
 import '../theme/app_color.dart';
 import 'app_svg_icon.dart';
 
@@ -17,9 +15,13 @@ class AppTabItem {
   final SvgGenImage icon;
 }
 
-/// The floating glass tab bar: a 70-tall pill, 24 from each side and 16 above the
-/// bottom safe area. Tabs share the width; the active one sits on a "lens" pill.
-/// Use it as `Scaffold.bottomNavigationBar` with `extendBody: true`.
+/// The floating iOS 26 "liquid glass" bottom tab bar: a frosted glass pill that
+/// refracts what is behind it, with a glass lens under the selected tab. When the
+/// selection changes the lens slides to the new tab with jelly physics, stretching
+/// and magnifying the tab it passes over.
+///
+/// Must sit inside a `GlassScaffold` (as `bottomBar`) so the glass has a layer to
+/// draw on. The package is set up once in `main()` (`LiquidGlassWidgets`).
 class AppTabBar extends StatelessWidget {
   const AppTabBar({
     super.key,
@@ -34,105 +36,44 @@ class AppTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pill = BorderRadius.circular(AppConstant.pillRadius.r);
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: REdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: ClipRRect(
-          borderRadius: pill,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-            child: Container(
-              height: 70.h,
-              padding: REdgeInsets.symmetric(horizontal: 6),
-              decoration: BoxDecoration(
-                borderRadius: pill,
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppColor.tabBarGlossTop, AppColor.tabBarGlossBottom],
-                ),
-                color: AppColor.tabBarFill,
-                border: Border.all(color: AppColor.tabBarBorder, width: 0.5),
-              ),
-              child: Row(
-                children: [
-                  for (var i = 0; i < items.length; i++)
-                    Expanded(
-                      child: _Tab(
-                        item: items[i],
-                        active: i == selectedIndex,
-                        onTap: () => onSelected?.call(i),
-                      ),
-                    ),
-                ],
-              ),
+    final labelStyle = appTheme(context).textTheme.labelSmall!;
+    return GlassTabBar.bottom(
+      tabs: [
+        for (final item in items)
+          GlassTab(
+            label: item.label,
+            semanticLabel: item.label,
+            icon: AppSvgIcon(item.icon, size: 23.r, color: AppColor.tabIdle),
+            activeIcon: AppSvgIcon(
+              item.icon,
+              size: 23.r,
+              color: AppColor.primary,
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
-  const _Tab({required this.item, required this.active, required this.onTap});
-
-  final AppTabItem item;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColor.primary : AppColor.tabIdle;
-    return Semantics(
-      button: true,
-      selected: active,
-      label: item.label,
-      excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        // expand: the lens is positioned against the full tab height, not the label's.
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (active)
-              Positioned(
-                left: 2.w,
-                right: 2.w,
-                top: 6.h,
-                bottom: 6.h,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      AppConstant.pillRadius.r,
-                    ),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [AppColor.tabLensTop, AppColor.tabLensBottom],
-                    ),
-                  ),
-                ),
-              ),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppSvgIcon(item.icon, size: 23.r, color: color),
-                  SizedBox(height: 2.h),
-                  Text(
-                    item.label,
-                    style: appTheme(context).textTheme.labelSmall!
-                        .copyWith(color: color),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      ],
+      selectedIndex: selectedIndex,
+      onTabSelected: (index) => onSelected?.call(index),
+      horizontalPadding: 24.w,
+      verticalPadding: 16.h,
+      barHeight: 70.h,
+      iconSize: 23.r,
+      labelFontSize: 10.5.spMin,
+      selectedIconColor: AppColor.primary,
+      unselectedIconColor: AppColor.tabIdle,
+      selectedLabelColor: AppColor.primary,
+      unselectedLabelColor: AppColor.tabIdle,
+      selectedLabelStyle: labelStyle.copyWith(color: AppColor.primary),
+      unselectedLabelStyle: labelStyle,
+      // The lens that follows the selection: iOS 26 magnifies what is under it.
+      magnification: 1.15,
+      indicatorColor: AppColor.tabLensTop,
+      // Dark, mostly clear glass: on a black screen the pill must not turn grey.
+      settings: const LiquidGlassSettings(
+        glassColor: AppColor.glassTint,
+        thickness: 24,
+        blur: 14,
+        lightIntensity: 0.55,
+        saturation: 1.2,
       ),
     );
   }
