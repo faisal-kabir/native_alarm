@@ -41,6 +41,22 @@ import 'package:eala/features/reasons/domain/usecases/get_reasons_usecase.dart'
     as _i838;
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart'
     as _i743;
+import 'package:eala/features/settings/data/datasources/app_info_data_source.dart'
+    as _i360;
+import 'package:eala/features/settings/data/datasources/settings_local_data_source.dart'
+    as _i209;
+import 'package:eala/features/settings/data/repositories/settings_repository_impl.dart'
+    as _i807;
+import 'package:eala/features/settings/domain/repositories/settings_repository.dart'
+    as _i582;
+import 'package:eala/features/settings/domain/usecases/get_app_info_usecase.dart'
+    as _i49;
+import 'package:eala/features/settings/domain/usecases/get_settings_usecase.dart'
+    as _i57;
+import 'package:eala/features/settings/domain/usecases/save_settings_usecase.dart'
+    as _i936;
+import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart'
+    as _i678;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
@@ -57,6 +73,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i156.AlarmPlatformClient>(
       () => _i156.AlarmPlatformClient(),
     );
+    gh.lazySingleton<_i360.AppInfoDataSource>(
+      () => _i360.AppInfoDataSourceImpl(),
+    );
+    gh.lazySingleton<_i209.SettingsLocalDataSource>(
+      () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
+    );
     gh.lazySingleton<_i276.AlarmLocalDataSource>(
       () => _i276.AlarmLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
@@ -65,6 +87,28 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i23.ReasonRepository>(
       () => _i534.ReasonRepositoryImpl(gh<_i429.ReasonLocalDataSource>()),
+    );
+    gh.lazySingleton<_i582.SettingsRepository>(
+      () => _i807.SettingsRepositoryImpl(
+        gh<_i209.SettingsLocalDataSource>(),
+        gh<_i360.AppInfoDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i49.GetAppInfoUseCase>(
+      () => _i49.GetAppInfoUseCase(gh<_i582.SettingsRepository>()),
+    );
+    gh.lazySingleton<_i57.GetSettingsUseCase>(
+      () => _i57.GetSettingsUseCase(gh<_i582.SettingsRepository>()),
+    );
+    gh.lazySingleton<_i936.SaveSettingsUseCase>(
+      () => _i936.SaveSettingsUseCase(gh<_i582.SettingsRepository>()),
+    );
+    gh.factory<_i678.SettingsBloc>(
+      () => _i678.SettingsBloc(
+        gh<_i57.GetSettingsUseCase>(),
+        gh<_i936.SaveSettingsUseCase>(),
+        gh<_i49.GetAppInfoUseCase>(),
+      ),
     );
     gh.lazySingleton<_i1032.AlarmRepository>(
       () => _i695.AlarmRepositoryImpl(gh<_i276.AlarmLocalDataSource>()),

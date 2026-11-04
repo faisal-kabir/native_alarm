@@ -668,10 +668,11 @@ Icons are organised exactly like the design export (`flutter-export/assets/icons
 |---|---|---|
 | `assets/icons/` | `Assets.icons.info` | generic icons |
 | `assets/icons/tab/` | `Assets.icons.tab.alarm` / `.alarmOn` | tab bar icons: outline + solid `_on` for the selected tab |
-| `assets/icons/area/` | `Assets.icons.area.health` | the ten areas of life |
 | `assets/icons/page/` | `Assets.icons.page.plus` | icons used by page-level widgets (plus, chevron, alarm badges) |
 
 Copy only the icons a screen needs from the export; do not import the whole set.
+
+**One file per icon shape.** An icon used in several places lives once in the common `assets/icons/` folder and every screen uses that same file (e.g. `Assets.icons.alarm` is used by the tab bar, the Settings row and the reason's alarm badge). The export has copies of the same shape with a different stroke width in `tab/`, `settings/` and `page/`; do not copy those duplicates. Before adding an icon, check whether the same shape already exists (compare the SVG path) and reuse it. Only keep a separate file when the shape differs, e.g. the solid `_on` tab icons or the crossed-out `alarm_off_badge`.
 
 - Icon SVGs are drawn in **white** (`stroke="#FFFFFF"` / `fill="#FFFFFF"`, 24×24 viewBox) so they can be tinted to any colour.
 - Show them with the common `AppSvgIcon` widget, not with `SvgPicture` directly:
@@ -700,7 +701,6 @@ Common widgets live in `lib/core/widgets/`:
 | `AppSvgIcon` | Tinted square SVG icon from `Assets.icons` |
 | `AppTabBar` / `AppTabItem` | iOS 26 **liquid glass** bottom tab bar (wraps `GlassTabBar.bottom`); must be the `bottomBar` of a `GlassScaffold` |
 | `SectionHeader` | List heading: bold title + optional trailing control |
-| `PlaceholderView` | Centred text for a screen that is not built yet |
 | `AddCard` | The one way to add on every list: `first: true` = big empty-state card (gold plus, title, subtitle); `first: false` = quiet 58-tall row with a plus tile and `label` |
 
 ### Liquid Glass (iOS 26 look)
@@ -715,12 +715,25 @@ Common widgets live in `lib/core/widgets/`:
 
 `lib/features/reasons/` follows the full Clean Architecture stack and is the reference for a list feature:
 
-- **Domain:** `Reason` (id, name, `ReasonArea`, `ReasonTone`; the enums are stored by name, never rename a value), `ReasonRepository`, `GetReasonsUseCase`.
-- **Data:** drift table `ReasonsTable` (`@DataClassName('ReasonRecord')`, `textEnum` columns), `ReasonLocalDataSource`, `ReasonRepositoryImpl`. Reasons are read from local SQLite only for now (no editor, no Supabase sync yet).
-- **Presentation:** `ReasonsBloc`, `ReasonsPage`, `ReasonRow`, `ReasonEmblem`. `reason_view.dart` maps the pure-Dart enums to presentation: `ReasonArea.tint` (`AppColor.area*`), `.icon` (`Assets.icons.area.*`), `.label(strings)` (arb `reason_area_*`), and `ReasonTone.label(strings)` (`reason_tone_*`). The domain never sees colours, icons or strings.
-- The alarm mark on a reason (`ReasonAlarmBadge`: none/on/off) is built into `ReasonRow`/`ReasonEmblem` but not wired to data yet, because alarms do not reference a reason. Wire it when that link exists.
-- **Database v2:** `AppDatabase.schemaVersion` is 2 and `onUpgrade` creates `reasonsTable` for existing v1 installs (verified on a device that already had a v1 database).
+- **Server-driven content:** the app contains **no** list of areas of life or tones (no enums, no labels, no colours, no icons for them). Each reason carries its area name, area colour (ARGB int, optional) and tone name exactly as the server sends them, so they can change without an app update. Never hardcode area/tone data in the app.
+- **Domain:** `Reason` (id, name, `areaName`, `areaColor`, `toneName`), `ReasonRepository`, `GetReasonsUseCase`.
+- **Data:** drift table `ReasonsTable` (`@DataClassName('ReasonRecord')`, columns `area_name`, `area_color`, `tone_name`), `ReasonLocalDataSource`, `ReasonRepositoryImpl`. Reasons are read from local SQLite only for now; when Supabase is connected, a remote data source will fetch and write them into this table (local-first).
+- **Presentation:** `ReasonsBloc`, `ReasonsPage`, `ReasonRow`, `ReasonEmblem`. The emblem is a rounded square tinted with the server colour (brand colour if none) showing the first letter of the area name. Server-provided area *icons* are not rendered yet: add that (cached network image, SVG or raster) once the Supabase schema says where the icon comes from.
+- The alarm mark on a reason (`ReasonAlarmBadge`: none/on/off, in `reason_emblem.dart`) is built but not wired to data yet, because alarms do not reference a reason.
+- **Database v4:** `AppDatabase.schemaVersion` is 4. Upgrading from v2/v3 drops and recreates `reasons` (it held no real data); verified on a simulator that already had a v3 database.
 - `ReasonRow` is *at least* 78 tall and grows with the text (large accessibility fonts); do not give rows a fixed height.
+
+### Settings Feature
+
+`lib/features/settings/` (Clean Architecture, same shape as Reasons):
+
+- **Domain:** `UserSettings` (`notifyBilling`, `notifyAlarms`, `notifyQuotes`; defaults true/true/false), `AppInfo` (name, version, build), `SettingsRepository`, and the use cases `GetSettingsUseCase`, `SaveSettingsUseCase`, `GetAppInfoUseCase`.
+- **Data:** drift table `SettingsTable` (one row, id 1; `AppDatabase.schemaVersion` is now 3 with a `from < 3` migration). `SettingsLocalDataSource` returns the defaults when nothing was saved. `AppInfoDataSource` reads the version through `package_info_plus` (the only package added for this screen; it shows "Eala 1.0.0 (1)").
+- **Presentation:** `SettingsBloc` (`LoadSettingsEvent`, `NotificationToggledEvent`; the switch moves at once, then saves, and reverts if saving fails), `SettingsPage`, and the widgets `ProfileCard`, `SettingsGroup`, `SettingsRow`, `SettingsSwitchRow`, `Horizon` (the warm glow at the bottom).
+- Switches are `CupertinoSwitch` (the native 51 x 31 iOS switch) coloured with `AppColor.toggleOn/toggleOff`.
+- Row text reuses the theme: `titleMedium` with a regular weight for labels, `bodyLarge` (with `height: 1.45`, `letterSpacing: 0`) for captions and the version line.
+- **No account system yet**, so the page always shows the signed-out look: "Set your name" / "Not signed in", the "Sign In" row, and the plan value "Free" (`settings_plan_free`). The design's Premium badge, Credits row, "Sign Out" row, and their icons (`premium_crown`, `credit`, `logout`) are **deliberately not included** — add them, with their icons, when auth and subscriptions exist. Rows without a destination yet (Help, FAQ, …) do nothing on tap.
+- Icons used here live in `assets/icons/settings/` (`Assets.icons.settings.*`).
 
 ### App Shell: Dashboard
 
@@ -730,11 +743,11 @@ Common widgets live in `lib/core/widgets/`:
 |---|---|---|
 | 0 Alarms | `MyAlarmsPage` | `lib/features/my_alarms/` (alarm list, slot meter, add card) |
 | 1 Reasons | `ReasonsPage` | `lib/features/reasons/` (list of saved reasons; no editor yet) |
-| 2 Settings | `SettingsPage` | `lib/features/settings/` (placeholder) |
+| 2 Settings | `SettingsPage` | `lib/features/settings/` (notification switches, support and legal rows, signed-out look) |
 
 - Tapping a tab calls `PageController.animateToPage`; swiping the pages sends `DashboardTabChangedEvent`, and `DashboardBloc` (selected index only) drives the tab bar highlight.
 - Each tab is its own feature with its own BLoC provided inside its page (`instance<…Bloc>()`); the Dashboard holds no tab data. A tab page that must keep its state while another tab shows uses `AutomaticKeepAliveClientMixin`.
-- Settings is still a `PlaceholderView`; replace it when its design arrives. To add a tab, add its two icons (outline + solid, in `assets/icons/tab/`), string, page and an `AppTabItem` in `DashboardPage`.
+- To add a tab, add its two icons (outline + solid, in `assets/icons/tab/`), string, page and an `AppTabItem` in `DashboardPage`.
 - Each tab page wraps its own content in `SafeArea(bottom: false)` and leaves ~100 bottom padding so content scrolls clear of the tab bar.
 
 ### Converting Design Code

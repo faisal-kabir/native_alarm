@@ -76,7 +76,7 @@ class _DashboardViewState extends State<_DashboardView> {
             items: [
               AppTabItem(
                 label: strings.tab_alarms,
-                icon: Assets.icons.tab.alarm,
+                icon: Assets.icons.alarm,
                 activeIcon: Assets.icons.tab.alarmOn,
               ),
               AppTabItem(

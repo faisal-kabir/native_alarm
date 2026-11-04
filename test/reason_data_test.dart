@@ -5,8 +5,6 @@ import 'package:eala/core/usecase/usecase.dart';
 import 'package:eala/features/reasons/data/datasources/reason_local_data_source.dart';
 import 'package:eala/features/reasons/data/repositories/reason_repository_impl.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
-import 'package:eala/features/reasons/domain/entities/reason_area.dart';
-import 'package:eala/features/reasons/domain/entities/reason_tone.dart';
 import 'package:eala/features/reasons/domain/usecases/get_reasons_usecase.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_event.dart';
@@ -29,8 +27,9 @@ void main() {
   Future<void> insert(
     String id,
     String name,
-    ReasonArea a,
-    ReasonTone t,
+    String area,
+    int? color,
+    String tone,
     int minute,
   ) {
     return db
@@ -39,45 +38,29 @@ void main() {
           ReasonsTableCompanion.insert(
             reasonId: id,
             name: name,
-            area: a,
-            tone: t,
+            areaName: area,
+            areaColor: Value(color),
+            toneName: tone,
             createdAt: Value(DateTime(2026, 11, 5, 4, minute)),
           ),
         );
   }
 
-  test('reasons load from SQLite as entities, oldest first', () async {
-    await insert(
-      'b',
-      'Build my own thing',
-      ReasonArea.business,
-      ReasonTone.focused,
-      5,
-    );
-    await insert(
-      'a',
-      'Stronger Every Day',
-      ReasonArea.health,
-      ReasonTone.encouraging,
-      1,
-    );
+  test("reasons load with the server's area and tone, oldest first", () async {
+    await insert('b', 'Second', 'Area B', null, 'Tone B', 5);
+    await insert('a', 'First', 'Area A', 0xFF112233, 'Tone A', 1);
 
     final result = await useCase(NoParams());
-    final reasons = result.getOrElse(() => []);
 
-    expect(reasons, const [
+    expect(result.getOrElse(() => []), const [
       Reason(
         id: 'a',
-        name: 'Stronger Every Day',
-        area: ReasonArea.health,
-        tone: ReasonTone.encouraging,
+        name: 'First',
+        areaName: 'Area A',
+        areaColor: 0xFF112233,
+        toneName: 'Tone A',
       ),
-      Reason(
-        id: 'b',
-        name: 'Build my own thing',
-        area: ReasonArea.business,
-        tone: ReasonTone.focused,
-      ),
+      Reason(id: 'b', name: 'Second', areaName: 'Area B', toneName: 'Tone B'),
     ]);
   });
 

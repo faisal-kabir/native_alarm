@@ -75,9 +75,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get my_alarms_add_first_alarm_subtitle => 'Pick a time and a reason.';
 
   @override
-  String get settings_placeholder => 'Settings screen will be here';
-
-  @override
   String get my_alarms_add_alarm => 'Add alarm';
 
   @override
@@ -91,51 +88,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reasons_add_label => 'New Reason';
-
-  @override
-  String get reason_area_health => 'Health';
-
-  @override
-  String get reason_area_healing => 'Healing';
-
-  @override
-  String get reason_area_fitness => 'Fitness';
-
-  @override
-  String get reason_area_career => 'Career';
-
-  @override
-  String get reason_area_family => 'Family';
-
-  @override
-  String get reason_area_money => 'Money';
-
-  @override
-  String get reason_area_growth => 'Growth';
-
-  @override
-  String get reason_area_business => 'Business';
-
-  @override
-  String get reason_area_study => 'Learning & Skills';
-
-  @override
-  String get reason_area_relationships => 'Relationships';
-
-  @override
-  String get reason_tone_encouraging => 'Encouraging';
-
-  @override
-  String get reason_tone_calm => 'Calm';
-
-  @override
-  String get reason_tone_focused => 'Focused';
-
-  @override
-  String get reason_tone_challenge => 'Challenge';
-
-  @override
-  String get reason_tone_playful => 'Playful';
 
   @override
   String reason_row_subtitle(String area, String tone) {
@@ -157,4 +109,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reason_alarm_off_note => ' Its alarm is off.';
+
+  @override
+  String get settings_title => 'Settings';
+
+  @override
+  String get settings_set_your_name => 'Set your name';
+
+  @override
+  String get settings_not_signed_in => 'Not signed in';
+
+  @override
+  String settings_profile_semantics(String name, String subtitle) {
+    return '$name. $subtitle';
+  }
+
+  @override
+  String get settings_notifications => 'Notifications';
+
+  @override
+  String get settings_notify_billing => 'Trial & billing';
+
+  @override
+  String get settings_notify_alarms => 'Alarm reminders';
+
+  @override
+  String get settings_notify_quotes => 'Thoughts for the day';
+
+  @override
+  String get settings_notifications_note =>
+      'These settings don’t affect your alarms.';
+
+  @override
+  String get settings_subscription => 'Subscription';
+
+  @override
+  String get settings_plan_free => 'Free';
+
+  @override
+  String get settings_support => 'Support';
+
+  @override
+  String get settings_help => 'Help & Support';
+
+  @override
+  String get settings_faq => 'FAQ';
+
+  @override
+  String get settings_request_feature => 'Request a feature';
+
+  @override
+  String get settings_leave_review => 'Leave a review';
+
+  @override
+  String get settings_legal => 'Legal';
+
+  @override
+  String get settings_privacy => 'Privacy Policy';
+
+  @override
+  String get settings_terms => 'Terms of Use';
+
+  @override
+  String get settings_account => 'Account';
+
+  @override
+  String get settings_sign_in => 'Sign In';
+
+  @override
+  String get settings_delete_account => 'Delete account';
+
+  @override
+  String settings_version(String name, String version, String build) {
+    return '$name $version ($build)';
+  }
 }

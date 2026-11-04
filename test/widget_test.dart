@@ -1,8 +1,7 @@
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
-import 'package:eala/features/reasons/domain/entities/reason_area.dart';
-import 'package:eala/features/reasons/domain/entities/reason_tone.dart';
 import 'package:eala/main.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes/fake_alarm_repository.dart';
@@ -41,7 +40,7 @@ void main() {
 
     await tester.tap(find.text('Settings').first);
     await tester.pumpAndSettle();
-    expect(find.text('Settings screen will be here'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
 
     await tester.tap(find.text('Alarms').first);
     await tester.pumpAndSettle();
@@ -97,15 +96,16 @@ void main() {
         reasonRepository: FakeReasonRepository(const [
           Reason(
             id: '1',
-            name: 'Stronger Every Day',
-            area: ReasonArea.health,
-            tone: ReasonTone.encouraging,
+            name: 'First reason',
+            areaName: 'Alpha',
+            areaColor: 0xFF112233,
+            toneName: 'Tone A',
           ),
           Reason(
             id: '2',
-            name: 'Study for the exam',
-            area: ReasonArea.study,
-            tone: ReasonTone.focused,
+            name: 'Second reason',
+            areaName: 'Beta',
+            toneName: 'Tone B',
           ),
         ]),
       );
@@ -115,12 +115,57 @@ void main() {
       await tester.tap(find.text('Reasons').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Stronger Every Day'), findsOneWidget);
-      expect(find.text('Health · Encouraging'), findsOneWidget);
-      expect(find.text('Study for the exam'), findsOneWidget);
-      expect(find.text('Learning & Skills · Focused'), findsOneWidget);
+      expect(find.text('First reason'), findsOneWidget);
+      expect(find.text('Alpha · Tone A'), findsOneWidget);
+      expect(find.text('Second reason'), findsOneWidget);
+      expect(find.text('Beta · Tone B'), findsOneWidget);
+      // The emblem shows the first letter of the area's name.
+      expect(find.text('A'), findsOneWidget);
+      expect(find.text('B'), findsOneWidget);
       expect(find.text('New Reason'), findsOneWidget);
       expect(find.text('Add your first Reason'), findsNothing);
     },
   );
+
+  testWidgets('Settings tab shows the groups, version and saves a switch', (
+    WidgetTester tester,
+  ) async {
+    final settings = FakeSettingsRepository();
+    await registerFakeAlarmDependencies(
+      FakeAlarmRepository(),
+      settingsRepository: settings,
+    );
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Settings').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Set your name'), findsOneWidget);
+    expect(find.text('Not signed in'), findsOneWidget);
+
+    // The third switch ("Thoughts for the day") is off by default; turn it on.
+    await tester.tap(find.byType(CupertinoSwitch).last);
+    await tester.pumpAndSettle();
+    expect(settings.saved?.notifyQuotes, isTrue);
+
+    for (final text in [
+      'Trial & billing',
+      'Alarm reminders',
+      'Thoughts for the day',
+      'Free',
+      'Help & Support',
+      'Privacy Policy',
+      'Sign In',
+      'Delete account',
+      'Eala 1.0.0 (1)',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(text),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(text), findsOneWidget);
+    }
+  });
 }

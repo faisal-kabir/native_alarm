@@ -562,24 +562,39 @@ class $ReasonsTableTable extends ReasonsTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _areaNameMeta = const VerificationMeta(
+    'areaName',
+  );
   @override
-  late final GeneratedColumnWithTypeConverter<ReasonArea, String> area =
-      GeneratedColumn<String>(
-        'area',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      ).withConverter<ReasonArea>($ReasonsTableTable.$converterarea);
+  late final GeneratedColumn<String> areaName = GeneratedColumn<String>(
+    'area_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _areaColorMeta = const VerificationMeta(
+    'areaColor',
+  );
   @override
-  late final GeneratedColumnWithTypeConverter<ReasonTone, String> tone =
-      GeneratedColumn<String>(
-        'tone',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      ).withConverter<ReasonTone>($ReasonsTableTable.$convertertone);
+  late final GeneratedColumn<int> areaColor = GeneratedColumn<int>(
+    'area_color',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toneNameMeta = const VerificationMeta(
+    'toneName',
+  );
+  @override
+  late final GeneratedColumn<String> toneName = GeneratedColumn<String>(
+    'tone_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -593,7 +608,14 @@ class $ReasonsTableTable extends ReasonsTable
     defaultValue: currentDateAndTime,
   );
   @override
-  List<GeneratedColumn> get $columns => [reasonId, name, area, tone, createdAt];
+  List<GeneratedColumn> get $columns => [
+    reasonId,
+    name,
+    areaName,
+    areaColor,
+    toneName,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -622,6 +644,28 @@ class $ReasonsTableTable extends ReasonsTable
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('area_name')) {
+      context.handle(
+        _areaNameMeta,
+        areaName.isAcceptableOrUnknown(data['area_name']!, _areaNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_areaNameMeta);
+    }
+    if (data.containsKey('area_color')) {
+      context.handle(
+        _areaColorMeta,
+        areaColor.isAcceptableOrUnknown(data['area_color']!, _areaColorMeta),
+      );
+    }
+    if (data.containsKey('tone_name')) {
+      context.handle(
+        _toneNameMeta,
+        toneName.isAcceptableOrUnknown(data['tone_name']!, _toneNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toneNameMeta);
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -645,18 +689,18 @@ class $ReasonsTableTable extends ReasonsTable
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
-      area: $ReasonsTableTable.$converterarea.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}area'],
-        )!,
+      areaName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}area_name'],
+      )!,
+      areaColor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}area_color'],
       ),
-      tone: $ReasonsTableTable.$convertertone.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}tone'],
-        )!,
-      ),
+      toneName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tone_name'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -668,24 +712,21 @@ class $ReasonsTableTable extends ReasonsTable
   $ReasonsTableTable createAlias(String alias) {
     return $ReasonsTableTable(attachedDatabase, alias);
   }
-
-  static JsonTypeConverter2<ReasonArea, String, String> $converterarea =
-      const EnumNameConverter<ReasonArea>(ReasonArea.values);
-  static JsonTypeConverter2<ReasonTone, String, String> $convertertone =
-      const EnumNameConverter<ReasonTone>(ReasonTone.values);
 }
 
 class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
   final String reasonId;
   final String name;
-  final ReasonArea area;
-  final ReasonTone tone;
+  final String areaName;
+  final int? areaColor;
+  final String toneName;
   final DateTime createdAt;
   const ReasonRecord({
     required this.reasonId,
     required this.name,
-    required this.area,
-    required this.tone,
+    required this.areaName,
+    this.areaColor,
+    required this.toneName,
     required this.createdAt,
   });
   @override
@@ -693,16 +734,11 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
     final map = <String, Expression>{};
     map['reason_id'] = Variable<String>(reasonId);
     map['name'] = Variable<String>(name);
-    {
-      map['area'] = Variable<String>(
-        $ReasonsTableTable.$converterarea.toSql(area),
-      );
+    map['area_name'] = Variable<String>(areaName);
+    if (!nullToAbsent || areaColor != null) {
+      map['area_color'] = Variable<int>(areaColor);
     }
-    {
-      map['tone'] = Variable<String>(
-        $ReasonsTableTable.$convertertone.toSql(tone),
-      );
-    }
+    map['tone_name'] = Variable<String>(toneName);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -711,8 +747,11 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
     return ReasonsTableCompanion(
       reasonId: Value(reasonId),
       name: Value(name),
-      area: Value(area),
-      tone: Value(tone),
+      areaName: Value(areaName),
+      areaColor: areaColor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(areaColor),
+      toneName: Value(toneName),
       createdAt: Value(createdAt),
     );
   }
@@ -725,12 +764,9 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
     return ReasonRecord(
       reasonId: serializer.fromJson<String>(json['reasonId']),
       name: serializer.fromJson<String>(json['name']),
-      area: $ReasonsTableTable.$converterarea.fromJson(
-        serializer.fromJson<String>(json['area']),
-      ),
-      tone: $ReasonsTableTable.$convertertone.fromJson(
-        serializer.fromJson<String>(json['tone']),
-      ),
+      areaName: serializer.fromJson<String>(json['areaName']),
+      areaColor: serializer.fromJson<int?>(json['areaColor']),
+      toneName: serializer.fromJson<String>(json['toneName']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -740,12 +776,9 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
     return <String, dynamic>{
       'reasonId': serializer.toJson<String>(reasonId),
       'name': serializer.toJson<String>(name),
-      'area': serializer.toJson<String>(
-        $ReasonsTableTable.$converterarea.toJson(area),
-      ),
-      'tone': serializer.toJson<String>(
-        $ReasonsTableTable.$convertertone.toJson(tone),
-      ),
+      'areaName': serializer.toJson<String>(areaName),
+      'areaColor': serializer.toJson<int?>(areaColor),
+      'toneName': serializer.toJson<String>(toneName),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -753,22 +786,25 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
   ReasonRecord copyWith({
     String? reasonId,
     String? name,
-    ReasonArea? area,
-    ReasonTone? tone,
+    String? areaName,
+    Value<int?> areaColor = const Value.absent(),
+    String? toneName,
     DateTime? createdAt,
   }) => ReasonRecord(
     reasonId: reasonId ?? this.reasonId,
     name: name ?? this.name,
-    area: area ?? this.area,
-    tone: tone ?? this.tone,
+    areaName: areaName ?? this.areaName,
+    areaColor: areaColor.present ? areaColor.value : this.areaColor,
+    toneName: toneName ?? this.toneName,
     createdAt: createdAt ?? this.createdAt,
   );
   ReasonRecord copyWithCompanion(ReasonsTableCompanion data) {
     return ReasonRecord(
       reasonId: data.reasonId.present ? data.reasonId.value : this.reasonId,
       name: data.name.present ? data.name.value : this.name,
-      area: data.area.present ? data.area.value : this.area,
-      tone: data.tone.present ? data.tone.value : this.tone,
+      areaName: data.areaName.present ? data.areaName.value : this.areaName,
+      areaColor: data.areaColor.present ? data.areaColor.value : this.areaColor,
+      toneName: data.toneName.present ? data.toneName.value : this.toneName,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -778,65 +814,73 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
     return (StringBuffer('ReasonRecord(')
           ..write('reasonId: $reasonId, ')
           ..write('name: $name, ')
-          ..write('area: $area, ')
-          ..write('tone: $tone, ')
+          ..write('areaName: $areaName, ')
+          ..write('areaColor: $areaColor, ')
+          ..write('toneName: $toneName, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(reasonId, name, area, tone, createdAt);
+  int get hashCode =>
+      Object.hash(reasonId, name, areaName, areaColor, toneName, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ReasonRecord &&
           other.reasonId == this.reasonId &&
           other.name == this.name &&
-          other.area == this.area &&
-          other.tone == this.tone &&
+          other.areaName == this.areaName &&
+          other.areaColor == this.areaColor &&
+          other.toneName == this.toneName &&
           other.createdAt == this.createdAt);
 }
 
 class ReasonsTableCompanion extends UpdateCompanion<ReasonRecord> {
   final Value<String> reasonId;
   final Value<String> name;
-  final Value<ReasonArea> area;
-  final Value<ReasonTone> tone;
+  final Value<String> areaName;
+  final Value<int?> areaColor;
+  final Value<String> toneName;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ReasonsTableCompanion({
     this.reasonId = const Value.absent(),
     this.name = const Value.absent(),
-    this.area = const Value.absent(),
-    this.tone = const Value.absent(),
+    this.areaName = const Value.absent(),
+    this.areaColor = const Value.absent(),
+    this.toneName = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ReasonsTableCompanion.insert({
     required String reasonId,
     required String name,
-    required ReasonArea area,
-    required ReasonTone tone,
+    required String areaName,
+    this.areaColor = const Value.absent(),
+    required String toneName,
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : reasonId = Value(reasonId),
        name = Value(name),
-       area = Value(area),
-       tone = Value(tone);
+       areaName = Value(areaName),
+       toneName = Value(toneName);
   static Insertable<ReasonRecord> custom({
     Expression<String>? reasonId,
     Expression<String>? name,
-    Expression<String>? area,
-    Expression<String>? tone,
+    Expression<String>? areaName,
+    Expression<int>? areaColor,
+    Expression<String>? toneName,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (reasonId != null) 'reason_id': reasonId,
       if (name != null) 'name': name,
-      if (area != null) 'area': area,
-      if (tone != null) 'tone': tone,
+      if (areaName != null) 'area_name': areaName,
+      if (areaColor != null) 'area_color': areaColor,
+      if (toneName != null) 'tone_name': toneName,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -845,16 +889,18 @@ class ReasonsTableCompanion extends UpdateCompanion<ReasonRecord> {
   ReasonsTableCompanion copyWith({
     Value<String>? reasonId,
     Value<String>? name,
-    Value<ReasonArea>? area,
-    Value<ReasonTone>? tone,
+    Value<String>? areaName,
+    Value<int?>? areaColor,
+    Value<String>? toneName,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return ReasonsTableCompanion(
       reasonId: reasonId ?? this.reasonId,
       name: name ?? this.name,
-      area: area ?? this.area,
-      tone: tone ?? this.tone,
+      areaName: areaName ?? this.areaName,
+      areaColor: areaColor ?? this.areaColor,
+      toneName: toneName ?? this.toneName,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -869,15 +915,14 @@ class ReasonsTableCompanion extends UpdateCompanion<ReasonRecord> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
-    if (area.present) {
-      map['area'] = Variable<String>(
-        $ReasonsTableTable.$converterarea.toSql(area.value),
-      );
+    if (areaName.present) {
+      map['area_name'] = Variable<String>(areaName.value);
     }
-    if (tone.present) {
-      map['tone'] = Variable<String>(
-        $ReasonsTableTable.$convertertone.toSql(tone.value),
-      );
+    if (areaColor.present) {
+      map['area_color'] = Variable<int>(areaColor.value);
+    }
+    if (toneName.present) {
+      map['tone_name'] = Variable<String>(toneName.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -893,10 +938,333 @@ class ReasonsTableCompanion extends UpdateCompanion<ReasonRecord> {
     return (StringBuffer('ReasonsTableCompanion(')
           ..write('reasonId: $reasonId, ')
           ..write('name: $name, ')
-          ..write('area: $area, ')
-          ..write('tone: $tone, ')
+          ..write('areaName: $areaName, ')
+          ..write('areaColor: $areaColor, ')
+          ..write('toneName: $toneName, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SettingsTableTable extends SettingsTable
+    with TableInfo<$SettingsTableTable, SettingsRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _notifyBillingMeta = const VerificationMeta(
+    'notifyBilling',
+  );
+  @override
+  late final GeneratedColumn<bool> notifyBilling = GeneratedColumn<bool>(
+    'notify_billing',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("notify_billing" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _notifyAlarmsMeta = const VerificationMeta(
+    'notifyAlarms',
+  );
+  @override
+  late final GeneratedColumn<bool> notifyAlarms = GeneratedColumn<bool>(
+    'notify_alarms',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("notify_alarms" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _notifyQuotesMeta = const VerificationMeta(
+    'notifyQuotes',
+  );
+  @override
+  late final GeneratedColumn<bool> notifyQuotes = GeneratedColumn<bool>(
+    'notify_quotes',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("notify_quotes" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    notifyBilling,
+    notifyAlarms,
+    notifyQuotes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SettingsRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('notify_billing')) {
+      context.handle(
+        _notifyBillingMeta,
+        notifyBilling.isAcceptableOrUnknown(
+          data['notify_billing']!,
+          _notifyBillingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notify_alarms')) {
+      context.handle(
+        _notifyAlarmsMeta,
+        notifyAlarms.isAcceptableOrUnknown(
+          data['notify_alarms']!,
+          _notifyAlarmsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notify_quotes')) {
+      context.handle(
+        _notifyQuotesMeta,
+        notifyQuotes.isAcceptableOrUnknown(
+          data['notify_quotes']!,
+          _notifyQuotesMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SettingsRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SettingsRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      notifyBilling: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}notify_billing'],
+      )!,
+      notifyAlarms: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}notify_alarms'],
+      )!,
+      notifyQuotes: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}notify_quotes'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingsTableTable createAlias(String alias) {
+    return $SettingsTableTable(attachedDatabase, alias);
+  }
+}
+
+class SettingsRecord extends DataClass implements Insertable<SettingsRecord> {
+  final int id;
+  final bool notifyBilling;
+  final bool notifyAlarms;
+  final bool notifyQuotes;
+  const SettingsRecord({
+    required this.id,
+    required this.notifyBilling,
+    required this.notifyAlarms,
+    required this.notifyQuotes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['notify_billing'] = Variable<bool>(notifyBilling);
+    map['notify_alarms'] = Variable<bool>(notifyAlarms);
+    map['notify_quotes'] = Variable<bool>(notifyQuotes);
+    return map;
+  }
+
+  SettingsTableCompanion toCompanion(bool nullToAbsent) {
+    return SettingsTableCompanion(
+      id: Value(id),
+      notifyBilling: Value(notifyBilling),
+      notifyAlarms: Value(notifyAlarms),
+      notifyQuotes: Value(notifyQuotes),
+    );
+  }
+
+  factory SettingsRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SettingsRecord(
+      id: serializer.fromJson<int>(json['id']),
+      notifyBilling: serializer.fromJson<bool>(json['notifyBilling']),
+      notifyAlarms: serializer.fromJson<bool>(json['notifyAlarms']),
+      notifyQuotes: serializer.fromJson<bool>(json['notifyQuotes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'notifyBilling': serializer.toJson<bool>(notifyBilling),
+      'notifyAlarms': serializer.toJson<bool>(notifyAlarms),
+      'notifyQuotes': serializer.toJson<bool>(notifyQuotes),
+    };
+  }
+
+  SettingsRecord copyWith({
+    int? id,
+    bool? notifyBilling,
+    bool? notifyAlarms,
+    bool? notifyQuotes,
+  }) => SettingsRecord(
+    id: id ?? this.id,
+    notifyBilling: notifyBilling ?? this.notifyBilling,
+    notifyAlarms: notifyAlarms ?? this.notifyAlarms,
+    notifyQuotes: notifyQuotes ?? this.notifyQuotes,
+  );
+  SettingsRecord copyWithCompanion(SettingsTableCompanion data) {
+    return SettingsRecord(
+      id: data.id.present ? data.id.value : this.id,
+      notifyBilling: data.notifyBilling.present
+          ? data.notifyBilling.value
+          : this.notifyBilling,
+      notifyAlarms: data.notifyAlarms.present
+          ? data.notifyAlarms.value
+          : this.notifyAlarms,
+      notifyQuotes: data.notifyQuotes.present
+          ? data.notifyQuotes.value
+          : this.notifyQuotes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingsRecord(')
+          ..write('id: $id, ')
+          ..write('notifyBilling: $notifyBilling, ')
+          ..write('notifyAlarms: $notifyAlarms, ')
+          ..write('notifyQuotes: $notifyQuotes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, notifyBilling, notifyAlarms, notifyQuotes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SettingsRecord &&
+          other.id == this.id &&
+          other.notifyBilling == this.notifyBilling &&
+          other.notifyAlarms == this.notifyAlarms &&
+          other.notifyQuotes == this.notifyQuotes);
+}
+
+class SettingsTableCompanion extends UpdateCompanion<SettingsRecord> {
+  final Value<int> id;
+  final Value<bool> notifyBilling;
+  final Value<bool> notifyAlarms;
+  final Value<bool> notifyQuotes;
+  const SettingsTableCompanion({
+    this.id = const Value.absent(),
+    this.notifyBilling = const Value.absent(),
+    this.notifyAlarms = const Value.absent(),
+    this.notifyQuotes = const Value.absent(),
+  });
+  SettingsTableCompanion.insert({
+    this.id = const Value.absent(),
+    this.notifyBilling = const Value.absent(),
+    this.notifyAlarms = const Value.absent(),
+    this.notifyQuotes = const Value.absent(),
+  });
+  static Insertable<SettingsRecord> custom({
+    Expression<int>? id,
+    Expression<bool>? notifyBilling,
+    Expression<bool>? notifyAlarms,
+    Expression<bool>? notifyQuotes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (notifyBilling != null) 'notify_billing': notifyBilling,
+      if (notifyAlarms != null) 'notify_alarms': notifyAlarms,
+      if (notifyQuotes != null) 'notify_quotes': notifyQuotes,
+    });
+  }
+
+  SettingsTableCompanion copyWith({
+    Value<int>? id,
+    Value<bool>? notifyBilling,
+    Value<bool>? notifyAlarms,
+    Value<bool>? notifyQuotes,
+  }) {
+    return SettingsTableCompanion(
+      id: id ?? this.id,
+      notifyBilling: notifyBilling ?? this.notifyBilling,
+      notifyAlarms: notifyAlarms ?? this.notifyAlarms,
+      notifyQuotes: notifyQuotes ?? this.notifyQuotes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (notifyBilling.present) {
+      map['notify_billing'] = Variable<bool>(notifyBilling.value);
+    }
+    if (notifyAlarms.present) {
+      map['notify_alarms'] = Variable<bool>(notifyAlarms.value);
+    }
+    if (notifyQuotes.present) {
+      map['notify_quotes'] = Variable<bool>(notifyQuotes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('notifyBilling: $notifyBilling, ')
+          ..write('notifyAlarms: $notifyAlarms, ')
+          ..write('notifyQuotes: $notifyQuotes')
           ..write(')'))
         .toString();
   }
@@ -907,6 +1275,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $AlarmsTableTable alarmsTable = $AlarmsTableTable(this);
   late final $ReasonsTableTable reasonsTable = $ReasonsTableTable(this);
+  late final $SettingsTableTable settingsTable = $SettingsTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -914,6 +1283,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     alarmsTable,
     reasonsTable,
+    settingsTable,
   ];
 }
 
@@ -1197,8 +1567,9 @@ typedef $$ReasonsTableTableCreateCompanionBuilder =
     ReasonsTableCompanion Function({
       required String reasonId,
       required String name,
-      required ReasonArea area,
-      required ReasonTone tone,
+      required String areaName,
+      Value<int?> areaColor,
+      required String toneName,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -1206,8 +1577,9 @@ typedef $$ReasonsTableTableUpdateCompanionBuilder =
     ReasonsTableCompanion Function({
       Value<String> reasonId,
       Value<String> name,
-      Value<ReasonArea> area,
-      Value<ReasonTone> tone,
+      Value<String> areaName,
+      Value<int?> areaColor,
+      Value<String> toneName,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -1231,17 +1603,20 @@ class $$ReasonsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<ReasonArea, ReasonArea, String> get area =>
-      $composableBuilder(
-        column: $table.area,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
+  ColumnFilters<String> get areaName => $composableBuilder(
+    column: $table.areaName,
+    builder: (column) => ColumnFilters(column),
+  );
 
-  ColumnWithTypeConverterFilters<ReasonTone, ReasonTone, String> get tone =>
-      $composableBuilder(
-        column: $table.tone,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
+  ColumnFilters<int> get areaColor => $composableBuilder(
+    column: $table.areaColor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toneName => $composableBuilder(
+    column: $table.toneName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
@@ -1268,13 +1643,18 @@ class $$ReasonsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get area => $composableBuilder(
-    column: $table.area,
+  ColumnOrderings<String> get areaName => $composableBuilder(
+    column: $table.areaName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tone => $composableBuilder(
-    column: $table.tone,
+  ColumnOrderings<int> get areaColor => $composableBuilder(
+    column: $table.areaColor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toneName => $composableBuilder(
+    column: $table.toneName,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1299,11 +1679,14 @@ class $$ReasonsTableTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<ReasonArea, String> get area =>
-      $composableBuilder(column: $table.area, builder: (column) => column);
+  GeneratedColumn<String> get areaName =>
+      $composableBuilder(column: $table.areaName, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<ReasonTone, String> get tone =>
-      $composableBuilder(column: $table.tone, builder: (column) => column);
+  GeneratedColumn<int> get areaColor =>
+      $composableBuilder(column: $table.areaColor, builder: (column) => column);
+
+  GeneratedColumn<String> get toneName =>
+      $composableBuilder(column: $table.toneName, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -1342,15 +1725,17 @@ class $$ReasonsTableTableTableManager
               ({
                 Value<String> reasonId = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<ReasonArea> area = const Value.absent(),
-                Value<ReasonTone> tone = const Value.absent(),
+                Value<String> areaName = const Value.absent(),
+                Value<int?> areaColor = const Value.absent(),
+                Value<String> toneName = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReasonsTableCompanion(
                 reasonId: reasonId,
                 name: name,
-                area: area,
-                tone: tone,
+                areaName: areaName,
+                areaColor: areaColor,
+                toneName: toneName,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -1358,15 +1743,17 @@ class $$ReasonsTableTableTableManager
               ({
                 required String reasonId,
                 required String name,
-                required ReasonArea area,
-                required ReasonTone tone,
+                required String areaName,
+                Value<int?> areaColor = const Value.absent(),
+                required String toneName,
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReasonsTableCompanion.insert(
                 reasonId: reasonId,
                 name: name,
-                area: area,
-                tone: tone,
+                areaName: areaName,
+                areaColor: areaColor,
+                toneName: toneName,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -1404,6 +1791,196 @@ typedef $$ReasonsTableTableProcessedTableManager =
       ReasonRecord,
       PrefetchHooks Function()
     >;
+typedef $$SettingsTableTableCreateCompanionBuilder =
+    SettingsTableCompanion Function({
+      Value<int> id,
+      Value<bool> notifyBilling,
+      Value<bool> notifyAlarms,
+      Value<bool> notifyQuotes,
+    });
+typedef $$SettingsTableTableUpdateCompanionBuilder =
+    SettingsTableCompanion Function({
+      Value<int> id,
+      Value<bool> notifyBilling,
+      Value<bool> notifyAlarms,
+      Value<bool> notifyQuotes,
+    });
+
+class $$SettingsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SettingsTableTable> {
+  $$SettingsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get notifyBilling => $composableBuilder(
+    column: $table.notifyBilling,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get notifyAlarms => $composableBuilder(
+    column: $table.notifyAlarms,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get notifyQuotes => $composableBuilder(
+    column: $table.notifyQuotes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SettingsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettingsTableTable> {
+  $$SettingsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get notifyBilling => $composableBuilder(
+    column: $table.notifyBilling,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get notifyAlarms => $composableBuilder(
+    column: $table.notifyAlarms,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get notifyQuotes => $composableBuilder(
+    column: $table.notifyQuotes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SettingsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettingsTableTable> {
+  $$SettingsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get notifyBilling => $composableBuilder(
+    column: $table.notifyBilling,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get notifyAlarms => $composableBuilder(
+    column: $table.notifyAlarms,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get notifyQuotes => $composableBuilder(
+    column: $table.notifyQuotes,
+    builder: (column) => column,
+  );
+}
+
+class $$SettingsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SettingsTableTable,
+          SettingsRecord,
+          $$SettingsTableTableFilterComposer,
+          $$SettingsTableTableOrderingComposer,
+          $$SettingsTableTableAnnotationComposer,
+          $$SettingsTableTableCreateCompanionBuilder,
+          $$SettingsTableTableUpdateCompanionBuilder,
+          (
+            SettingsRecord,
+            BaseReferences<_$AppDatabase, $SettingsTableTable, SettingsRecord>,
+          ),
+          SettingsRecord,
+          PrefetchHooks Function()
+        > {
+  $$SettingsTableTableTableManager(_$AppDatabase db, $SettingsTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> notifyBilling = const Value.absent(),
+                Value<bool> notifyAlarms = const Value.absent(),
+                Value<bool> notifyQuotes = const Value.absent(),
+              }) => SettingsTableCompanion(
+                id: id,
+                notifyBilling: notifyBilling,
+                notifyAlarms: notifyAlarms,
+                notifyQuotes: notifyQuotes,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> notifyBilling = const Value.absent(),
+                Value<bool> notifyAlarms = const Value.absent(),
+                Value<bool> notifyQuotes = const Value.absent(),
+              }) => SettingsTableCompanion.insert(
+                id: id,
+                notifyBilling: notifyBilling,
+                notifyAlarms: notifyAlarms,
+                notifyQuotes: notifyQuotes,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SettingsTableTable, SettingsRecord>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $SettingsTableTable,
+                    SettingsRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SettingsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SettingsTableTable,
+      SettingsRecord,
+      $$SettingsTableTableFilterComposer,
+      $$SettingsTableTableOrderingComposer,
+      $$SettingsTableTableAnnotationComposer,
+      $$SettingsTableTableCreateCompanionBuilder,
+      $$SettingsTableTableUpdateCompanionBuilder,
+      (
+        SettingsRecord,
+        BaseReferences<_$AppDatabase, $SettingsTableTable, SettingsRecord>,
+      ),
+      SettingsRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1412,4 +1989,6 @@ class $AppDatabaseManager {
       $$AlarmsTableTableTableManager(_db, _db.alarmsTable);
   $$ReasonsTableTableTableManager get reasonsTable =>
       $$ReasonsTableTableTableManager(_db, _db.reasonsTable);
+  $$SettingsTableTableTableManager get settingsTable =>
+      $$SettingsTableTableTableManager(_db, _db.settingsTable);
 }

@@ -2,10 +2,9 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../domain/entities/reason.dart';
-import '../../domain/entities/reason_area.dart';
-import '../../domain/entities/reason_tone.dart';
 
-/// SQL table `reasons`. Each row is one reason, keyed by its id. Rows come back as
+/// SQL table `reasons`. Each row is one reason, keyed by its id; the area and tone
+/// are stored as the display names the server sent. Rows come back as
 /// [ReasonRecord].
 @DataClassName('ReasonRecord')
 class ReasonsTable extends Table {
@@ -14,8 +13,9 @@ class ReasonsTable extends Table {
 
   TextColumn get reasonId => text()();
   TextColumn get name => text()();
-  TextColumn get area => textEnum<ReasonArea>()();
-  TextColumn get tone => textEnum<ReasonTone>()();
+  TextColumn get areaName => text()();
+  IntColumn get areaColor => integer().nullable()();
+  TextColumn get toneName => text()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -23,5 +23,11 @@ class ReasonsTable extends Table {
 }
 
 extension ReasonRecordMapper on ReasonRecord {
-  Reason toEntity() => Reason(id: reasonId, name: name, area: area, tone: tone);
+  Reason toEntity() => Reason(
+    id: reasonId,
+    name: name,
+    areaName: areaName,
+    areaColor: areaColor,
+    toneName: toneName,
+  );
 }

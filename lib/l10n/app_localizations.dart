@@ -208,12 +208,6 @@ abstract class AppLocalizations {
   /// **'Pick a time and a reason.'**
   String get my_alarms_add_first_alarm_subtitle;
 
-  /// No description provided for @settings_placeholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings screen will be here'**
-  String get settings_placeholder;
-
   /// No description provided for @my_alarms_add_alarm.
   ///
   /// In en, this message translates to:
@@ -244,96 +238,6 @@ abstract class AppLocalizations {
   /// **'New Reason'**
   String get reasons_add_label;
 
-  /// No description provided for @reason_area_health.
-  ///
-  /// In en, this message translates to:
-  /// **'Health'**
-  String get reason_area_health;
-
-  /// No description provided for @reason_area_healing.
-  ///
-  /// In en, this message translates to:
-  /// **'Healing'**
-  String get reason_area_healing;
-
-  /// No description provided for @reason_area_fitness.
-  ///
-  /// In en, this message translates to:
-  /// **'Fitness'**
-  String get reason_area_fitness;
-
-  /// No description provided for @reason_area_career.
-  ///
-  /// In en, this message translates to:
-  /// **'Career'**
-  String get reason_area_career;
-
-  /// No description provided for @reason_area_family.
-  ///
-  /// In en, this message translates to:
-  /// **'Family'**
-  String get reason_area_family;
-
-  /// No description provided for @reason_area_money.
-  ///
-  /// In en, this message translates to:
-  /// **'Money'**
-  String get reason_area_money;
-
-  /// No description provided for @reason_area_growth.
-  ///
-  /// In en, this message translates to:
-  /// **'Growth'**
-  String get reason_area_growth;
-
-  /// No description provided for @reason_area_business.
-  ///
-  /// In en, this message translates to:
-  /// **'Business'**
-  String get reason_area_business;
-
-  /// No description provided for @reason_area_study.
-  ///
-  /// In en, this message translates to:
-  /// **'Learning & Skills'**
-  String get reason_area_study;
-
-  /// No description provided for @reason_area_relationships.
-  ///
-  /// In en, this message translates to:
-  /// **'Relationships'**
-  String get reason_area_relationships;
-
-  /// No description provided for @reason_tone_encouraging.
-  ///
-  /// In en, this message translates to:
-  /// **'Encouraging'**
-  String get reason_tone_encouraging;
-
-  /// No description provided for @reason_tone_calm.
-  ///
-  /// In en, this message translates to:
-  /// **'Calm'**
-  String get reason_tone_calm;
-
-  /// No description provided for @reason_tone_focused.
-  ///
-  /// In en, this message translates to:
-  /// **'Focused'**
-  String get reason_tone_focused;
-
-  /// No description provided for @reason_tone_challenge.
-  ///
-  /// In en, this message translates to:
-  /// **'Challenge'**
-  String get reason_tone_challenge;
-
-  /// No description provided for @reason_tone_playful.
-  ///
-  /// In en, this message translates to:
-  /// **'Playful'**
-  String get reason_tone_playful;
-
   /// Second line of a reason row: its area of life and tone.
   ///
   /// In en, this message translates to:
@@ -362,6 +266,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' Its alarm is off.'**
   String get reason_alarm_off_note;
+
+  /// No description provided for @settings_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings_title;
+
+  /// No description provided for @settings_set_your_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your name'**
+  String get settings_set_your_name;
+
+  /// No description provided for @settings_not_signed_in.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get settings_not_signed_in;
+
+  /// Screen reader label of the account card.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}. {subtitle}'**
+  String settings_profile_semantics(String name, String subtitle);
+
+  /// No description provided for @settings_notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settings_notifications;
+
+  /// No description provided for @settings_notify_billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial & billing'**
+  String get settings_notify_billing;
+
+  /// No description provided for @settings_notify_alarms.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm reminders'**
+  String get settings_notify_alarms;
+
+  /// No description provided for @settings_notify_quotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts for the day'**
+  String get settings_notify_quotes;
+
+  /// No description provided for @settings_notifications_note.
+  ///
+  /// In en, this message translates to:
+  /// **'These settings don’t affect your alarms.'**
+  String get settings_notifications_note;
+
+  /// No description provided for @settings_subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get settings_subscription;
+
+  /// No description provided for @settings_plan_free.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get settings_plan_free;
+
+  /// No description provided for @settings_support.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get settings_support;
+
+  /// No description provided for @settings_help.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Support'**
+  String get settings_help;
+
+  /// No description provided for @settings_faq.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQ'**
+  String get settings_faq;
+
+  /// No description provided for @settings_request_feature.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a feature'**
+  String get settings_request_feature;
+
+  /// No description provided for @settings_leave_review.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave a review'**
+  String get settings_leave_review;
+
+  /// No description provided for @settings_legal.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get settings_legal;
+
+  /// No description provided for @settings_privacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get settings_privacy;
+
+  /// No description provided for @settings_terms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Use'**
+  String get settings_terms;
+
+  /// No description provided for @settings_account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settings_account;
+
+  /// No description provided for @settings_sign_in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get settings_sign_in;
+
+  /// No description provided for @settings_delete_account.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get settings_delete_account;
+
+  /// App name, version and build number at the bottom of Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} {version} ({build})'**
+  String settings_version(String name, String version, String build);
 }
 
 class _AppLocalizationsDelegate

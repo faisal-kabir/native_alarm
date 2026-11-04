@@ -1,8 +1,6 @@
 import 'package:eala/features/reasons/domain/entities/reason.dart';
-import 'package:eala/features/reasons/domain/entities/reason_area.dart';
-import 'package:eala/features/reasons/domain/entities/reason_tone.dart';
 import 'package:eala/features/reasons/presentation/widgets/reason_row.dart';
-import 'package:eala/features/reasons/presentation/widgets/reason_view.dart';
+import 'package:eala/features/reasons/presentation/widgets/reason_emblem.dart';
 import 'package:eala/l10n/app_localizations.dart';
 import 'package:eala/main.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 const _reason = Reason(
   id: '1',
   name: 'Build my own thing',
-  area: ReasonArea.business,
-  tone: ReasonTone.focused,
+  areaName: 'Area X',
+  areaColor: 0xFF336699,
+  toneName: 'Tone Y',
 );
 
 Widget _host(ReasonAlarmBadge badge) => ScreenUtilInit(
@@ -34,11 +33,11 @@ void main() {
   ) async {
     final handle = tester.ensureSemantics();
     final cases = {
-      ReasonAlarmBadge.none: 'Build my own thing. Business, Focused tone.',
+      ReasonAlarmBadge.none: 'Build my own thing. Area X, Tone Y tone.',
       ReasonAlarmBadge.on:
-          'Build my own thing. Business, Focused tone. Played by an alarm.',
+          'Build my own thing. Area X, Tone Y tone. Played by an alarm.',
       ReasonAlarmBadge.off:
-          'Build my own thing. Business, Focused tone. Its alarm is off.',
+          'Build my own thing. Area X, Tone Y tone. Its alarm is off.',
     };
     for (final entry in cases.entries) {
       await tester.pumpWidget(_host(entry.key));

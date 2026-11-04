@@ -7,7 +7,6 @@ import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
 import '../../domain/entities/reason.dart';
 import 'reason_emblem.dart';
-import 'reason_view.dart';
 
 /// A reason as a row: a card at least 78 tall (radius 14), 16 padding, 46 emblem, two text
 /// lines and a chevron. Tapping opens the reason; it does not play it.
@@ -27,8 +26,8 @@ class ReasonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     final textTheme = appTheme(context).textTheme;
-    final area = reason.area.label(strings);
-    final tone = reason.tone.label(strings);
+    final area = reason.areaName;
+    final tone = reason.toneName;
     final note = switch (badge) {
       ReasonAlarmBadge.none => '',
       ReasonAlarmBadge.on => strings.reason_alarm_on_note,
@@ -51,7 +50,11 @@ class ReasonRow extends StatelessWidget {
               padding: REdgeInsets.all(16),
               child: Row(
                 children: [
-                  ReasonEmblem(area: reason.area, badge: badge),
+                  ReasonEmblem(
+                    areaName: reason.areaName,
+                    areaColor: reason.areaColor,
+                    badge: badge,
+                  ),
                   SizedBox(width: 13.w),
                   Expanded(
                     child: Column(
