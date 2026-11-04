@@ -105,6 +105,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No alarms yet. Tap + to add one.'**
   String get alarm_list_empty;
+
+  /// No description provided for @common_allow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get common_allow;
+
+  /// No description provided for @common_not_now.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get common_not_now;
+
+  /// No description provided for @alarm_permission_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission needed'**
+  String get alarm_permission_title;
+
+  /// No description provided for @alarm_permission_notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications so the alarm can alert you.'**
+  String get alarm_permission_notifications;
+
+  /// No description provided for @alarm_permission_full_screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow full-screen alarms so the alarm screen can appear over the lock screen.'**
+  String get alarm_permission_full_screen;
+
+  /// No description provided for @alarm_permission_overlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow \"Display over other apps\" so the alarm screen can open while you are using the phone.'**
+  String get alarm_permission_overlay;
+
+  /// No description provided for @alarm_permission_exact_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow exact alarms so the alarm rings on time.'**
+  String get alarm_permission_exact_alarm;
+
+  /// No description provided for @tab_alarms.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms'**
+  String get tab_alarms;
+
+  /// No description provided for @tab_reasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasons'**
+  String get tab_reasons;
+
+  /// No description provided for @tab_settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get tab_settings;
+
+  /// No description provided for @my_alarms_title.
+  ///
+  /// In en, this message translates to:
+  /// **'My Alarms'**
+  String get my_alarms_title;
+
+  /// No description provided for @my_alarms_your_alarms.
+  ///
+  /// In en, this message translates to:
+  /// **'Your alarms'**
+  String get my_alarms_your_alarms;
+
+  /// Alarm limit shown beside the slot pills.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count}'**
+  String my_alarms_slot_meter_label(int count);
+
+  /// Screen reader label of the slot meter.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {count} alarms'**
+  String my_alarms_slot_meter_semantics(int count);
+
+  /// No description provided for @my_alarms_thought_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s thought'**
+  String get my_alarms_thought_semantics;
+
+  /// No description provided for @my_alarms_add_first_alarm_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your first alarm'**
+  String get my_alarms_add_first_alarm_title;
+
+  /// No description provided for @my_alarms_add_first_alarm_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a time and a reason.'**
+  String get my_alarms_add_first_alarm_subtitle;
+
+  /// No description provided for @reasons_placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasons screen will be here'**
+  String get reasons_placeholder;
+
+  /// No description provided for @settings_placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings screen will be here'**
+  String get settings_placeholder;
 }
 
 class _AppLocalizationsDelegate

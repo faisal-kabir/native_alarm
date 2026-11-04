@@ -6,7 +6,7 @@ import '../../../../core/error/failures.dart';
 import '../../domain/entities/alarm.dart';
 import '../../domain/repositories/alarm_repository.dart';
 import '../datasources/alarm_local_data_source.dart';
-import '../models/alarm_isar_model.dart';
+import '../models/alarms_table.dart';
 
 @LazySingleton(as: AlarmRepository)
 class AlarmRepositoryImpl implements AlarmRepository {
@@ -27,7 +27,7 @@ class AlarmRepositoryImpl implements AlarmRepository {
   @override
   Future<Either<Failure, Alarm>> saveAlarm(Alarm alarm) async {
     try {
-      await localDataSource.saveAlarm(AlarmIsarModel.fromEntity(alarm));
+      await localDataSource.saveAlarm(alarm);
       return Right(alarm);
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));

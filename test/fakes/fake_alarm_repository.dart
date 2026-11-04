@@ -6,9 +6,12 @@ import 'package:eala/features/alarm/domain/repositories/alarm_repository.dart';
 import 'package:eala/features/alarm/domain/usecases/delete_alarm_usecase.dart';
 import 'package:eala/features/alarm/domain/usecases/get_alarms_usecase.dart';
 import 'package:eala/features/alarm/domain/usecases/save_alarm_usecase.dart';
+import 'package:eala/core/platform/alarm_platform_client.dart';
 import 'package:eala/features/alarm/presentation/bloc/alarm_list_bloc.dart';
+import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart';
 
-/// In-memory [AlarmRepository] so tests run without Isar.
+/// In-memory [AlarmRepository] so BLoC tests run without a database.
 class FakeAlarmRepository implements AlarmRepository {
   final Map<String, Alarm> store = {};
 
@@ -35,8 +38,13 @@ AlarmListBloc buildAlarmListBloc(AlarmRepository repository) => AlarmListBloc(
   DeleteAlarmUseCase(repository),
 );
 
-/// Registers [AlarmListBloc] in the locator, backed by [repository].
+/// Registers the BLoCs the app's screens need, backed by [repository].
 Future<void> registerFakeAlarmDependencies(AlarmRepository repository) async {
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
+  instance.registerFactory<DashboardBloc>(DashboardBloc.new);
+  instance.registerFactory<MyAlarmsBloc>(
+    () => MyAlarmsBloc(GetAlarmsUseCase(repository)),
+  );
+  instance.registerLazySingleton<AlarmPlatformClient>(AlarmPlatformClient.new);
 }

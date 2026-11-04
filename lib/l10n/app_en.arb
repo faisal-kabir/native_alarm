@@ -1,4 +1,39 @@
 {
   "app_name": "Eala",
-  "alarm_list_empty": "No alarms yet. Tap + to add one."
+  "alarm_list_empty": "No alarms yet. Tap + to add one.",
+  "common_allow": "Allow",
+  "common_not_now": "Not now",
+  "alarm_permission_title": "Permission needed",
+  "alarm_permission_notifications": "Allow notifications so the alarm can alert you.",
+  "alarm_permission_full_screen": "Allow full-screen alarms so the alarm screen can appear over the lock screen.",
+  "alarm_permission_overlay": "Allow \"Display over other apps\" so the alarm screen can open while you are using the phone.",
+  "alarm_permission_exact_alarm": "Allow exact alarms so the alarm rings on time.",
+  "tab_alarms": "Alarms",
+  "tab_reasons": "Reasons",
+  "tab_settings": "Settings",
+  "my_alarms_title": "My Alarms",
+  "my_alarms_your_alarms": "Your alarms",
+  "my_alarms_slot_meter_label": "Up to {count}",
+  "@my_alarms_slot_meter_label": {
+    "description": "Alarm limit shown beside the slot pills.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "my_alarms_slot_meter_semantics": "Up to {count} alarms",
+  "@my_alarms_slot_meter_semantics": {
+    "description": "Screen reader label of the slot meter.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "my_alarms_thought_semantics": "Today's thought",
+  "my_alarms_add_first_alarm_title": "Set your first alarm",
+  "my_alarms_add_first_alarm_subtitle": "Pick a time and a reason.",
+  "reasons_placeholder": "Reasons screen will be here",
+  "settings_placeholder": "Settings screen will be here"
 }

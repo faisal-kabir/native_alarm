@@ -1,35 +1,39 @@
+import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
-import 'package:isar_community/isar.dart';
 
+import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
-import '../models/alarm_isar_model.dart';
+import '../../domain/entities/alarm.dart';
+import '../models/alarms_table.dart';
 
 abstract class AlarmLocalDataSource {
-  Future<List<AlarmIsarModel>> getAlarms();
-  Future<void> saveAlarm(AlarmIsarModel alarm);
+  Future<List<AlarmRecord>> getAlarms();
+  Future<void> saveAlarm(Alarm alarm);
   Future<void> deleteAlarm(String alarmId);
 }
 
 @LazySingleton(as: AlarmLocalDataSource)
 class AlarmLocalDataSourceImpl implements AlarmLocalDataSource {
-  final Isar isar;
+  final AppDatabase db;
 
-  AlarmLocalDataSourceImpl(this.isar);
+  AlarmLocalDataSourceImpl(this.db);
 
   @override
-  Future<List<AlarmIsarModel>> getAlarms() async {
+  Future<List<AlarmRecord>> getAlarms() async {
     try {
-      return await isar.alarmIsarModels.where().sortByTime().findAll();
+      return await (db.select(
+        db.alarmsTable,
+      )..orderBy([(t) => OrderingTerm.asc(t.time)])).get();
     } catch (e) {
       throw CacheException(e.toString());
     }
   }
 
   @override
-  Future<void> saveAlarm(AlarmIsarModel alarm) async {
+  Future<void> saveAlarm(Alarm alarm) async {
     try {
-      // Unique index on alarmId with replace: true turns this into an upsert.
-      await isar.writeTxn(() => isar.alarmIsarModels.putByAlarmId(alarm));
+      // Primary key is alarmId, so saving the same alarm again updates its row.
+      await db.into(db.alarmsTable).insertOnConflictUpdate(alarm.toCompanion());
     } catch (e) {
       throw CacheException(e.toString());
     }
@@ -38,7 +42,9 @@ class AlarmLocalDataSourceImpl implements AlarmLocalDataSource {
   @override
   Future<void> deleteAlarm(String alarmId) async {
     try {
-      await isar.writeTxn(() => isar.alarmIsarModels.deleteByAlarmId(alarmId));
+      await (db.delete(
+        db.alarmsTable,
+      )..where((t) => t.alarmId.equals(alarmId))).go();
     } catch (e) {
       throw CacheException(e.toString());
     }

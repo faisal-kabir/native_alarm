@@ -14,5 +14,6 @@ class SaveAlarmUseCase implements UseCase<Alarm, Alarm> {
   SaveAlarmUseCase(this.repository);
 
   @override
-  Future<Either<Failure, Alarm>> call(Alarm alarm) => repository.saveAlarm(alarm);
+  Future<Either<Failure, Alarm>> call(Alarm alarm) =>
+      repository.saveAlarm(alarm);
 }

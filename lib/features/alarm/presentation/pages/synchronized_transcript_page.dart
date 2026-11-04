@@ -8,6 +8,7 @@ import '../../domain/entities/audio_track.dart';
 import '../../domain/entities/transcript.dart';
 import '../../domain/entities/transcript_word.dart';
 import '../../../../core/router/route_names.dart';
+
 import 'package:go_router/go_router.dart';
 
 class SynchronizedTranscriptPage extends StatefulWidget {
@@ -250,9 +251,9 @@ class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
-              // Back to the existing home route; never stack a second AlarmListPage
+              // Back to the existing home route; never stack a second home page
               // (each instance listens to alarm events and would navigate again).
-              GoRouter.of(context).go(RouteNames.alarmListPath);
+              GoRouter.of(context).go(RouteNames.dashboardPath);
             }
           },
         ),

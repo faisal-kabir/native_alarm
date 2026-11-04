@@ -13,7 +13,6 @@ import '../../domain/entities/alarm.dart';
 import '../bloc/alarm_list_bloc.dart';
 import '../bloc/alarm_list_event.dart';
 import '../bloc/alarm_list_state.dart';
-import 'alarm_ringing_page.dart';
 import 'synchronized_transcript_page.dart';
 
 class AlarmListPage extends StatelessWidget {
@@ -38,13 +37,12 @@ class _AlarmListView extends StatefulWidget {
 
 class _AlarmListPageState extends State<_AlarmListView>
     with WidgetsBindingObserver {
-  final AlarmPlatformClient _platformClient = AlarmPlatformClient();
+  final AlarmPlatformClient _platformClient = instance<AlarmPlatformClient>();
   // Repeat count / interval / tune sent with every alarm (0 repeats = none).
   static const AlarmScheduleOptions _scheduleOptions = AlarmScheduleOptions();
   StreamSubscription? _eventSubscription;
   bool _hasNotificationPermission = true;
   bool _isRinging = false;
-  bool _isRingingPageOpen = false;
   bool _isTranscriptPageOpen = false;
 
   @override
@@ -53,35 +51,20 @@ class _AlarmListPageState extends State<_AlarmListView>
     WidgetsBinding.instance.addObserver(this);
 
     _checkNotificationPermission();
-    _checkAlarmLaunch();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _ensureAlarmScreenPermissions(),
-    );
 
-    // Listen to background alarm events
+    // Alarm launches, the message page and permissions are handled by the home
+    // screen's AlarmEventListener; this page only reflects the ringing state.
     _eventSubscription = _platformClient.events.listen((event) {
       final type = event['event'] as String?;
-      final eventAlarmId = event['alarmId'] as String?;
+      if (!mounted) return;
       if (type == 'alarmRinging') {
-        // Android shows its own native alarm screen; the Flutter ringing page is iOS-only.
-        if (Platform.isAndroid || SynchronizedTranscriptPage.isOpen) return;
-        setState(() {
-          _isRinging = true;
-        });
-        _navigateToRingingPage(alarmId: eventAlarmId);
+        if (Platform.isAndroid) return;
+        setState(() => _isRinging = true);
       } else if (type == 'openTranscript' ||
-          (type == 'customAudioStarted' &&
-              (eventAlarmId?.isNotEmpty ?? false))) {
-        // Only alarm-originated starts open the page (they carry an alarmId);
-        // replaying inside the message page must not push it again.
-        setState(() {
-          _isRinging = false;
-        });
-        _navigateToTranscript(alarmId: eventAlarmId);
-      } else if (type == 'alarmDismissed' || type == 'customAudioStopped') {
-        setState(() {
-          _isRinging = false;
-        });
+          type == 'customAudioStarted' ||
+          type == 'alarmDismissed' ||
+          type == 'customAudioStopped') {
+        setState(() => _isRinging = false);
       }
     });
   }
@@ -91,86 +74,7 @@ class _AlarmListPageState extends State<_AlarmListView>
     if (state == AppLifecycleState.resumed) {
       // Re-read so alarms that rang while the app was in the background show as off.
       context.read<AlarmListBloc>().add(const LoadAlarmsEvent());
-      _checkAlarmLaunch();
-      _ensureAlarmScreenPermissions();
     }
-  }
-
-  static const Map<String, String> _permissionExplanations = {
-    'notifications': 'Allow notifications so the alarm can alert you.',
-    'fullScreenIntent': 'Allow full-screen alarms so the alarm screen can appear over the lock screen.',
-    'overlay': 'Allow "Display over other apps" so the alarm screen can open while you are using the phone.',
-    'exactAlarm': 'Allow exact alarms so the alarm rings on time.',
-  };
-  // Static: a permission is asked once per app start, not once per page instance.
-  static final Set<String> _askedPermissions = {};
-  bool _askingPermission = false;
-
-  /// Android only: walks the user through the permissions the alarm screen needs,
-  /// one settings page at a time (each ask happens once per app start).
-  Future<void> _ensureAlarmScreenPermissions() async {
-    if (!Platform.isAndroid || _askingPermission) return;
-    final status = await _platformClient.getAlarmScreenPermissions();
-    final missing = status.entries
-        .where((e) => !e.value && !_askedPermissions.contains(e.key))
-        .map((e) => e.key)
-        .toList();
-    if (missing.isEmpty || !mounted) return;
-
-    final key = missing.first;
-    _askedPermissions.add(key);
-    _askingPermission = true;
-    final agreed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Permission needed'),
-        content: Text(_permissionExplanations[key] ?? key),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Not now'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Allow'),
-          ),
-        ],
-      ),
-    );
-    _askingPermission = false;
-    if (agreed == true) {
-      await _platformClient.requestAlarmScreenPermissions();
-    }
-  }
-
-  Future<void> _checkAlarmLaunch() async {
-    try {
-      final launchData = await _platformClient.consumeAlarmLaunch();
-      final launched = launchData['launchedFromAlarm'] as bool? ?? false;
-      if (launched) {
-        if (!SynchronizedTranscriptPage.isOpen) {
-          final launchAlarmId = launchData['alarmId'] as String?;
-          _navigateToTranscript(
-            alarmId: (launchAlarmId?.isEmpty ?? true) ? null : launchAlarmId,
-          );
-        }
-        return;
-      }
-    } catch (_) {}
-    _checkInitialState();
-  }
-
-  /// iOS only: if the app was opened while the alarm is still ringing, show the
-  /// ringing page. The message page is opened only through [_checkAlarmLaunch] or an
-  /// alarm event, never just because audio is playing (that re-opened it after Back).
-  Future<void> _checkInitialState() async {
-    if (Platform.isAndroid) return;
-    try {
-      final state = await _platformClient.getPlaybackState();
-      if (state['state'] == 'ringing') {
-        _navigateToRingingPage(alarmId: state['alarmId'] as String?);
-      }
-    } catch (_) {}
   }
 
   Future<void> _checkNotificationPermission() async {
@@ -190,10 +94,6 @@ class _AlarmListPageState extends State<_AlarmListView>
 
   void _navigateToTranscript({String? missionName, String? alarmId}) async {
     if (SynchronizedTranscriptPage.isOpen || _isTranscriptPageOpen) return;
-    if (_isRingingPageOpen) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      _isRingingPageOpen = false;
-    }
     _isTranscriptPageOpen = true;
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -207,26 +107,6 @@ class _AlarmListPageState extends State<_AlarmListView>
       ),
     );
     _isTranscriptPageOpen = false;
-  }
-
-  void _navigateToRingingPage({String? alarmId}) async {
-    if (_isRingingPageOpen ||
-        _isTranscriptPageOpen ||
-        SynchronizedTranscriptPage.isOpen) {
-      return;
-    }
-    _isRingingPageOpen = true;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/alarm_ringing'),
-        builder: (_) => AlarmRingingPage(
-          platformClient: _platformClient,
-          alarmId: alarmId,
-          audioTrack: AudioTrackRepository.predefinedTracks.first,
-        ),
-      ),
-    );
-    _isRingingPageOpen = false;
   }
 
   void _dismissCurrentAlarm() {
@@ -635,7 +515,6 @@ class _AlarmListPageState extends State<_AlarmListView>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
-    _platformClient.dispose();
     super.dispose();
   }
 

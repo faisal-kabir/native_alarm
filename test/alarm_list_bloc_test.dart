@@ -38,23 +38,26 @@ void main() {
   });
 
   group('AlarmListBloc', () {
-    test('loads saved alarms (they survive a new bloc = app restart)', () async {
-      final repo = FakeAlarmRepository();
-      final time = DateTime.now().add(const Duration(hours: 2));
+    test(
+      'loads saved alarms (they survive a new bloc = app restart)',
+      () async {
+        final repo = FakeAlarmRepository();
+        final time = DateTime.now().add(const Duration(hours: 2));
 
-      final first = buildAlarmListBloc(repo);
-      first.add(SaveAlarmEvent(_alarm('a1', time)));
-      await first.stream.firstWhere((s) => s is AlarmListLoaded);
-      await first.close();
+        final first = buildAlarmListBloc(repo);
+        first.add(SaveAlarmEvent(_alarm('a1', time)));
+        await first.stream.firstWhere((s) => s is AlarmListLoaded);
+        await first.close();
 
-      final second = buildAlarmListBloc(repo)..add(const LoadAlarmsEvent());
-      final loaded =
-          await second.stream.firstWhere((s) => s is AlarmListLoaded)
-              as AlarmListLoaded;
-      expect(loaded.alarms.map((a) => a.id), ['a1']);
-      expect(loaded.alarms.single.missionName, 'Mission a1');
-      await second.close();
-    });
+        final second = buildAlarmListBloc(repo)..add(const LoadAlarmsEvent());
+        final loaded = await second.stream.firstWhere(
+          (s) => s is AlarmListLoaded,
+        ) as AlarmListLoaded;
+        expect(loaded.alarms.map((a) => a.id), ['a1']);
+        expect(loaded.alarms.single.missionName, 'Mission a1');
+        await second.close();
+      },
+    );
 
     test('save updates an existing alarm and delete removes it', () async {
       final repo = FakeAlarmRepository();
@@ -69,11 +72,9 @@ void main() {
       expect(repo.store.length, 1);
 
       bloc.add(const DeleteAlarmEvent('a1'));
-      final state =
-          await bloc.stream.firstWhere(
-                (s) => s is AlarmListLoaded && s.alarms.isEmpty,
-              )
-              as AlarmListLoaded;
+      final state = await bloc.stream.firstWhere(
+        (s) => s is AlarmListLoaded && s.alarms.isEmpty,
+      ) as AlarmListLoaded;
       expect(state.alarms, isEmpty);
       await Future<void>.delayed(Duration.zero);
       expect(repo.store, isEmpty);

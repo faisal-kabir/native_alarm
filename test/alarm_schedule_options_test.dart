@@ -11,7 +11,10 @@ void main() {
     });
 
     test('repeatCount 0 is sent as 0 (no internal alarms)', () {
-      expect(const AlarmScheduleOptions(repeatCount: 0).toMap()['repeatCount'], 0);
+      expect(
+        const AlarmScheduleOptions(repeatCount: 0).toMap()['repeatCount'],
+        0,
+      );
     });
 
     test('optional texts and tune are included only when set', () {

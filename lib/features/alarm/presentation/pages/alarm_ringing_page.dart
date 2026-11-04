@@ -8,6 +8,7 @@ import '../../data/audio_track_repository.dart';
 import '../../domain/entities/audio_track.dart';
 import 'synchronized_transcript_page.dart';
 import '../../../../core/router/route_names.dart';
+
 import 'package:go_router/go_router.dart';
 
 class AlarmRingingPage extends StatefulWidget {
@@ -62,9 +63,9 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
           if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           } else {
-            // Back to the existing home route; never stack a second AlarmListPage
-              // (each instance listens to alarm events and would navigate again).
-              GoRouter.of(context).go(RouteNames.alarmListPath);
+            // Back to the existing home route; never stack a second home page
+            // (each instance listens to alarm events and would navigate again).
+            GoRouter.of(context).go(RouteNames.dashboardPath);
           }
         }
       }
@@ -109,9 +110,9 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       } else {
-        // Back to the existing home route; never stack a second AlarmListPage
-              // (each instance listens to alarm events and would navigate again).
-              GoRouter.of(context).go(RouteNames.alarmListPath);
+        // Back to the existing home route; never stack a second home page
+        // (each instance listens to alarm events and would navigate again).
+        GoRouter.of(context).go(RouteNames.dashboardPath);
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

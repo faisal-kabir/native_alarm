@@ -62,9 +62,9 @@ The architecture and folder structure must remain consistent throughout the enti
 
 Dependencies always point **inward, toward Domain**:
 
-- Presentation → knows Domain only (never Data, never DataSources, never Supabase/Isar).
+- Presentation → knows Domain only (never Data, never DataSources, never Supabase/drift).
 - Data → knows Domain (implements its abstractions).
-- **Domain knows nobody.** It is pure Dart: no Flutter imports, no `fromJson`, no Supabase/Isar/Dio types.
+- **Domain knows nobody.** It is pure Dart: no Flutter imports, no `fromJson`, no Supabase/drift/Dio types.
 
 | Layer | Contains | Depends on |
 |---|---|---|
@@ -87,14 +87,18 @@ lib/
 │   ├── network/
 │   ├── di/                        ← get_it `instance` + injectable config
 │   ├── router/                    ← go_router (app_router.dart, route_names.dart)
-│   └── platform/                  ← native MethodChannel clients (alarm)
+│   ├── platform/                  ← native MethodChannel clients (alarm)
+│   ├── database/                  ← drift AppDatabase + DatabaseModule
+│   ├── theme/                     ← AppColor, AppTheme, Dimension
+│   ├── constants/                 ← AppConstant
+│   └── widgets/                   ← common reusable widgets
 │
 ├── features/
 │   └── <feature>/
 │       ├── data/
 │       │   ├── datasources/
 │       │   │   ├── <feature>_remote_data_source.dart   ← Supabase calls
-│       │   │   └── <feature>_local_data_source.dart    ← Isar / secure storage
+│       │   │   └── <feature>_local_data_source.dart    ← drift / secure storage
 │       │   ├── models/
 │       │   │   └── <name>_model.dart
 │       │   └── repositories/
@@ -128,14 +132,14 @@ Adding a new feature (e.g. Profile, Chat) means adding a new folder under `featu
 - **UseCase** – exactly one business action per class (`LoginUseCase`, `GetTodosUseCase`). Implements `UseCase<Type, Params>`, calls the repository abstraction and does not know whether data comes from the server or local DB. Use a `<Action>Params` class for inputs, or `NoParams` when there are none.
 
 **Data**
-- **Model** – `extends` the Entity and adds `fromJson()` / `toJson()` (and Isar mapping when needed).
-- **DataSource** – where the real Supabase query / Isar query happens. Returns Models and **throws** exceptions (`ServerException`, `CacheException`) on error — it never returns `Either`.
+- **Model** – `extends` the Entity and adds `fromJson()` / `toJson()` (and drift table mapping when needed).
+- **DataSource** – where the real Supabase query / drift (SQLite) query happens. Returns Models and **throws** exceptions (`ServerException`, `CacheException`) on error — it never returns `Either`.
 - **Repository (impl)** – implements the Domain abstraction. Calls DataSources, applies the local-first flow (section 4), catches exceptions and converts them to `Left(Failure)`; success goes to `Right(data)`.
 
 **Presentation**
 - **Event** – what the user did (`LoginButtonPressed`). Extends `Equatable`.
 - **State** – what the UI shows (`Initial`, `Loading`, `Success`, `Failure`). Extends `Equatable`.
-- **BLoC** – listens to Events, calls UseCases, `fold`s the `Either` result and emits States. It only knows UseCases — never repositories' implementations, DataSources, Supabase or Isar.
+- **BLoC** – listens to Events, calls UseCases, `fold`s the `Either` result and emits States. It only knows UseCases — never repositories' implementations, DataSources, Supabase or drift.
 - **Page/Widget** – renders from State via `BlocBuilder` / `BlocListener` / `BlocConsumer` and dispatches Events. No business logic in widgets.
 
 ### 2.4 Core Building Blocks
@@ -182,7 +186,7 @@ The architecture guide shows manual `sl.registerFactory(...)` registration for e
 | UseCase | `@lazySingleton` |
 | Repository impl | `@LazySingleton(as: FeatureRepository)` |
 | DataSource impl | `@LazySingleton(as: FeatureRemoteDataSource)` / `@LazySingleton(as: FeatureLocalDataSource)` |
-| External (Supabase client, Isar, secure storage) | `@module` with `@preResolve` / `@lazySingleton` getters |
+| External (Supabase client, AppDatabase, secure storage) | `@module` with `@preResolve` / `@lazySingleton` getters |
 
 ```dart
 @LazySingleton(as: AuthRepository)
@@ -204,7 +208,7 @@ User taps button
   → Page dispatches Event
   → BLoC calls UseCase
   → UseCase calls Repository (abstraction)
-  → RepositoryImpl calls Local/Remote DataSource (Isar / Supabase)
+  → RepositoryImpl calls Local/Remote DataSource (drift / Supabase)
   → DataSource returns Model (or throws)
   → RepositoryImpl returns Either<Failure, Entity>
   → BLoC folds result and emits State
@@ -217,7 +221,7 @@ User taps button
 2. `domain/repositories/` – abstract Repository returning `Either<Failure, T>`.
 3. `domain/usecases/` – one UseCase per action (+ Params class).
 4. `data/models/` – Model extending the Entity with `fromJson` / `toJson`.
-5. `data/datasources/` – remote (Supabase) and/or local (Isar) DataSource, abstract + impl, throwing exceptions.
+5. `data/datasources/` – remote (Supabase) and/or local (drift) DataSource, abstract + impl, throwing exceptions.
 6. `data/repositories/` – Repository impl: local-first, exception → `Failure`.
 7. `presentation/bloc/` – Event, State (Equatable), BLoC calling UseCases.
 8. `presentation/pages/` – Page using `instance<XBloc>()`, `appLanguage()`, `appTheme()`, `AppColor`, ScreenUtil.
@@ -238,15 +242,20 @@ User taps button
 Use the following packages for local data management:
 
 - **flutter_secure_storage:** For storing sensitive and internal application data securely.
-- **isar:** For managing the application's internal local database. The project uses **`isar_community`** (the maintained drop-in fork of Isar 3; original `isar 3.1.0` is unmaintained and does not build with this project's AGP 9). Import it as `package:isar_community/isar.dart`.
+- **drift:** For managing the application's internal local database. drift is a type-safe, **relational** layer on top of **SQLite** (tables, primary/foreign keys, joins, transactions, migrations), fully offline on the device. Packages: `drift`, `drift_flutter` (opens the SQLite file), and `drift_dev` (dev, code generation). Do not add `isar`, `hive`/`hive_ce`, or raw `sqflite`.
 
-### Isar Setup
+### drift Setup
 
-- The database is opened once in `lib/core/database/database_module.dart` (an injectable `@module`, `@preResolve`), so `Isar` is injected into local DataSources.
-- Every new `@collection` schema must be added to the `Isar.open([...])` list there.
-- Collections live in the feature's `data/models/` (e.g. `alarm_isar_model.dart`) with `fromEntity()` / `toEntity()` mapping; Domain never sees Isar types.
+- `lib/core/database/app_database.dart` holds the single `@DriftDatabase` class `AppDatabase`. Add every feature's table to its `tables: [...]` list.
+- `lib/core/database/database_module.dart` (injectable `@module`) provides `AppDatabase` as a lazy singleton (`driftDatabase(name: 'eala')` → `eala.sqlite` in the app documents directory), so local DataSources get it injected.
+- Tables live in the feature's `data/models/` (e.g. `alarms_table.dart`): a `Table` class with `@DataClassName('<Name>Record')` (never the same name as a Domain entity), plus mapping extensions `Record.toEntity()` and `Entity.toCompanion()`. Domain never sees drift types.
+- Lists or other non-SQL values are stored through a `TypeConverter` (e.g. `WeekdaysConverter` → JSON text).
+- Writes keyed by the natural id use `insertOnConflictUpdate`, so saving again updates the row.
+- **Schema changes:** whenever a table or column changes, increase `schemaVersion` and add a step in `migration.onUpgrade` (`if (from < N) { ... }`). Never edit a released schema without a migration — users' data would be lost or the app would crash.
+- For reactive UI, DataSources can expose drift's `.watch()` streams instead of `.get()`.
+- Tests use `AppDatabase(NativeDatabase.memory())` (from `package:drift/native.dart`) — no device needed.
 - `lib/core/di/injection.dart` defines `instance` and `configureDependencies()`, awaited in `main()` before `runApp`.
-- After changing a collection or an injectable class, run `dart run build_runner build` (the `--delete-conflicting-outputs` flag is accepted but ignored by the current build_runner).
+- After changing a table or an injectable class, run `dart run build_runner build` (the `--delete-conflicting-outputs` flag is accepted but ignored by the current build_runner).
 
 ### Local-First Data Management
 
@@ -255,7 +264,7 @@ The application must follow a **Local-First Data Architecture**.
 The expected workflow is:
 
 1. When data is requested for the first time, fetch it from the server.
-2. Store the retrieved data in the local Isar database.
+2. Store the retrieved data in the local drift database.
 3. For subsequent requests, load data from local storage instead of depending on the server.
 4. Make API requests internally when necessary to fetch updated data.
 5. Synchronize the latest server data with the local database.
@@ -284,6 +293,8 @@ Create a centralized class named `AppColor` to manage all application colors.
 - If a new color is required, add it to `AppColor` and reuse it wherever necessary.
 
 This will ensure consistent color usage and make future theme changes easier.
+
+`AppColor` lives in `lib/core/theme/app_color.dart` and is grouped by role (brand, surfaces, text, tab bar). The brand accent is `AppColor.primary` (gold/orange) with `AppColor.onPrimary` for content on it. Name new colours by their role, not by their value.
 
 ## 7. Navigation & Routing
 
@@ -319,6 +330,8 @@ Follow these conventions:
 - Use `.spMin`, `.spMax`, or `.sp` for font sizes.
 - Use `REdgeInsets()` instead of `EdgeInsets()` for margins and padding.
 - Use `1.sw` and `1.sh` when full screen dimensions are required.
+- Use `.r` for **square** sizes (icons, circles, avatar rings, and offsets inside them) so they stay square on every screen.
+- Wrap screen content in `SafeArea` and keep the scaled padding in `REdgeInsets`; never scale the system insets themselves.
 - Apply these conventions consistently wherever dimensions are defined.
 
 Do not use hardcoded dimensions when a ScreenUtil extension is applicable.
@@ -562,6 +575,25 @@ appTheme().textTheme.bodyLarge!.copyWith(
 - Avoid creating unnecessary standalone text styles.
 - Keep all text styling consistent with the centralized `AppTheme` configuration.
 
+### Current Theme Implementation
+
+- `lib/core/theme/app_theme.dart` → `AppTheme.darkTheme` (the design is dark only), applied in `main.dart`. The system font is used (SF Pro / Roboto), so no `fontFamily` is set; `FontFamily`/`AppControllerBloc` from the reference above are not part of this project yet.
+- `lib/core/theme/dimension.dart` → `Dimension.textRegular / textMedium / textSemiBold / textBold`.
+- Every `TextStyle` in the theme sets `letterSpacing` (0 when the design has none). Otherwise Material 3's default tracking is merged in and text renders wider than designed.
+- Text roles used by the screens:
+
+| Role | Use |
+|---|---|
+| `headlineLarge` | Large screen title (34, bold) |
+| `headlineSmall` | Section header (20, bold) |
+| `titleLarge` | Card title (21, regular) |
+| `bodyMedium` | Regular body text (14) |
+| `bodySmall` | Muted supporting text under a title (14) |
+| `labelLarge` | Small secondary label (14, semibold) |
+| `labelSmall` | Tab bar label (10.5, semibold) |
+
+When a design needs a new text role, add it to the theme first and read it with `appTheme(context).textTheme.<role>!.copyWith(...)`.
+
 ## 12. Asset Management
 
 All application assets must be stored inside the centralized `assets` directory.
@@ -616,6 +648,17 @@ Use the appropriate generated asset reference and method depending on whether th
 
 Never hardcode asset paths inside widgets when a generated reference is available.
 
+### SVG Icons
+
+- Icon SVGs are drawn in **white** (`stroke="#FFFFFF"` / `fill="#FFFFFF"`, 24×24 viewBox) so they can be tinted to any colour.
+- Show them with the common `AppSvgIcon` widget, not with `SvgPicture` directly:
+
+```dart
+AppSvgIcon(Assets.icons.plus, size: 26.r, color: AppColor.onPrimary)
+```
+
+- When a design (e.g. an exported Dart file) uses Material `Icons.*` or web icons, convert each to an SVG in `assets/icons/` (snake_case file name), run `fluttergen`, and use the generated `Assets.icons.<name>`.
+
 ## 13. Common Widgets & Reusable Components
 
 - Store all common and reusable widgets in a separate, centralized location.
@@ -627,6 +670,41 @@ Never hardcode asset paths inside widgets when a generated reference is availabl
 
 Feature-specific widgets should remain inside their respective feature structures unless they are genuinely reusable across the application.
 
+Common widgets live in `lib/core/widgets/`:
+
+| Widget | Purpose |
+|---|---|
+| `AppSvgIcon` | Tinted square SVG icon from `Assets.icons` |
+| `AppTabBar` / `AppTabItem` | Floating glass bottom tab bar (`Scaffold.bottomNavigationBar` with `extendBody: true`) |
+| `SectionHeader` | List heading: bold title + optional trailing control |
+| `PlaceholderView` | Centred text for a screen that is not built yet |
+| `AddCard` | Empty-state "add" card (gold plus, title, subtitle) shared by list screens |
+
+### App Shell: Dashboard
+
+`DashboardPage` (`lib/features/dashboard/`) is the **mother screen** and the app's home. It owns the floating `AppTabBar` and a `PageView` whose pages are the tabs, in order:
+
+| Tab | Page | Feature |
+|---|---|---|
+| 0 Alarms | `MyAlarmsPage` | `lib/features/my_alarms/` (alarm list, slot meter, add card) |
+| 1 Reasons | `ReasonsPage` | `lib/features/reasons/` (placeholder) |
+| 2 Settings | `SettingsPage` | `lib/features/settings/` (placeholder) |
+
+- Tapping a tab calls `PageController.animateToPage`; swiping the pages sends `DashboardTabChangedEvent`, and `DashboardBloc` (selected index only) drives the tab bar highlight.
+- Each tab is its own feature with its own BLoC provided inside its page (`instance<…Bloc>()`); the Dashboard holds no tab data. A tab page that must keep its state while another tab shows uses `AutomaticKeepAliveClientMixin`.
+- To build a real Reasons/Settings screen, replace the `PlaceholderView` in its page; to add a tab, add its icon, string, page and an `AppTabItem` in `DashboardPage`.
+- Each tab page wraps its own content in `SafeArea(bottom: false)` and leaves ~100 bottom padding so content scrolls clear of the tab bar.
+
+### Converting Design Code
+
+Design screens are delivered as Dart files (e.g. exported from the web prototype). When converting one:
+
+1. Create (or extend) the feature under `lib/features/<feature>/` with its `presentation/pages`, `bloc`, `widgets` (and `domain`/`data` when it owns data; reuse other features' UseCases when it does not).
+2. Move every colour to `AppColor`, every text style to `AppTheme` (then `copyWith`), every string to `app_en.arb`, every constant to `AppConstant`, every icon to an SVG in `assets/icons/`.
+3. Replace raw numbers with ScreenUtil (`.h`, `.w`, `.r`, `.spMin`, `REdgeInsets`).
+4. Reuse anything already in `lib/core/widgets/`; move a widget there when a second screen needs it.
+5. Register the page in go_router and its BLoC with injectable.
+
 ## 14. Application Constants
 
 Create a centralized class named `AppConstant` to manage application-wide constant values.
@@ -635,6 +713,7 @@ Create a centralized class named `AppConstant` to manage application-wide consta
 - Avoid hardcoding constant values throughout the application.
 - Reuse predefined constants wherever applicable.
 - Whenever a new application-wide constant is required, add it to `AppConstant`.
+- `AppConstant` lives in `lib/core/constants/app_constant.dart` (e.g. `maxAlarmCount`, `pillRadius`).
 
 Keep constants organized and maintain a consistent naming convention.
 
@@ -647,7 +726,7 @@ Use **Flutter Supabase** for server-side communication and backend integration.
 - Keep API and server communication inside the appropriate data layer.
 - Use repositories and use cases to manage business logic and data access.
 - Follow the established `dartz`-based response-handling approach.
-- Synchronize server data with the local Isar database.
+- Synchronize server data with the local drift database.
 - Keep the UI independent of direct Supabase calls.
 
 All backend integrations must follow the same architecture and coding conventions.
@@ -690,6 +769,10 @@ Be especially careful when modifying shared dependencies, common widgets, naviga
 ### Native Alarm Layer
 
 The alarm feature relies on native code (`android/app/src/main/kotlin/com/eala/app/`, `ios/Runner/`) reached through `lib/core/platform/alarm_platform_client.dart` (MethodChannel `com.eala.app/alarm` / `app/alarm`, EventChannel `*_events`). Treat these channels as a contract: Android and iOS must behave the same, and any change on one side must be mirrored on the other. See `docs/alarm_test_matrix.md` for the scenarios to re-test.
+
+- `AlarmPlatformClient` is an injectable lazy singleton; get it with `instance<AlarmPlatformClient>()`. Its `events` stream is **one shared native subscription** — never create another `EventChannel.receiveBroadcastStream()` for the alarm channel, it would take the events away from every other listener.
+- The home screen (Dashboard) is wrapped in `AlarmEventListener` (`lib/features/alarm/presentation/widgets/`). It opens the message page after an alarm unlock (event or cold launch), the iOS ringing page, and the Android permission walkthrough. Keep it on whatever screen is the app's home; only the first mounted instance acts.
+- The home route is `RouteNames.dashboardPath`; pages that need to return home use `GoRouter.of(context).go(RouteNames.dashboardPath)`.
 
 ## 18. README.md Maintenance & AI Agent Instructions
 

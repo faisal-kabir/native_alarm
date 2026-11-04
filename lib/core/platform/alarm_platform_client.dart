@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
 
 /// Represents the possible native states of an alarm or playback.
 enum AlarmState {
@@ -17,6 +18,7 @@ enum AlarmState {
 }
 
 /// A thin wrapper around platform channels to communicate with native code.
+@lazySingleton
 class AlarmPlatformClient {
   static final MethodChannel _methodChannel = MethodChannel(
     Platform.isIOS ? 'app/alarm' : 'com.eala.app/alarm',
@@ -25,21 +27,17 @@ class AlarmPlatformClient {
     Platform.isIOS ? 'app/alarm_events' : 'com.eala.app/alarm_events',
   );
 
-  final StreamController<Map<String, dynamic>> _eventController =
-      StreamController.broadcast();
+  /// One native subscription for the whole app. Each `receiveBroadcastStream()`
+  /// call replaces the previous one on the native side, so a second client used to
+  /// silently take all events away from the first.
+  static final Stream<Map<String, dynamic>> _events = _eventChannel
+      .receiveBroadcastStream()
+      .where((event) => event is Map)
+      .map((event) => Map<String, dynamic>.from(event as Map))
+      .asBroadcastStream();
 
-  AlarmPlatformClient() {
-    _eventChannel.receiveBroadcastStream().listen(_handleNativeEvent);
-  }
-
-  void _handleNativeEvent(dynamic event) {
-    if (event is Map) {
-      _eventController.add(Map<String, dynamic>.from(event));
-    }
-  }
-
-  /// Stream of native events.
-  Stream<Map<String, dynamic>> get events => _eventController.stream;
+  /// Stream of native events, shared by every listener.
+  Stream<Map<String, dynamic>> get events => _events;
 
   // ----- MethodChannel calls -----
   Future<void> scheduleAlarm(Map<String, dynamic> alarmData) async {
@@ -70,7 +68,9 @@ class AlarmPlatformClient {
   /// Everything is reported as granted on iOS.
   Future<Map<String, bool>> getAlarmScreenPermissions() async {
     try {
-      final result = await _methodChannel.invokeMethod('getAlarmScreenPermissions');
+      final result = await _methodChannel.invokeMethod(
+        'getAlarmScreenPermissions',
+      );
       return Map<String, bool>.from(result ?? {});
     } catch (_) {
       return {};
@@ -145,7 +145,6 @@ class AlarmPlatformClient {
     }
   }
 
-  void dispose() {
-    _eventController.close();
-  }
+  /// Kept for existing callers; the shared event stream lives as long as the app.
+  void dispose() {}
 }
