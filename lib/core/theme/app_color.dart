@@ -32,6 +32,21 @@ abstract final class AppColor {
   static const Color tabLensTop = Color(0x29FFFFFF);
   static const Color tabLensBottom = Color(0x14FFFFFF);
 
+  // Reasons: tint of each area of life (emblem background at 15 %, icon at full).
+  static const Color areaHealth = Color(0xFFC96B4B);
+  static const Color areaHealing = Color(0xFFC9B08A);
+  static const Color areaFitness = Color(0xFFDD9C55);
+  static const Color areaCareer = Color(0xFF6F93BE);
+  static const Color areaFamily = Color(0xFFE2A0B5);
+  static const Color areaMoney = Color(0xFF5FA8A3);
+  static const Color areaGrowth = Color(0xFF9FB98A);
+  static const Color areaBusiness = Color(0xFFE7B563);
+  static const Color areaStudy = Color(0xFF9490BE);
+  static const Color areaRelationships = Color(0xFFC97BAE);
+
+  // Alarm mark on a reason whose alarm is switched off.
+  static const Color badgeOff = Color(0xFF3A3A3C);
+
   static const Color white = Color(0xFFFFFFFF);
   static const Color transparent = Colors.transparent;
 }

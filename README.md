@@ -587,6 +587,9 @@ appTheme().textTheme.bodyLarge!.copyWith(
 | `headlineLarge` | Large screen title (34, bold) |
 | `headlineSmall` | Section header (20, bold) |
 | `titleLarge` | Card title (21, regular) |
+| `titleMedium` | List row title (17, semibold) |
+| `titleSmall` | Quiet add-row label (16.5, semibold) |
+| `bodyLarge` | List row subtitle (15, secondary colour) |
 | `bodyMedium` | Regular body text (14) |
 | `bodySmall` | Muted supporting text under a title (14) |
 | `labelLarge` | Small secondary label (14, semibold) |
@@ -648,7 +651,27 @@ Use the appropriate generated asset reference and method depending on whether th
 
 Never hardcode asset paths inside widgets when a generated reference is available.
 
+### No Unused Assets (App Size)
+
+Every asset ships inside the app, so unused ones only make it bigger.
+
+- Add an asset only when code in the project uses it. When converting a design export, copy **only the files the screen references**, never a whole folder (the export's `icons/` has 100+ SVGs).
+- Before finishing a task that adds assets, check that each new file is referenced through `Assets.…`; delete the rest. When the code that used an asset is removed, remove the asset too.
+- Prefer SVG over raster images; keep images small (compress, no oversized sources).
+- The same rule applies to packages, fonts and audio.
+
 ### SVG Icons
+
+Icons are organised exactly like the design export (`flutter-export/assets/icons/`), and pubspec lists each folder (Flutter does not read sub-folders of a listed folder):
+
+| Folder | Generated accessor | Contents |
+|---|---|---|
+| `assets/icons/` | `Assets.icons.info` | generic icons |
+| `assets/icons/tab/` | `Assets.icons.tab.alarm` / `.alarmOn` | tab bar icons: outline + solid `_on` for the selected tab |
+| `assets/icons/area/` | `Assets.icons.area.health` | the ten areas of life |
+| `assets/icons/page/` | `Assets.icons.page.plus` | icons used by page-level widgets (plus, chevron, alarm badges) |
+
+Copy only the icons a screen needs from the export; do not import the whole set.
 
 - Icon SVGs are drawn in **white** (`stroke="#FFFFFF"` / `fill="#FFFFFF"`, 24×24 viewBox) so they can be tinted to any colour.
 - Show them with the common `AppSvgIcon` widget, not with `SvgPicture` directly:
@@ -678,7 +701,7 @@ Common widgets live in `lib/core/widgets/`:
 | `AppTabBar` / `AppTabItem` | iOS 26 **liquid glass** bottom tab bar (wraps `GlassTabBar.bottom`); must be the `bottomBar` of a `GlassScaffold` |
 | `SectionHeader` | List heading: bold title + optional trailing control |
 | `PlaceholderView` | Centred text for a screen that is not built yet |
-| `AddCard` | Empty-state "add" card (gold plus, title, subtitle) shared by list screens |
+| `AddCard` | The one way to add on every list: `first: true` = big empty-state card (gold plus, title, subtitle); `first: false` = quiet 58-tall row with a plus tile and `label` |
 
 ### Liquid Glass (iOS 26 look)
 
@@ -688,6 +711,17 @@ Common widgets live in `lib/core/widgets/`:
 - Because the lens draws a second copy of the selected label, widget tests use `find.text('Alarms').first` / `findsWidgets` for tab labels.
 - Do not wrap ordinary content in glass; glass on glass degrades by design.
 
+### Reasons Feature
+
+`lib/features/reasons/` follows the full Clean Architecture stack and is the reference for a list feature:
+
+- **Domain:** `Reason` (id, name, `ReasonArea`, `ReasonTone`; the enums are stored by name, never rename a value), `ReasonRepository`, `GetReasonsUseCase`.
+- **Data:** drift table `ReasonsTable` (`@DataClassName('ReasonRecord')`, `textEnum` columns), `ReasonLocalDataSource`, `ReasonRepositoryImpl`. Reasons are read from local SQLite only for now (no editor, no Supabase sync yet).
+- **Presentation:** `ReasonsBloc`, `ReasonsPage`, `ReasonRow`, `ReasonEmblem`. `reason_view.dart` maps the pure-Dart enums to presentation: `ReasonArea.tint` (`AppColor.area*`), `.icon` (`Assets.icons.area.*`), `.label(strings)` (arb `reason_area_*`), and `ReasonTone.label(strings)` (`reason_tone_*`). The domain never sees colours, icons or strings.
+- The alarm mark on a reason (`ReasonAlarmBadge`: none/on/off) is built into `ReasonRow`/`ReasonEmblem` but not wired to data yet, because alarms do not reference a reason. Wire it when that link exists.
+- **Database v2:** `AppDatabase.schemaVersion` is 2 and `onUpgrade` creates `reasonsTable` for existing v1 installs (verified on a device that already had a v1 database).
+- `ReasonRow` is *at least* 78 tall and grows with the text (large accessibility fonts); do not give rows a fixed height.
+
 ### App Shell: Dashboard
 
 `DashboardPage` (`lib/features/dashboard/`) is the **mother screen** and the app's home. It owns the floating `AppTabBar` and a `PageView` whose pages are the tabs, in order:
@@ -695,12 +729,12 @@ Common widgets live in `lib/core/widgets/`:
 | Tab | Page | Feature |
 |---|---|---|
 | 0 Alarms | `MyAlarmsPage` | `lib/features/my_alarms/` (alarm list, slot meter, add card) |
-| 1 Reasons | `ReasonsPage` | `lib/features/reasons/` (placeholder) |
+| 1 Reasons | `ReasonsPage` | `lib/features/reasons/` (list of saved reasons; no editor yet) |
 | 2 Settings | `SettingsPage` | `lib/features/settings/` (placeholder) |
 
 - Tapping a tab calls `PageController.animateToPage`; swiping the pages sends `DashboardTabChangedEvent`, and `DashboardBloc` (selected index only) drives the tab bar highlight.
 - Each tab is its own feature with its own BLoC provided inside its page (`instance<…Bloc>()`); the Dashboard holds no tab data. A tab page that must keep its state while another tab shows uses `AutomaticKeepAliveClientMixin`.
-- To build a real Reasons/Settings screen, replace the `PlaceholderView` in its page; to add a tab, add its icon, string, page and an `AppTabItem` in `DashboardPage`.
+- Settings is still a `PlaceholderView`; replace it when its design arrives. To add a tab, add its two icons (outline + solid, in `assets/icons/tab/`), string, page and an `AppTabItem` in `DashboardPage`.
 - Each tab page wraps its own content in `SafeArea(bottom: false)` and leaves ~100 bottom padding so content scrolls clear of the tab bar.
 
 ### Converting Design Code

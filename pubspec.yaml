@@ -78,6 +78,9 @@ flutter:
     - assets/transcripts/
     - assets/images/
     - assets/icons/
+    - assets/icons/tab/
+    - assets/icons/area/
+    - assets/icons/page/
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

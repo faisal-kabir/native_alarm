@@ -208,17 +208,160 @@ abstract class AppLocalizations {
   /// **'Pick a time and a reason.'**
   String get my_alarms_add_first_alarm_subtitle;
 
-  /// No description provided for @reasons_placeholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Reasons screen will be here'**
-  String get reasons_placeholder;
-
   /// No description provided for @settings_placeholder.
   ///
   /// In en, this message translates to:
   /// **'Settings screen will be here'**
   String get settings_placeholder;
+
+  /// No description provided for @my_alarms_add_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add alarm'**
+  String get my_alarms_add_alarm;
+
+  /// No description provided for @reasons_title.
+  ///
+  /// In en, this message translates to:
+  /// **'My Reasons'**
+  String get reasons_title;
+
+  /// No description provided for @reasons_add_first_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first Reason'**
+  String get reasons_add_first_title;
+
+  /// No description provided for @reasons_add_first_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The why behind your day.'**
+  String get reasons_add_first_subtitle;
+
+  /// No description provided for @reasons_add_label.
+  ///
+  /// In en, this message translates to:
+  /// **'New Reason'**
+  String get reasons_add_label;
+
+  /// No description provided for @reason_area_health.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get reason_area_health;
+
+  /// No description provided for @reason_area_healing.
+  ///
+  /// In en, this message translates to:
+  /// **'Healing'**
+  String get reason_area_healing;
+
+  /// No description provided for @reason_area_fitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get reason_area_fitness;
+
+  /// No description provided for @reason_area_career.
+  ///
+  /// In en, this message translates to:
+  /// **'Career'**
+  String get reason_area_career;
+
+  /// No description provided for @reason_area_family.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get reason_area_family;
+
+  /// No description provided for @reason_area_money.
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get reason_area_money;
+
+  /// No description provided for @reason_area_growth.
+  ///
+  /// In en, this message translates to:
+  /// **'Growth'**
+  String get reason_area_growth;
+
+  /// No description provided for @reason_area_business.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get reason_area_business;
+
+  /// No description provided for @reason_area_study.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning & Skills'**
+  String get reason_area_study;
+
+  /// No description provided for @reason_area_relationships.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationships'**
+  String get reason_area_relationships;
+
+  /// No description provided for @reason_tone_encouraging.
+  ///
+  /// In en, this message translates to:
+  /// **'Encouraging'**
+  String get reason_tone_encouraging;
+
+  /// No description provided for @reason_tone_calm.
+  ///
+  /// In en, this message translates to:
+  /// **'Calm'**
+  String get reason_tone_calm;
+
+  /// No description provided for @reason_tone_focused.
+  ///
+  /// In en, this message translates to:
+  /// **'Focused'**
+  String get reason_tone_focused;
+
+  /// No description provided for @reason_tone_challenge.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenge'**
+  String get reason_tone_challenge;
+
+  /// No description provided for @reason_tone_playful.
+  ///
+  /// In en, this message translates to:
+  /// **'Playful'**
+  String get reason_tone_playful;
+
+  /// Second line of a reason row: its area of life and tone.
+  ///
+  /// In en, this message translates to:
+  /// **'{area} · {tone}'**
+  String reason_row_subtitle(String area, String tone);
+
+  /// Screen reader label of a reason row; note is empty or one of the alarm notes below.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}. {area}, {tone} tone.{note}'**
+  String reason_row_semantics(
+    String name,
+    String area,
+    String tone,
+    String note,
+  );
+
+  /// No description provided for @reason_alarm_on_note.
+  ///
+  /// In en, this message translates to:
+  /// **' Played by an alarm.'**
+  String get reason_alarm_on_note;
+
+  /// No description provided for @reason_alarm_off_note.
+  ///
+  /// In en, this message translates to:
+  /// **' Its alarm is off.'**
+  String get reason_alarm_off_note;
 }
 
 class _AppLocalizationsDelegate

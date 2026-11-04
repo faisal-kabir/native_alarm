@@ -74,14 +74,20 @@ class _DashboardViewState extends State<_DashboardView> {
             selectedIndex: state.selectedIndex,
             onSelected: _onTabTapped,
             items: [
-              AppTabItem(label: strings.tab_alarms, icon: Assets.icons.alarm),
+              AppTabItem(
+                label: strings.tab_alarms,
+                icon: Assets.icons.tab.alarm,
+                activeIcon: Assets.icons.tab.alarmOn,
+              ),
               AppTabItem(
                 label: strings.tab_reasons,
-                icon: Assets.icons.reasons,
+                icon: Assets.icons.tab.reasons,
+                activeIcon: Assets.icons.tab.reasonsOn,
               ),
               AppTabItem(
                 label: strings.tab_settings,
-                icon: Assets.icons.settings,
+                icon: Assets.icons.tab.settings,
+                activeIcon: Assets.icons.tab.settingsOn,
               ),
             ],
           ),

@@ -14,6 +14,9 @@ import 'dimension.dart';
 /// * headlineLarge  – large screen title ("My Alarms")
 /// * headlineSmall  – section header ("Your alarms")
 /// * titleLarge     – card title ("Set your first alarm")
+/// * titleMedium    – list row title (a reason's name)
+/// * titleSmall     – quiet add-row label ("New Reason")
+/// * bodyLarge      – list row subtitle ("Health · Encouraging")
 /// * bodyMedium     – regular body text
 /// * bodySmall      – supporting, muted text under a title
 /// * labelLarge     – small secondary label ("Up to 3")
@@ -110,27 +113,27 @@ abstract final class AppTheme {
         decorationColor: AppColor.textColor,
       ),
       titleMedium: TextStyle(
-        color: AppColor.textColor,
-        fontSize: 16.spMin,
+        color: AppColor.titleColor,
+        fontSize: 17.spMin,
+        height: 20 / 17,
         fontWeight: Dimension.textSemiBold,
-        letterSpacing: 0,
-        decorationColor: AppColor.textColor,
+        letterSpacing: -0.4,
+        decorationColor: AppColor.titleColor,
       ),
       titleSmall: TextStyle(
         color: AppColor.textColor,
-        fontSize: 14.spMin,
-        fontWeight: Dimension.textRegular,
-        height: 1.3,
-        letterSpacing: 0,
+        fontSize: 16.5.spMin,
+        fontWeight: Dimension.textSemiBold,
+        letterSpacing: -0.2,
         decorationColor: AppColor.textColor,
       ),
       bodyLarge: TextStyle(
-        color: AppColor.textColor,
-        fontSize: 16.spMin,
+        color: AppColor.textSecondary,
+        fontSize: 15.spMin,
+        height: 17.5 / 15,
         fontWeight: Dimension.textRegular,
-        height: 1.3,
-        letterSpacing: 0,
-        decorationColor: AppColor.textColor,
+        letterSpacing: -0.2,
+        decorationColor: AppColor.textSecondary,
       ),
       bodyMedium: TextStyle(
         color: AppColor.textColor,

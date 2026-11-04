@@ -28,26 +28,23 @@ class $AssetsAudioGen {
 class $AssetsIconsGen {
   const $AssetsIconsGen();
 
-  /// File path: assets/icons/alarm.svg
-  SvgGenImage get alarm => const SvgGenImage('assets/icons/alarm.svg');
+  /// Directory path: assets/icons/area
+  $AssetsIconsAreaGen get area => const $AssetsIconsAreaGen();
 
   /// File path: assets/icons/info.svg
   SvgGenImage get info => const SvgGenImage('assets/icons/info.svg');
 
-  /// File path: assets/icons/plus.svg
-  SvgGenImage get plus => const SvgGenImage('assets/icons/plus.svg');
+  /// Directory path: assets/icons/page
+  $AssetsIconsPageGen get page => const $AssetsIconsPageGen();
 
   /// File path: assets/icons/quote.svg
   SvgGenImage get quote => const SvgGenImage('assets/icons/quote.svg');
 
-  /// File path: assets/icons/reasons.svg
-  SvgGenImage get reasons => const SvgGenImage('assets/icons/reasons.svg');
-
-  /// File path: assets/icons/settings.svg
-  SvgGenImage get settings => const SvgGenImage('assets/icons/settings.svg');
+  /// Directory path: assets/icons/tab
+  $AssetsIconsTabGen get tab => const $AssetsIconsTabGen();
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarm, info, plus, quote, reasons, settings];
+  List<SvgGenImage> get values => [info, quote];
 }
 
 class $AssetsTranscriptsGen {
@@ -58,6 +55,112 @@ class $AssetsTranscriptsGen {
 
   /// List of all assets
   List<String> get values => [demoAlarmMessage];
+}
+
+class $AssetsIconsAreaGen {
+  const $AssetsIconsAreaGen();
+
+  /// File path: assets/icons/area/business.svg
+  SvgGenImage get business =>
+      const SvgGenImage('assets/icons/area/business.svg');
+
+  /// File path: assets/icons/area/career.svg
+  SvgGenImage get career => const SvgGenImage('assets/icons/area/career.svg');
+
+  /// File path: assets/icons/area/family.svg
+  SvgGenImage get family => const SvgGenImage('assets/icons/area/family.svg');
+
+  /// File path: assets/icons/area/fitness.svg
+  SvgGenImage get fitness => const SvgGenImage('assets/icons/area/fitness.svg');
+
+  /// File path: assets/icons/area/growth.svg
+  SvgGenImage get growth => const SvgGenImage('assets/icons/area/growth.svg');
+
+  /// File path: assets/icons/area/healing.svg
+  SvgGenImage get healing => const SvgGenImage('assets/icons/area/healing.svg');
+
+  /// File path: assets/icons/area/health.svg
+  SvgGenImage get health => const SvgGenImage('assets/icons/area/health.svg');
+
+  /// File path: assets/icons/area/money.svg
+  SvgGenImage get money => const SvgGenImage('assets/icons/area/money.svg');
+
+  /// File path: assets/icons/area/relationships.svg
+  SvgGenImage get relationships =>
+      const SvgGenImage('assets/icons/area/relationships.svg');
+
+  /// File path: assets/icons/area/study.svg
+  SvgGenImage get study => const SvgGenImage('assets/icons/area/study.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [
+    business,
+    career,
+    family,
+    fitness,
+    growth,
+    healing,
+    health,
+    money,
+    relationships,
+    study,
+  ];
+}
+
+class $AssetsIconsPageGen {
+  const $AssetsIconsPageGen();
+
+  /// File path: assets/icons/page/alarm_badge.svg
+  SvgGenImage get alarmBadge =>
+      const SvgGenImage('assets/icons/page/alarm_badge.svg');
+
+  /// File path: assets/icons/page/alarm_off_badge.svg
+  SvgGenImage get alarmOffBadge =>
+      const SvgGenImage('assets/icons/page/alarm_off_badge.svg');
+
+  /// File path: assets/icons/page/chevron.svg
+  SvgGenImage get chevron => const SvgGenImage('assets/icons/page/chevron.svg');
+
+  /// File path: assets/icons/page/plus.svg
+  SvgGenImage get plus => const SvgGenImage('assets/icons/page/plus.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [alarmBadge, alarmOffBadge, chevron, plus];
+}
+
+class $AssetsIconsTabGen {
+  const $AssetsIconsTabGen();
+
+  /// File path: assets/icons/tab/alarm.svg
+  SvgGenImage get alarm => const SvgGenImage('assets/icons/tab/alarm.svg');
+
+  /// File path: assets/icons/tab/alarm_on.svg
+  SvgGenImage get alarmOn => const SvgGenImage('assets/icons/tab/alarm_on.svg');
+
+  /// File path: assets/icons/tab/reasons.svg
+  SvgGenImage get reasons => const SvgGenImage('assets/icons/tab/reasons.svg');
+
+  /// File path: assets/icons/tab/reasons_on.svg
+  SvgGenImage get reasonsOn =>
+      const SvgGenImage('assets/icons/tab/reasons_on.svg');
+
+  /// File path: assets/icons/tab/settings.svg
+  SvgGenImage get settings =>
+      const SvgGenImage('assets/icons/tab/settings.svg');
+
+  /// File path: assets/icons/tab/settings_on.svg
+  SvgGenImage get settingsOn =>
+      const SvgGenImage('assets/icons/tab/settings_on.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [
+    alarm,
+    alarmOn,
+    reasons,
+    reasonsOn,
+    settings,
+    settingsOn,
+  ];
 }
 
 class Assets {

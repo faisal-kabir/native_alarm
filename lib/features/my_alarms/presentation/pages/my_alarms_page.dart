@@ -81,9 +81,13 @@ class _MyAlarmsViewState extends State<_MyAlarmsView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      strings.my_alarms_title,
-                      style: appTheme(context).textTheme.headlineLarge,
+                    Flexible(
+                      child: Text(
+                        strings.my_alarms_title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: appTheme(context).textTheme.headlineLarge,
+                      ),
                     ),
                     const ThoughtRingButton(),
                   ],
@@ -95,10 +99,12 @@ class _MyAlarmsViewState extends State<_MyAlarmsView>
                 trailing: SlotMeter(used: alarmCount, total: alarmLimit),
               ),
               SizedBox(height: 10.h),
-              if (loaded != null && alarmCount == 0)
+              if (loaded != null)
                 AddCard(
+                  first: alarmCount == 0,
                   title: strings.my_alarms_add_first_alarm_title,
                   subtitle: strings.my_alarms_add_first_alarm_subtitle,
+                  label: strings.my_alarms_add_alarm,
                 ),
             ],
           );

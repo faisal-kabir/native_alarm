@@ -34,6 +34,57 @@
   "my_alarms_thought_semantics": "Today's thought",
   "my_alarms_add_first_alarm_title": "Set your first alarm",
   "my_alarms_add_first_alarm_subtitle": "Pick a time and a reason.",
-  "reasons_placeholder": "Reasons screen will be here",
-  "settings_placeholder": "Settings screen will be here"
+  "settings_placeholder": "Settings screen will be here",
+  "my_alarms_add_alarm": "Add alarm",
+  "reasons_title": "My Reasons",
+  "reasons_add_first_title": "Add your first Reason",
+  "reasons_add_first_subtitle": "The why behind your day.",
+  "reasons_add_label": "New Reason",
+  "reason_area_health": "Health",
+  "reason_area_healing": "Healing",
+  "reason_area_fitness": "Fitness",
+  "reason_area_career": "Career",
+  "reason_area_family": "Family",
+  "reason_area_money": "Money",
+  "reason_area_growth": "Growth",
+  "reason_area_business": "Business",
+  "reason_area_study": "Learning & Skills",
+  "reason_area_relationships": "Relationships",
+  "reason_tone_encouraging": "Encouraging",
+  "reason_tone_calm": "Calm",
+  "reason_tone_focused": "Focused",
+  "reason_tone_challenge": "Challenge",
+  "reason_tone_playful": "Playful",
+  "reason_row_subtitle": "{area} · {tone}",
+  "@reason_row_subtitle": {
+    "description": "Second line of a reason row: its area of life and tone.",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      },
+      "tone": {
+        "type": "String"
+      }
+    }
+  },
+  "reason_row_semantics": "{name}. {area}, {tone} tone.{note}",
+  "@reason_row_semantics": {
+    "description": "Screen reader label of a reason row; note is empty or one of the alarm notes below.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "area": {
+        "type": "String"
+      },
+      "tone": {
+        "type": "String"
+      },
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "reason_alarm_on_note": " Played by an alarm.",
+  "reason_alarm_off_note": " Its alarm is off."
 }

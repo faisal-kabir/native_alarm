@@ -9,10 +9,19 @@ import 'app_svg_icon.dart';
 
 /// One tab of [AppTabBar].
 class AppTabItem {
-  const AppTabItem({required this.label, required this.icon});
+  const AppTabItem({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
 
   final String label;
+
+  /// Outline icon of an unselected tab.
   final SvgGenImage icon;
+
+  /// Solid icon of the selected tab.
+  final SvgGenImage activeIcon;
 }
 
 /// The floating iOS 26 "liquid glass" bottom tab bar: a frosted glass pill that
@@ -45,7 +54,7 @@ class AppTabBar extends StatelessWidget {
             semanticLabel: item.label,
             icon: AppSvgIcon(item.icon, size: 23.r, color: AppColor.tabIdle),
             activeIcon: AppSvgIcon(
-              item.icon,
+              item.activeIcon,
               size: 23.r,
               color: AppColor.primary,
             ),

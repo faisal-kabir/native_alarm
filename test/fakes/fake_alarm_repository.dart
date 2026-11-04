@@ -10,6 +10,10 @@ import 'package:eala/core/platform/alarm_platform_client.dart';
 import 'package:eala/features/alarm/presentation/bloc/alarm_list_bloc.dart';
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart';
+import 'package:eala/features/reasons/domain/entities/reason.dart';
+import 'package:eala/features/reasons/domain/repositories/reason_repository.dart';
+import 'package:eala/features/reasons/domain/usecases/get_reasons_usecase.dart';
+import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
 
 /// In-memory [AlarmRepository] so BLoC tests run without a database.
 class FakeAlarmRepository implements AlarmRepository {
@@ -38,13 +42,32 @@ AlarmListBloc buildAlarmListBloc(AlarmRepository repository) => AlarmListBloc(
   DeleteAlarmUseCase(repository),
 );
 
-/// Registers the BLoCs the app's screens need, backed by [repository].
-Future<void> registerFakeAlarmDependencies(AlarmRepository repository) async {
+/// In-memory [ReasonRepository].
+class FakeReasonRepository implements ReasonRepository {
+  FakeReasonRepository([this.reasons = const []]);
+
+  final List<Reason> reasons;
+
+  @override
+  Future<Either<Failure, List<Reason>>> getReasons() async => Right(reasons);
+}
+
+/// Registers the BLoCs the app's screens need, backed by [repository] (and
+/// [reasonRepository], empty by default).
+Future<void> registerFakeAlarmDependencies(
+  AlarmRepository repository, {
+  ReasonRepository? reasonRepository,
+}) async {
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
   instance.registerFactory<DashboardBloc>(DashboardBloc.new);
   instance.registerFactory<MyAlarmsBloc>(
     () => MyAlarmsBloc(GetAlarmsUseCase(repository)),
+  );
+  instance.registerFactory<ReasonsBloc>(
+    () => ReasonsBloc(
+      GetReasonsUseCase(reasonRepository ?? FakeReasonRepository()),
+    ),
   );
   instance.registerLazySingleton<AlarmPlatformClient>(AlarmPlatformClient.new);
 }
