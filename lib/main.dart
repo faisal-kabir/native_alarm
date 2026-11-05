@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:eala/core/constants/app_constant.dart';
 import 'package:flutter/material.dart';
 import 'package:eala/features/alarm/presentation/pages/alarm_list_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
@@ -35,6 +37,10 @@ Future<void> main() async {
   HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
   await configureDependencies();
+  await Supabase.initialize(
+    url: AppConstant.SUPABASE_URL,
+    publishableKey: SUPABASE_KEY,
+  );
   await LiquidGlassWidgets.initialize();
   runApp(
     LiquidGlassWidgets.wrap(
