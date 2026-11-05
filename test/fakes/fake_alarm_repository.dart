@@ -1,6 +1,14 @@
 import 'package:dartz/dartz.dart';
 import 'package:eala/core/di/injection.dart';
 import 'package:eala/core/firebase/analytics_service.dart';
+import 'package:eala/features/auth/domain/entities/app_user.dart';
+import 'package:eala/features/auth/domain/entities/device_info.dart';
+import 'package:eala/features/auth/domain/entities/user_profile.dart';
+import 'package:eala/features/auth/domain/repositories/auth_repository.dart';
+import 'package:eala/features/auth/domain/repositories/user_profile_repository.dart';
+import 'package:eala/features/auth/domain/usecases/sync_user_profile_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/ensure_signed_in_usecase.dart';
 import 'package:eala/core/error/failures.dart';
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/alarm/domain/repositories/alarm_repository.dart';
@@ -49,6 +57,48 @@ AlarmListBloc buildAlarmListBloc(AlarmRepository repository) => AlarmListBloc(
   SaveAlarmUseCase(repository),
   DeleteAlarmUseCase(repository),
 );
+
+/// Pretends to be signed in anonymously; counts how often a session was ensured.
+class FakeAuthRepository implements AuthRepository {
+  int calls = 0;
+
+  @override
+  Future<Either<Failure, AppUser>> ensureSignedIn() async {
+    calls++;
+    return const Right(AppUser(id: 'test-uuid', isAnonymous: true));
+  }
+}
+
+/// Keeps the profile in memory; counts how often it was synced.
+class FakeUserProfileRepository implements UserProfileRepository {
+  int syncs = 0;
+  UserProfile? cached;
+  final List<DeviceInfo> deviceUpdates = [];
+
+  @override
+  Future<Either<Failure, UserProfile?>> getCachedProfile() async =>
+      Right(cached);
+
+  @override
+  Future<Either<Failure, UserProfile>> syncProfile() async {
+    syncs++;
+    return Right(cached = const UserProfile(id: 1, authUserId: 'test-uuid'));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> updateDeviceInfo(DeviceInfo info) async {
+    deviceUpdates.add(info);
+    return Right(
+      cached = UserProfile(
+        id: 1,
+        authUserId: 'test-uuid',
+        platform: info.platform,
+        appVersion: info.appVersion,
+        fcmToken: info.fcmToken,
+      ),
+    );
+  }
+}
 
 /// Records the screens logged instead of sending them to Firebase.
 class FakeAnalyticsService implements AnalyticsService {
@@ -106,8 +156,18 @@ Future<void> registerFakeAlarmDependencies(
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
   instance.registerLazySingleton<AnalyticsService>(FakeAnalyticsService.new);
+  instance.registerLazySingleton<AuthRepository>(FakeAuthRepository.new);
+  instance.registerLazySingleton<UserProfileRepository>(
+    FakeUserProfileRepository.new,
+  );
   instance.registerFactory<DashboardBloc>(
-    () => DashboardBloc(instance<AnalyticsService>()),
+    () => DashboardBloc(
+      instance<AnalyticsService>(),
+      EnsureSignedInUseCase(instance<AuthRepository>()),
+      SyncUserProfileUseCase(instance<UserProfileRepository>()),
+      UpdateDeviceInfoUseCase(instance<UserProfileRepository>()),
+      GetAppInfoUseCase(FakeSettingsRepository()),
+    ),
   );
   instance.registerFactory<MyAlarmsBloc>(
     () => MyAlarmsBloc(GetAlarmsUseCase(repository)),

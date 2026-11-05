@@ -16,3 +16,14 @@ class DashboardTabChangedEvent extends DashboardEvent {
   @override
   List<Object?> get props => [index];
 }
+
+/// The app opened or came back to the foreground: make sure a Supabase session
+/// exists (an anonymous one for now). Cheap when a session is already saved.
+class EnsureSessionEvent extends DashboardEvent {
+  const EnsureSessionEvent();
+}
+
+/// Firebase issued or refreshed the FCM token: pass it on to the server.
+class FcmTokenChangedEvent extends DashboardEvent {
+  const FcmTokenChangedEvent();
+}

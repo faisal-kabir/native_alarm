@@ -25,8 +25,9 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       // The first tab is on screen from the start, so it is logged right away.
-      create: (BuildContext context) =>
-          instance<DashboardBloc>()..add(const DashboardTabChangedEvent(0)),
+      create: (BuildContext context) => instance<DashboardBloc>()
+        ..add(const DashboardTabChangedEvent(0))
+        ..add(const EnsureSessionEvent()),
       child: const _DashboardView(),
     );
   }

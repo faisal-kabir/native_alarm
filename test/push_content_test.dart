@@ -38,4 +38,17 @@ void main() {
     expect(fcmToken, 'abc');
     fcmToken = null;
   });
+
+  test('every new token is announced on fcmTokenChanges', () async {
+    final seen = <String>[];
+    final sub = fcmTokenChanges.listen(seen.add);
+    setFcmToken('first');
+    setFcmToken(null); // no token: stored as null, nothing announced
+    setFcmToken('second');
+    await Future<void>.delayed(Duration.zero);
+    expect(seen, ['first', 'second']);
+    expect(fcmToken, 'second');
+    await sub.cancel();
+    setFcmToken(null);
+  });
 }

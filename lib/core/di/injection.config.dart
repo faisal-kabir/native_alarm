@@ -11,13 +11,15 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'package:eala/core/database/app_database.dart' as _i81;
-import 'package:eala/core/database/database_module.dart' as _i25;
+import 'package:eala/core/database/database_module.dart' as _i26;
 import 'package:eala/core/firebase/analytics_service.dart' as _i36;
 import 'package:eala/core/firebase/firebase_module.dart' as _i101;
 import 'package:eala/core/notification/local_notification_presenter.dart'
     as _i153;
 import 'package:eala/core/notification/notification_service.dart' as _i118;
 import 'package:eala/core/platform/alarm_platform_client.dart' as _i156;
+import 'package:eala/core/storage/storage_module.dart' as _i964;
+import 'package:eala/core/supabase/supabase_module.dart' as _i543;
 import 'package:eala/features/alarm/data/datasources/alarm_local_data_source.dart'
     as _i276;
 import 'package:eala/features/alarm/data/repositories/alarm_repository_impl.dart'
@@ -32,6 +34,28 @@ import 'package:eala/features/alarm/domain/usecases/save_alarm_usecase.dart'
     as _i357;
 import 'package:eala/features/alarm/presentation/bloc/alarm_list_bloc.dart'
     as _i646;
+import 'package:eala/features/auth/data/datasources/auth_remote_data_source.dart'
+    as _i570;
+import 'package:eala/features/auth/data/datasources/user_profile_local_data_source.dart'
+    as _i125;
+import 'package:eala/features/auth/data/datasources/user_profile_remote_data_source.dart'
+    as _i693;
+import 'package:eala/features/auth/data/repositories/auth_repository_impl.dart'
+    as _i9;
+import 'package:eala/features/auth/data/repositories/user_profile_repository_impl.dart'
+    as _i172;
+import 'package:eala/features/auth/domain/repositories/auth_repository.dart'
+    as _i653;
+import 'package:eala/features/auth/domain/repositories/user_profile_repository.dart'
+    as _i512;
+import 'package:eala/features/auth/domain/usecases/ensure_signed_in_usecase.dart'
+    as _i131;
+import 'package:eala/features/auth/domain/usecases/get_cached_user_profile_usecase.dart'
+    as _i25;
+import 'package:eala/features/auth/domain/usecases/sync_user_profile_usecase.dart'
+    as _i157;
+import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.dart'
+    as _i798;
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart'
     as _i874;
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart'
@@ -67,8 +91,10 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart' as _i141;
 import 'package:firebase_messaging/firebase_messaging.dart' as _i892;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as _i163;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:supabase_flutter/supabase_flutter.dart' as _i454;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
@@ -79,6 +105,8 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final databaseModule = _$DatabaseModule();
     final firebaseModule = _$FirebaseModule();
+    final storageModule = _$StorageModule();
+    final supabaseModule = _$SupabaseModule();
     gh.lazySingleton<_i81.AppDatabase>(() => databaseModule.database);
     gh.lazySingleton<_i892.FirebaseMessaging>(() => firebaseModule.messaging);
     gh.lazySingleton<_i398.FirebaseAnalytics>(() => firebaseModule.analytics);
@@ -91,13 +119,25 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i156.AlarmPlatformClient>(
       () => _i156.AlarmPlatformClient(),
     );
+    gh.lazySingleton<_i558.FlutterSecureStorage>(
+      () => storageModule.secureStorage,
+    );
+    gh.lazySingleton<_i454.SupabaseClient>(() => supabaseModule.supabase);
     gh.lazySingleton<_i360.AppInfoDataSource>(
       () => _i360.AppInfoDataSourceImpl(),
+    );
+    gh.lazySingleton<_i125.UserProfileLocalDataSource>(
+      () => _i125.UserProfileLocalDataSourceImpl(
+        gh<_i558.FlutterSecureStorage>(),
+      ),
     );
     gh.lazySingleton<_i153.LocalNotificationPresenter>(
       () => _i153.LocalNotificationPresenter(
         gh<_i163.FlutterLocalNotificationsPlugin>(),
       ),
+    );
+    gh.lazySingleton<_i570.AuthRemoteDataSource>(
+      () => _i570.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i209.SettingsLocalDataSource>(
       () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
@@ -105,11 +145,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i36.AnalyticsService>(
       () => _i36.FirebaseAnalyticsService(gh<_i398.FirebaseAnalytics>()),
     );
+    gh.lazySingleton<_i693.UserProfileRemoteDataSource>(
+      () => _i693.UserProfileRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
     gh.lazySingleton<_i276.AlarmLocalDataSource>(
       () => _i276.AlarmLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
     gh.lazySingleton<_i429.ReasonLocalDataSource>(
       () => _i429.ReasonLocalDataSourceImpl(gh<_i81.AppDatabase>()),
+    );
+    gh.lazySingleton<_i653.AuthRepository>(
+      () => _i9.AuthRepositoryImpl(gh<_i570.AuthRemoteDataSource>()),
     );
     gh.lazySingleton<_i118.NotificationService>(
       () => _i118.NotificationService(
@@ -145,8 +191,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1032.AlarmRepository>(
       () => _i695.AlarmRepositoryImpl(gh<_i276.AlarmLocalDataSource>()),
     );
-    gh.factory<_i874.DashboardBloc>(
-      () => _i874.DashboardBloc(gh<_i36.AnalyticsService>()),
+    gh.lazySingleton<_i512.UserProfileRepository>(
+      () => _i172.UserProfileRepositoryImpl(
+        gh<_i693.UserProfileRemoteDataSource>(),
+        gh<_i125.UserProfileLocalDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i131.EnsureSignedInUseCase>(
+      () => _i131.EnsureSignedInUseCase(gh<_i653.AuthRepository>()),
     );
     gh.lazySingleton<_i838.GetReasonsUseCase>(
       () => _i838.GetReasonsUseCase(gh<_i23.ReasonRepository>()),
@@ -160,11 +212,29 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i357.SaveAlarmUseCase>(
       () => _i357.SaveAlarmUseCase(gh<_i1032.AlarmRepository>()),
     );
+    gh.lazySingleton<_i25.GetCachedUserProfileUseCase>(
+      () => _i25.GetCachedUserProfileUseCase(gh<_i512.UserProfileRepository>()),
+    );
+    gh.lazySingleton<_i157.SyncUserProfileUseCase>(
+      () => _i157.SyncUserProfileUseCase(gh<_i512.UserProfileRepository>()),
+    );
+    gh.lazySingleton<_i798.UpdateDeviceInfoUseCase>(
+      () => _i798.UpdateDeviceInfoUseCase(gh<_i512.UserProfileRepository>()),
+    );
     gh.factory<_i1005.MyAlarmsBloc>(
       () => _i1005.MyAlarmsBloc(gh<_i586.GetAlarmsUseCase>()),
     );
     gh.factory<_i743.ReasonsBloc>(
       () => _i743.ReasonsBloc(gh<_i838.GetReasonsUseCase>()),
+    );
+    gh.factory<_i874.DashboardBloc>(
+      () => _i874.DashboardBloc(
+        gh<_i36.AnalyticsService>(),
+        gh<_i131.EnsureSignedInUseCase>(),
+        gh<_i157.SyncUserProfileUseCase>(),
+        gh<_i798.UpdateDeviceInfoUseCase>(),
+        gh<_i49.GetAppInfoUseCase>(),
+      ),
     );
     gh.factory<_i646.AlarmListBloc>(
       () => _i646.AlarmListBloc(
@@ -177,6 +247,10 @@ extension GetItInjectableX on _i174.GetIt {
   }
 }
 
-class _$DatabaseModule extends _i25.DatabaseModule {}
+class _$DatabaseModule extends _i26.DatabaseModule {}
 
 class _$FirebaseModule extends _i101.FirebaseModule {}
+
+class _$StorageModule extends _i964.StorageModule {}
+
+class _$SupabaseModule extends _i543.SupabaseModule {}

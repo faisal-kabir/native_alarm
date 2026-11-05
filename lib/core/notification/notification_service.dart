@@ -62,7 +62,7 @@ class NotificationService {
   }
 
   void _storeToken(String? token) {
-    fcmToken = token;
+    setFcmToken(token);
     if (token != null) debugPrint('FCM token: $token');
   }
 

@@ -26,8 +26,8 @@ class AppTabItem {
 
 /// The floating iOS 26 "liquid glass" bottom tab bar: a frosted glass pill that
 /// refracts what is behind it, with a glass lens under the selected tab. When the
-/// selection changes the lens slides to the new tab with jelly physics, stretching
-/// and magnifying the tab it passes over.
+/// selection changes the lens slides to the new tab; it keeps its size (no jelly
+/// stretch or magnified icon).
 ///
 /// Must sit inside a `GlassScaffold` (as `bottomBar`) so the glass has a layer to
 /// draw on. The package is set up once in `main()` (`LiquidGlassWidgets`).
@@ -73,14 +73,17 @@ class AppTabBar extends StatelessWidget {
       unselectedLabelColor: AppColor.tabIdle,
       selectedLabelStyle: labelStyle.copyWith(color: AppColor.primary),
       unselectedLabelStyle: labelStyle,
-      // The lens that follows the selection: iOS 26 magnifies what is under it.
-      magnification: 1.15,
+      // The lens slides to the selected tab but nothing grows: no magnified icon, no
+      // jelly expansion of the lens, no swelling of the bar when it is pressed.
+      magnification: 1.0,
+      indicatorExpansion: EdgeInsets.zero,
+      pressScale: 1.0,
       indicatorColor: AppColor.tabLensTop,
       // Dark, mostly clear glass: on a black screen the pill must not turn grey.
       settings: const LiquidGlassSettings(
         glassColor: AppColor.glassTint,
         thickness: 24,
-        blur: 14,
+        blur: 2,
         lightIntensity: 0.55,
         saturation: 1.2,
       ),
