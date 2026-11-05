@@ -44,6 +44,7 @@ dependencies:
   dio: ^5.11.1
   injectable: ^3.0.0
   cached_network_image: ^4.0.6
+  flutter_cache_manager: ^3.4.1
   url_launcher: ^6.3.3
   auto_size_text: ^3.0.0
   flutter_svg: ^2.3.2

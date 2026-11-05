@@ -32,6 +32,10 @@ abstract final class AppColor {
   static const Color tabLensTop = Color(0x29FFFFFF);
   static const Color tabLensBottom = Color(0x14FFFFFF);
 
+  // Choice lists and step screens
+  static const Color selectRing = Color(0xCC545458); // rgba(84,84,88,.8)
+  static const Color progressTrack = Color(0x1AFFFFFF); // rgba(255,255,255,.1)
+
   // Alarm mark on a reason whose alarm is switched off.
   static const Color badgeOff = Color(0xFF3A3A3C);
 

@@ -26,6 +26,14 @@ import 'package:eala/features/settings/domain/usecases/get_app_info_usecase.dart
 import 'package:eala/features/settings/domain/usecases/get_settings_usecase.dart';
 import 'package:eala/features/settings/domain/usecases/save_settings_usecase.dart';
 import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart';
+
+import 'dart:async';
+
+import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
+import 'package:eala/features/area_of_life/domain/repositories/area_of_life_repository.dart';
+import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
+import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
+import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/repositories/reason_repository.dart';
 import 'package:eala/features/reasons/domain/usecases/get_reasons_usecase.dart';
@@ -118,6 +126,42 @@ class FakeReasonRepository implements ReasonRepository {
   Future<Either<Failure, List<Reason>>> getReasons() async => Right(reasons);
 }
 
+/// In-memory [AreaOfLifeRepository]. [saved] is what is "on the device"; a refresh
+/// replaces it with [server] (or fails when [offline]) once [serverAnswer] completes,
+/// so tests can look at the loading state first.
+class FakeAreaOfLifeRepository implements AreaOfLifeRepository {
+  FakeAreaOfLifeRepository({
+    this.saved = const [],
+    this.server = const [],
+    this.offline = false,
+    this.serverAnswer,
+  });
+
+  List<AreaOfLife> saved;
+  List<AreaOfLife> server;
+  bool offline;
+  Future<void>? serverAnswer;
+  int refreshCount = 0;
+
+  final _changes = StreamController<List<AreaOfLife>>.broadcast();
+
+  @override
+  Stream<Either<Failure, List<AreaOfLife>>> watchAreas() async* {
+    yield Right(saved);
+    yield* _changes.stream.map(Right.new);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> refreshAreas() async {
+    refreshCount++;
+    await serverAnswer;
+    if (offline) return const Left(ServerFailure('offline'));
+    saved = server;
+    _changes.add(saved);
+    return const Right(unit);
+  }
+}
+
 /// In-memory [SettingsRepository]; [saved] records what was stored last.
 class FakeSettingsRepository implements SettingsRepository {
   FakeSettingsRepository([this.settings = const UserSettings()]);
@@ -152,6 +196,7 @@ Future<void> registerFakeAlarmDependencies(
   AlarmRepository repository, {
   ReasonRepository? reasonRepository,
   SettingsRepository? settingsRepository,
+  AreaOfLifeRepository? areaOfLifeRepository,
 }) async {
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
@@ -177,6 +222,13 @@ Future<void> registerFakeAlarmDependencies(
       GetReasonsUseCase(reasonRepository ?? FakeReasonRepository()),
     ),
   );
+  instance.registerFactory<CreateReasonBloc>(() {
+    final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
+    return CreateReasonBloc(
+      WatchAreasOfLifeUseCase(areas),
+      RefreshAreasOfLifeUseCase(areas),
+    );
+  });
   instance.registerFactory<SettingsBloc>(
     () => buildSettingsBloc(settingsRepository ?? FakeSettingsRepository()),
   );

@@ -118,6 +118,30 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get common_not_now;
 
+  /// No description provided for @common_continue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get common_continue;
+
+  /// No description provided for @common_back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get common_back;
+
+  /// No description provided for @common_progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get common_progress;
+
+  /// No description provided for @common_try_again.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get common_try_again;
+
   /// No description provided for @alarm_permission_title.
   ///
   /// In en, this message translates to:
@@ -254,6 +278,24 @@ abstract class AppLocalizations {
     String tone,
     String note,
   );
+
+  /// Heading of the first Create Reason step. Words between stars are drawn in the brand colour.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want\nto *wake up for*?'**
+  String get create_reason_area_title;
+
+  /// No description provided for @create_reason_areas_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load the list. Check your connection and try again.'**
+  String get create_reason_areas_error;
+
+  /// No description provided for @create_reason_areas_empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to choose from yet.'**
+  String get create_reason_areas_empty;
 
   /// No description provided for @reason_alarm_on_note.
   ///

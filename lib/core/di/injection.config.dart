@@ -34,6 +34,18 @@ import 'package:eala/features/alarm/domain/usecases/save_alarm_usecase.dart'
     as _i357;
 import 'package:eala/features/alarm/presentation/bloc/alarm_list_bloc.dart'
     as _i646;
+import 'package:eala/features/area_of_life/data/datasources/area_of_life_local_data_source.dart'
+    as _i504;
+import 'package:eala/features/area_of_life/data/datasources/area_of_life_remote_data_source.dart'
+    as _i760;
+import 'package:eala/features/area_of_life/data/repositories/area_of_life_repository_impl.dart'
+    as _i925;
+import 'package:eala/features/area_of_life/domain/repositories/area_of_life_repository.dart'
+    as _i650;
+import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart'
+    as _i190;
+import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart'
+    as _i375;
 import 'package:eala/features/auth/data/datasources/auth_remote_data_source.dart'
     as _i570;
 import 'package:eala/features/auth/data/datasources/user_profile_local_data_source.dart'
@@ -56,6 +68,8 @@ import 'package:eala/features/auth/domain/usecases/sync_user_profile_usecase.dar
     as _i157;
 import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.dart'
     as _i798;
+import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart'
+    as _i946;
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart'
     as _i874;
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart'
@@ -131,6 +145,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i558.FlutterSecureStorage>(),
       ),
     );
+    gh.lazySingleton<_i504.AreaOfLifeLocalDataSource>(
+      () => _i504.AreaOfLifeLocalDataSourceImpl(gh<_i81.AppDatabase>()),
+    );
     gh.lazySingleton<_i153.LocalNotificationPresenter>(
       () => _i153.LocalNotificationPresenter(
         gh<_i163.FlutterLocalNotificationsPlugin>(),
@@ -156,6 +173,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i653.AuthRepository>(
       () => _i9.AuthRepositoryImpl(gh<_i570.AuthRemoteDataSource>()),
+    );
+    gh.lazySingleton<_i760.AreaOfLifeRemoteDataSource>(
+      () => _i760.AreaOfLifeRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i118.NotificationService>(
       () => _i118.NotificationService(
@@ -200,6 +220,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i131.EnsureSignedInUseCase>(
       () => _i131.EnsureSignedInUseCase(gh<_i653.AuthRepository>()),
     );
+    gh.lazySingleton<_i650.AreaOfLifeRepository>(
+      () => _i925.AreaOfLifeRepositoryImpl(
+        gh<_i760.AreaOfLifeRemoteDataSource>(),
+        gh<_i504.AreaOfLifeLocalDataSource>(),
+      ),
+    );
     gh.lazySingleton<_i838.GetReasonsUseCase>(
       () => _i838.GetReasonsUseCase(gh<_i23.ReasonRepository>()),
     );
@@ -236,11 +262,23 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i49.GetAppInfoUseCase>(),
       ),
     );
+    gh.lazySingleton<_i190.RefreshAreasOfLifeUseCase>(
+      () => _i190.RefreshAreasOfLifeUseCase(gh<_i650.AreaOfLifeRepository>()),
+    );
+    gh.lazySingleton<_i375.WatchAreasOfLifeUseCase>(
+      () => _i375.WatchAreasOfLifeUseCase(gh<_i650.AreaOfLifeRepository>()),
+    );
     gh.factory<_i646.AlarmListBloc>(
       () => _i646.AlarmListBloc(
         gh<_i586.GetAlarmsUseCase>(),
         gh<_i357.SaveAlarmUseCase>(),
         gh<_i962.DeleteAlarmUseCase>(),
+      ),
+    );
+    gh.factory<_i946.CreateReasonBloc>(
+      () => _i946.CreateReasonBloc(
+        gh<_i375.WatchAreasOfLifeUseCase>(),
+        gh<_i190.RefreshAreasOfLifeUseCase>(),
       ),
     );
     return this;

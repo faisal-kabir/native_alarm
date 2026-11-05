@@ -1270,12 +1270,409 @@ class SettingsTableCompanion extends UpdateCompanion<SettingsRecord> {
   }
 }
 
+class $AreasOfLifeTableTable extends AreasOfLifeTable
+    with TableInfo<$AreasOfLifeTableTable, AreaOfLifeRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AreasOfLifeTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
+  @override
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+    'icon',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<int> color = GeneratedColumn<int>(
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    title,
+    description,
+    icon,
+    color,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'areas_of_life';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AreaOfLifeRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('icon')) {
+      context.handle(
+        _iconMeta,
+        icon.isAcceptableOrUnknown(data['icon']!, _iconMeta),
+      );
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AreaOfLifeRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AreaOfLifeRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      icon: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon'],
+      ),
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color'],
+      ),
+    );
+  }
+
+  @override
+  $AreasOfLifeTableTable createAlias(String alias) {
+    return $AreasOfLifeTableTable(attachedDatabase, alias);
+  }
+}
+
+class AreaOfLifeRecord extends DataClass
+    implements Insertable<AreaOfLifeRecord> {
+  final int id;
+  final String name;
+  final String title;
+  final String? description;
+  final String? icon;
+  final int? color;
+  const AreaOfLifeRecord({
+    required this.id,
+    required this.name,
+    required this.title,
+    this.description,
+    this.icon,
+    this.color,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || icon != null) {
+      map['icon'] = Variable<String>(icon);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<int>(color);
+    }
+    return map;
+  }
+
+  AreasOfLifeTableCompanion toCompanion(bool nullToAbsent) {
+    return AreasOfLifeTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      icon: icon == null && nullToAbsent ? const Value.absent() : Value(icon),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
+    );
+  }
+
+  factory AreaOfLifeRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AreaOfLifeRecord(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      icon: serializer.fromJson<String?>(json['icon']),
+      color: serializer.fromJson<int?>(json['color']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'icon': serializer.toJson<String?>(icon),
+      'color': serializer.toJson<int?>(color),
+    };
+  }
+
+  AreaOfLifeRecord copyWith({
+    int? id,
+    String? name,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    Value<String?> icon = const Value.absent(),
+    Value<int?> color = const Value.absent(),
+  }) => AreaOfLifeRecord(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    icon: icon.present ? icon.value : this.icon,
+    color: color.present ? color.value : this.color,
+  );
+  AreaOfLifeRecord copyWithCompanion(AreasOfLifeTableCompanion data) {
+    return AreaOfLifeRecord(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      icon: data.icon.present ? data.icon.value : this.icon,
+      color: data.color.present ? data.color.value : this.color,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AreaOfLifeRecord(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('icon: $icon, ')
+          ..write('color: $color')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, title, description, icon, color);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AreaOfLifeRecord &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.icon == this.icon &&
+          other.color == this.color);
+}
+
+class AreasOfLifeTableCompanion extends UpdateCompanion<AreaOfLifeRecord> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<String?> icon;
+  final Value<int?> color;
+  const AreasOfLifeTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.color = const Value.absent(),
+  });
+  AreasOfLifeTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String title,
+    this.description = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.color = const Value.absent(),
+  }) : name = Value(name),
+       title = Value(title);
+  static Insertable<AreaOfLifeRecord> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<String>? icon,
+    Expression<int>? color,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (icon != null) 'icon': icon,
+      if (color != null) 'color': color,
+    });
+  }
+
+  AreasOfLifeTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<String?>? icon,
+    Value<int?>? color,
+  }) {
+    return AreasOfLifeTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (icon.present) {
+      map['icon'] = Variable<String>(icon.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<int>(color.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AreasOfLifeTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('icon: $icon, ')
+          ..write('color: $color')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $AlarmsTableTable alarmsTable = $AlarmsTableTable(this);
   late final $ReasonsTableTable reasonsTable = $ReasonsTableTable(this);
   late final $SettingsTableTable settingsTable = $SettingsTableTable(this);
+  late final $AreasOfLifeTableTable areasOfLifeTable = $AreasOfLifeTableTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1284,6 +1681,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     alarmsTable,
     reasonsTable,
     settingsTable,
+    areasOfLifeTable,
   ];
 }
 
@@ -1981,6 +2379,236 @@ typedef $$SettingsTableTableProcessedTableManager =
       SettingsRecord,
       PrefetchHooks Function()
     >;
+typedef $$AreasOfLifeTableTableCreateCompanionBuilder =
+    AreasOfLifeTableCompanion Function({
+      Value<int> id,
+      required String name,
+      required String title,
+      Value<String?> description,
+      Value<String?> icon,
+      Value<int?> color,
+    });
+typedef $$AreasOfLifeTableTableUpdateCompanionBuilder =
+    AreasOfLifeTableCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> title,
+      Value<String?> description,
+      Value<String?> icon,
+      Value<int?> color,
+    });
+
+class $$AreasOfLifeTableTableFilterComposer
+    extends Composer<_$AppDatabase, $AreasOfLifeTableTable> {
+  $$AreasOfLifeTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AreasOfLifeTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $AreasOfLifeTableTable> {
+  $$AreasOfLifeTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AreasOfLifeTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AreasOfLifeTableTable> {
+  $$AreasOfLifeTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get icon =>
+      $composableBuilder(column: $table.icon, builder: (column) => column);
+
+  GeneratedColumn<int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+}
+
+class $$AreasOfLifeTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AreasOfLifeTableTable,
+          AreaOfLifeRecord,
+          $$AreasOfLifeTableTableFilterComposer,
+          $$AreasOfLifeTableTableOrderingComposer,
+          $$AreasOfLifeTableTableAnnotationComposer,
+          $$AreasOfLifeTableTableCreateCompanionBuilder,
+          $$AreasOfLifeTableTableUpdateCompanionBuilder,
+          (
+            AreaOfLifeRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $AreasOfLifeTableTable,
+              AreaOfLifeRecord
+            >,
+          ),
+          AreaOfLifeRecord,
+          PrefetchHooks Function()
+        > {
+  $$AreasOfLifeTableTableTableManager(
+    _$AppDatabase db,
+    $AreasOfLifeTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AreasOfLifeTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AreasOfLifeTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AreasOfLifeTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String?> icon = const Value.absent(),
+                Value<int?> color = const Value.absent(),
+              }) => AreasOfLifeTableCompanion(
+                id: id,
+                name: name,
+                title: title,
+                description: description,
+                icon: icon,
+                color: color,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                Value<String?> icon = const Value.absent(),
+                Value<int?> color = const Value.absent(),
+              }) => AreasOfLifeTableCompanion.insert(
+                id: id,
+                name: name,
+                title: title,
+                description: description,
+                icon: icon,
+                color: color,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AreasOfLifeTableTable, AreaOfLifeRecord>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AreasOfLifeTableTable,
+                    AreaOfLifeRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AreasOfLifeTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AreasOfLifeTableTable,
+      AreaOfLifeRecord,
+      $$AreasOfLifeTableTableFilterComposer,
+      $$AreasOfLifeTableTableOrderingComposer,
+      $$AreasOfLifeTableTableAnnotationComposer,
+      $$AreasOfLifeTableTableCreateCompanionBuilder,
+      $$AreasOfLifeTableTableUpdateCompanionBuilder,
+      (
+        AreaOfLifeRecord,
+        BaseReferences<_$AppDatabase, $AreasOfLifeTableTable, AreaOfLifeRecord>,
+      ),
+      AreaOfLifeRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1991,4 +2619,6 @@ class $AppDatabaseManager {
       $$ReasonsTableTableTableManager(_db, _db.reasonsTable);
   $$SettingsTableTableTableManager get settingsTable =>
       $$SettingsTableTableTableManager(_db, _db.settingsTable);
+  $$AreasOfLifeTableTableTableManager get areasOfLifeTable =>
+      $$AreasOfLifeTableTableTableManager(_db, _db.areasOfLifeTable);
 }

@@ -3,6 +3,10 @@
   "alarm_list_empty": "No alarms yet. Tap + to add one.",
   "common_allow": "Allow",
   "common_not_now": "Not now",
+  "common_continue": "Continue",
+  "common_back": "Back",
+  "common_progress": "Progress",
+  "common_try_again": "Try again",
   "alarm_permission_title": "Permission needed",
   "alarm_permission_notifications": "Allow notifications so the alarm can alert you.",
   "alarm_permission_full_screen": "Allow full-screen alarms so the alarm screen can appear over the lock screen.",
@@ -69,6 +73,12 @@
       }
     }
   },
+  "create_reason_area_title": "What do you want\nto *wake up for*?",
+  "@create_reason_area_title": {
+    "description": "Heading of the first Create Reason step. Words between stars are drawn in the brand colour."
+  },
+  "create_reason_areas_error": "Couldn’t load the list. Check your connection and try again.",
+  "create_reason_areas_empty": "Nothing to choose from yet.",
   "reason_alarm_on_note": " Played by an alarm.",
   "reason_alarm_off_note": " Its alarm is off.",
   "settings_title": "Settings",

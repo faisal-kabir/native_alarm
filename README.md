@@ -702,6 +702,13 @@ Common widgets live in `lib/core/widgets/`:
 | `AppTabBar` / `AppTabItem` | iOS 26 **liquid glass** bottom tab bar (wraps `GlassTabBar.bottom`); must be the `bottomBar` of a `GlassScaffold` |
 | `SectionHeader` | List heading: bold title + optional trailing control |
 | `AddCard` | The one way to add on every list: `first: true` = big empty-state card (gold plus, title, subtitle); `first: false` = quiet 58-tall row with a plus tile and `label` |
+| `AnimatedSelectList` / `SelectItem` / `SelectRow` | The single-choice card list. **Every choice list (area, tone, ...) uses it**, so they all move the same way: one shared orange border springs from the old row to the new row, the icon pops, the subtitle turns orange, the check springs in, new rows rise in. Icon = server SVG (`SelectItem.iconUrl`, via `CachedSvgIcon`) or the title's first letter |
+| `SelectListSkeleton` / `Shimmer` | Loading skeleton (shimmer) shaped like `AnimatedSelectList` rows; `Shimmer` paints any placeholder shapes with the sweeping highlight (no package) |
+| `CachedSvgIcon` | Server SVG (`path`) painted in one colour, kept on the device by `flutter_cache_manager`, so it shows offline; falls back to the widget you pass. Adds the base URL itself |
+| `StepTopBar` | Top bar of a multi-step flow: back button + animated progress line (0..1) |
+| `HighlightedTitle` | Step heading; words in `*stars*` are drawn in the brand colour; rises in |
+| `PillButton` | The bottom "Continue" pill (58 tall, orange when enabled) |
+| `RiseIn` | The fade + lift entrance motion (`RiseIn.curve` is the app's settle curve) |
 
 ### Liquid Glass (iOS 26 look)
 
@@ -758,6 +765,29 @@ Android needs nothing extra (the notification permission is already requested by
 - The alarm mark on a reason (`ReasonAlarmBadge`: none/on/off, in `reason_emblem.dart`) is built but not wired to data yet, because alarms do not reference a reason.
 - **Database v4:** `AppDatabase.schemaVersion` is 4. Upgrading from v2/v3 drops and recreates `reasons` (it held no real data); verified on a simulator that already had a v3 database.
 - `ReasonRow` is *at least* 78 tall and grows with the text (large accessibility fonts); do not give rows a fixed height.
+
+### Server files (icons, images): base URL + path
+
+The database stores only the **path** of a file (e.g. `icons/health.svg`). The address those paths live under is **`AppConstant.baseUrl`** (Supabase Storage's public URL by default: `<SUPABASE_URL>/storage/v1/object/public/`). To show any server file, turn the stored path into a URL with **`mediaUrl(path)`** (`lib/core/network/media_url.dart`); never build a file URL by hand and never put the base URL in the database or a widget. A value that already is a full `http(s)` URL is returned unchanged. Widgets that show server files (`CachedSvgIcon` now, an image widget later) take the *path* and call `mediaUrl` themselves, so the base URL is added in exactly one place. Network images and icons must be cached (README §5): `CachedSvgIcon` uses `flutter_cache_manager`.
+
+### Area of Life Feature (server list, local first)
+
+`lib/features/area_of_life/` holds the list of areas of life from the Supabase table **`area_of_life`** (`id int8, name, title, description, icon, color (hex text), created_at, updated_at`). It is shared by Create Reason and, later, onboarding.
+
+- **Domain:** `AreaOfLife` (id, name, title, description, icon URL, `color` as ARGB int), `AreaOfLifeRepository` (`watchAreas()` stream + `refreshAreas()`), `WatchAreasOfLifeUseCase`, `RefreshAreasOfLifeUseCase`.
+- **Data:** `AreaOfLifeRemoteDataSource` (Supabase select ordered by id), `AreaOfLifeLocalDataSource` (drift `AreasOfLifeTable` → `areas_of_life`, `AppDatabase.schemaVersion` **5**), `AreaOfLifeRepositoryImpl`, `AreaOfLifeModel.fromJson` (colour hex → ARGB, blank text → null, missing title → name).
+- **Local-first flow:** the UI only watches the saved rows (instant, works offline). A refresh downloads the server rows and, in one transaction, adds/updates rows and deletes rows the server no longer has; drift's `watch()` then pushes the change to the page. A failed refresh leaves the saved rows alone; an **empty** server answer is ignored (never wipes the saved list).
+- **Needs on the Supabase side:** Row Level Security must allow reading it, e.g. `create policy "read areas" on public.area_of_life for select to anon, authenticated using (true);` — without a select policy the server answers with an empty list and the page shows "Nothing to choose from yet."
+- `icon` holds only the **path** of a single-colour SVG on the server (see *Server files* below); it is painted in the area's `color`.
+
+### Create Reason Feature (multi-step mother page)
+
+`lib/features/create_reason/` is its **own feature** (everything about creating a reason lives there: `presentation/bloc`, `pages`, `widgets`, and later its `domain`/`data` for saving the reason). Route `RouteNames.createReasonPath` (`/createReason`), opened by the Reasons tab's `AddCard`. It reads the areas through the shared `area_of_life` feature.
+
+- **`CreateReasonPage` is the mother page:** top `StepTopBar` (progress = `(stepIndex + 1) / AppConstant.createReasonStepCount`, 5 steps as designed), a `PageView` (no swiping) whose pages are the steps, and the bottom `PillButton` "Continue" (enabled by `CreateReasonState.canContinue`). The system back gesture goes one step back; only the first step closes the page.
+- **`CreateReasonBloc` holds every step's data** (`CreateReasonState`) so the last step can insert the reason into Supabase in one go. Events: `LoadAreasEvent`, `RefreshAreasEvent`, `AreaSelectedEvent`, `NextStepEvent`, `PreviousStepEvent`.
+- **To add a step:** build its page widget (like `SelectAreaStep`), append it to `_steps` in the page, raise `CreateReasonBloc.builtStepCount`, add its data to `CreateReasonState` and a case to `canContinue`. Until step 2 exists "Continue" does nothing after choosing an area.
+- **Step 1 `SelectAreaStep`:** `AnimatedSelectList` of the areas (title, description, icon, colour from the server). First time with nothing saved → `SelectListSkeleton`; offline with nothing saved → message + "Try again"; later opens show the saved areas at once while the refresh runs, and areas that arrive or change update in place (new rows rise in). A chosen area the server has removed is un-chosen.
 
 ### Settings Feature
 

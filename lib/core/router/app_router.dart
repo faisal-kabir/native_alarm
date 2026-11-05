@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../features/alarm/presentation/pages/alarm_list_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/create_reason/presentation/pages/create_reason_page.dart';
 import 'route_names.dart';
 
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,11 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.alarmListPath,
       name: RouteNames.alarmList,
       builder: (context, state) => const AlarmListPage(),
+    ),
+    GoRoute(
+      path: RouteNames.createReasonPath,
+      name: RouteNames.createReason,
+      builder: (context, state) => const CreateReasonPage(),
     ),
   ],
   errorBuilder: (context, state) =>

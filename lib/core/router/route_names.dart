@@ -5,4 +5,6 @@ abstract class RouteNames {
   static const dashboardPath = '/dashboard';
   static const alarmList = 'alarmList';
   static const alarmListPath = '/alarmList';
+  static const createReason = 'createReason';
+  static const createReasonPath = '/createReason';
 }

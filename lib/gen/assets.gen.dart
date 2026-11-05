@@ -31,6 +31,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/alarm.svg
   SvgGenImage get alarm => const SvgGenImage('assets/icons/alarm.svg');
 
+  /// File path: assets/icons/check.svg
+  SvgGenImage get check => const SvgGenImage('assets/icons/check.svg');
+
   /// File path: assets/icons/info.svg
   SvgGenImage get info => const SvgGenImage('assets/icons/info.svg');
 
@@ -47,7 +50,7 @@ class $AssetsIconsGen {
   $AssetsIconsTabGen get tab => const $AssetsIconsTabGen();
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarm, info, quote];
+  List<SvgGenImage> get values => [alarm, check, info, quote];
 }
 
 class $AssetsTranscriptsGen {

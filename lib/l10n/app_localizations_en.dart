@@ -22,6 +22,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get common_not_now => 'Not now';
 
   @override
+  String get common_continue => 'Continue';
+
+  @override
+  String get common_back => 'Back';
+
+  @override
+  String get common_progress => 'Progress';
+
+  @override
+  String get common_try_again => 'Try again';
+
+  @override
   String get alarm_permission_title => 'Permission needed';
 
   @override
@@ -103,6 +115,16 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$name. $area, $tone tone.$note';
   }
+
+  @override
+  String get create_reason_area_title => 'What do you want\nto *wake up for*?';
+
+  @override
+  String get create_reason_areas_error =>
+      'Couldn’t load the list. Check your connection and try again.';
+
+  @override
+  String get create_reason_areas_empty => 'Nothing to choose from yet.';
 
   @override
   String get reason_alarm_on_note => ' Played by an alarm.';

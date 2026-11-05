@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/widgets/add_card.dart';
 import '../../../../main.dart';
 import '../bloc/reasons_bloc.dart';
@@ -71,6 +73,7 @@ class _ReasonsViewState extends State<_ReasonsView>
                   title: strings.reasons_add_first_title,
                   subtitle: strings.reasons_add_first_subtitle,
                   label: strings.reasons_add_label,
+                  onTap: () => context.push(RouteNames.createReasonPath),
                 ),
             ],
           );
