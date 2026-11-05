@@ -39,7 +39,7 @@ Future<void> main() async {
   await configureDependencies();
   await Supabase.initialize(
     url: AppConstant.SUPABASE_URL,
-    publishableKey: SUPABASE_KEY,
+    publishableKey: AppConstant.SUPABASE_KEY,
   );
   await LiquidGlassWidgets.initialize();
   runApp(
