@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "980238433703",
+    "project_id": "eala-01",
+    "storage_bucket": "eala-01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:980238433703:android:9926607efeadd31cbd8a82",
+        "android_client_info": {
+          "package_name": "com.eala.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiQRUT2AhFsX_AdrQglBMBw1j8SIZ1F44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

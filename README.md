@@ -711,6 +711,26 @@ Common widgets live in `lib/core/widgets/`:
 - Because the lens draws a second copy of the selected label, widget tests use `find.text('Alarms').first` / `findsWidgets` for tab labels.
 - Do not wrap ordinary content in glass; glass on glass degrades by design.
 
+### Firebase (Crashlytics, Analytics, Messaging)
+
+Project **`eala-01`**, configured with the FlutterFire CLI (`flutterfire configure --project=eala-01 --platforms=android,ios --android-package-name=com.eala.app --ios-bundle-id=com.example.nativeAlerm`). Generated files: `lib/firebase_options.dart`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`, `firebase.json`. **If the bundle id or package name changes, re-run the command** (it also re-adds the Gradle and Xcode build steps). Needs `dart pub global activate flutterfire_cli` and a logged-in `firebase` CLI (`npm i -g firebase-tools`).
+
+- **Startup (`main()`):** `initializeFirebase()` first (so Crashlytics sees everything after it), then `FirebaseMessaging.onBackgroundMessage(...)`, DI, Supabase, glass, and `NotificationService.initialize()` (not awaited, so the permission prompt does not delay the first frame).
+- **Crashlytics** (`lib/core/firebase/firebase_initializer.dart`): `FlutterError.onError` and `PlatformDispatcher.onError` report fatal errors. Collection is **off in debug builds** (`!kDebugMode`); test it with a release/profile build and `FirebaseCrashlytics.instance.crash()`. Android uses the Crashlytics Gradle plugin; iOS has the "upload-crashlytics-symbols" build phase.
+- **Analytics** (`AnalyticsService`, `lib/core/firebase/analytics_service.dart`): active users, sessions and engagement are automatic. `DashboardBloc` also logs a `screen_view` for each tab (`my_alarms`, `reasons`, `settings`). Use `instance<AnalyticsService>()`; never call `FirebaseAnalytics` from a widget.
+- **Messaging + local notifications** (`lib/core/notification/`): `NotificationService` asks permission, fills the token, and shows push messages that arrive while the app is open through `LocalNotificationPresenter` (flutter_local_notifications, channel `eala_general`) because Firebase draws nothing in the foreground. In background/closed state the system shows `notification` messages itself (channel and icon set in `AndroidManifest.xml`); data-only messages with `title` and `body` are drawn by `firebaseMessagingBackgroundHandler`. `PushContent.fromMessage` is the one place that reads a message's title/body.
+- **The token variable:** `String? fcmToken` in `lib/core/notification/fcm_token.dart`. Import it anywhere and read `fcmToken`; it is null until Firebase issues one and is updated on every refresh. It uses `getToken`/`onTokenRefresh`, which the plugin marks deprecated in favour of `register()`/`onRegistered`; those return the *Firebase Installation ID*, not the FCM token the console and the HTTP v1 `token` field need, so keep the deprecated calls (with their `ignore` comments) unless the sending side changes.
+- **Plugins and DI:** `FirebaseModule` provides `FirebaseMessaging`, `FirebaseAnalytics`, `FirebaseCrashlytics` and `FlutterLocalNotificationsPlugin`; tests replace services with fakes (`FakeAnalyticsService`).
+- **iOS notification delegate:** `AppDelegate` handles only notifications whose `userInfo` has an `alarmId` (the native alarm layer); everything else is passed to `super` so Firebase and flutter_local_notifications receive it. Keep that rule when editing `willPresent`/`didReceive`.
+
+**One-time setup outside the code (needed for iOS push):**
+1. The Apple Developer account holder must accept the latest Program License Agreement (Xcode currently refuses to update provisioning with "PLA Update available").
+2. In Xcode: Runner → Signing & Capabilities → **+ Capability → Push Notifications** (this creates the entitlements file; Background Modes → Remote notifications is already in `Info.plist`). The current wildcard profile ("iOS Team Provisioning Profile: *") cannot carry push, so the App ID `com.example.nativeAlerm` must be an explicit one. Without this, iOS builds still work but push messages are not received and `fcmToken` stays null.
+3. Create an APNs Auth Key (.p8) in the Apple Developer portal and upload it in Firebase console → Project settings → Cloud Messaging → Apple app configuration.
+4. Firebase console → Crashlytics: open the dashboard once so it finishes enabling.
+
+Android needs nothing extra (the notification permission is already requested by the alarm layer too). The iOS Simulator cannot get an APNs token, so test push on a real iPhone or an Android device.
+
 ### Reasons Feature
 
 `lib/features/reasons/` follows the full Clean Architecture stack and is the reference for a list feature:

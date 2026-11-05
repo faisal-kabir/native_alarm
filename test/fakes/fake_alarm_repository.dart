@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:eala/core/di/injection.dart';
+import 'package:eala/core/firebase/analytics_service.dart';
 import 'package:eala/core/error/failures.dart';
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/alarm/domain/repositories/alarm_repository.dart';
@@ -49,6 +50,14 @@ AlarmListBloc buildAlarmListBloc(AlarmRepository repository) => AlarmListBloc(
   DeleteAlarmUseCase(repository),
 );
 
+/// Records the screens logged instead of sending them to Firebase.
+class FakeAnalyticsService implements AnalyticsService {
+  final List<String> screens = [];
+
+  @override
+  Future<void> logScreen(String name) async => screens.add(name);
+}
+
 /// In-memory [ReasonRepository].
 class FakeReasonRepository implements ReasonRepository {
   FakeReasonRepository([this.reasons = const []]);
@@ -96,7 +105,10 @@ Future<void> registerFakeAlarmDependencies(
 }) async {
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
-  instance.registerFactory<DashboardBloc>(DashboardBloc.new);
+  instance.registerLazySingleton<AnalyticsService>(FakeAnalyticsService.new);
+  instance.registerFactory<DashboardBloc>(
+    () => DashboardBloc(instance<AnalyticsService>()),
+  );
   instance.registerFactory<MyAlarmsBloc>(
     () => MyAlarmsBloc(GetAlarmsUseCase(repository)),
   );

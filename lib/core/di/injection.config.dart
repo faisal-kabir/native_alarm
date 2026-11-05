@@ -12,6 +12,11 @@
 
 import 'package:eala/core/database/app_database.dart' as _i81;
 import 'package:eala/core/database/database_module.dart' as _i25;
+import 'package:eala/core/firebase/analytics_service.dart' as _i36;
+import 'package:eala/core/firebase/firebase_module.dart' as _i101;
+import 'package:eala/core/notification/local_notification_presenter.dart'
+    as _i153;
+import 'package:eala/core/notification/notification_service.dart' as _i118;
 import 'package:eala/core/platform/alarm_platform_client.dart' as _i156;
 import 'package:eala/features/alarm/data/datasources/alarm_local_data_source.dart'
     as _i276;
@@ -57,6 +62,11 @@ import 'package:eala/features/settings/domain/usecases/save_settings_usecase.dar
     as _i936;
 import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart'
     as _i678;
+import 'package:firebase_analytics/firebase_analytics.dart' as _i398;
+import 'package:firebase_crashlytics/firebase_crashlytics.dart' as _i141;
+import 'package:firebase_messaging/firebase_messaging.dart' as _i892;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    as _i163;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
@@ -68,22 +78,44 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final databaseModule = _$DatabaseModule();
-    gh.factory<_i874.DashboardBloc>(() => _i874.DashboardBloc());
+    final firebaseModule = _$FirebaseModule();
     gh.lazySingleton<_i81.AppDatabase>(() => databaseModule.database);
+    gh.lazySingleton<_i892.FirebaseMessaging>(() => firebaseModule.messaging);
+    gh.lazySingleton<_i398.FirebaseAnalytics>(() => firebaseModule.analytics);
+    gh.lazySingleton<_i141.FirebaseCrashlytics>(
+      () => firebaseModule.crashlytics,
+    );
+    gh.lazySingleton<_i163.FlutterLocalNotificationsPlugin>(
+      () => firebaseModule.localNotifications,
+    );
     gh.lazySingleton<_i156.AlarmPlatformClient>(
       () => _i156.AlarmPlatformClient(),
     );
     gh.lazySingleton<_i360.AppInfoDataSource>(
       () => _i360.AppInfoDataSourceImpl(),
     );
+    gh.lazySingleton<_i153.LocalNotificationPresenter>(
+      () => _i153.LocalNotificationPresenter(
+        gh<_i163.FlutterLocalNotificationsPlugin>(),
+      ),
+    );
     gh.lazySingleton<_i209.SettingsLocalDataSource>(
       () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
+    );
+    gh.lazySingleton<_i36.AnalyticsService>(
+      () => _i36.FirebaseAnalyticsService(gh<_i398.FirebaseAnalytics>()),
     );
     gh.lazySingleton<_i276.AlarmLocalDataSource>(
       () => _i276.AlarmLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
     gh.lazySingleton<_i429.ReasonLocalDataSource>(
       () => _i429.ReasonLocalDataSourceImpl(gh<_i81.AppDatabase>()),
+    );
+    gh.lazySingleton<_i118.NotificationService>(
+      () => _i118.NotificationService(
+        gh<_i892.FirebaseMessaging>(),
+        gh<_i153.LocalNotificationPresenter>(),
+      ),
     );
     gh.lazySingleton<_i23.ReasonRepository>(
       () => _i534.ReasonRepositoryImpl(gh<_i429.ReasonLocalDataSource>()),
@@ -112,6 +144,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i1032.AlarmRepository>(
       () => _i695.AlarmRepositoryImpl(gh<_i276.AlarmLocalDataSource>()),
+    );
+    gh.factory<_i874.DashboardBloc>(
+      () => _i874.DashboardBloc(gh<_i36.AnalyticsService>()),
     );
     gh.lazySingleton<_i838.GetReasonsUseCase>(
       () => _i838.GetReasonsUseCase(gh<_i23.ReasonRepository>()),
@@ -143,3 +178,5 @@ extension GetItInjectableX on _i174.GetIt {
 }
 
 class _$DatabaseModule extends _i25.DatabaseModule {}
+
+class _$FirebaseModule extends _i101.FirebaseModule {}

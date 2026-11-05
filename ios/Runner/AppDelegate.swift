@@ -335,6 +335,12 @@ import UserNotifications
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        // Only our alarm notifications are handled here. Everything else (push messages
+        // from Firebase, local notifications from Flutter) goes to the Flutter plugins.
+        guard isAlarmNotification(notification) else {
+            super.userNotificationCenter(center, willPresent: notification, withCompletionHandler: completionHandler)
+            return
+        }
         if #available(iOS 14.0, *) {
             completionHandler([.banner, .sound, .badge, .list])
         } else {
@@ -348,8 +354,18 @@ import UserNotifications
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        guard isAlarmNotification(response.notification) else {
+            super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+            return
+        }
         handleNotificationResponse(response)
         completionHandler()
+    }
+
+    /// Alarm notifications always carry the alarm's id in their userInfo.
+    private func isAlarmNotification(_ notification: UNNotification) -> Bool {
+        let alarmId = notification.request.content.userInfo["alarmId"] as? String
+        return !(alarmId ?? "").isEmpty
     }
 
     private func handleNotificationResponse(_ response: UNNotificationResponse) {

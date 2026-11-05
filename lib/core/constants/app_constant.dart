@@ -7,5 +7,6 @@ abstract final class AppConstant {
   static const double pillRadius = 999;
 
   static const String SUPABASE_URL = "https://jnvohuvefbjgcuzpnmek.supabase.co";
-  static const String SUPABASE_KEY = "sb_publishable_jSRwQ9vwCi7cJloq1tdgqQ_7VVDeCIN";
+  static const String SUPABASE_KEY =
+      "sb_publishable_jSRwQ9vwCi7cJloq1tdgqQ_7VVDeCIN";
 }
