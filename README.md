@@ -303,6 +303,7 @@ This will ensure consistent color usage and make future theme changes easier.
 - Register and manage all application pages through the established go_router configuration (`lib/core/router/`).
 - Follow the existing routing structure when adding new pages.
 - Avoid implementing separate navigation approaches or using unnecessary navigation packages.
+- **Page transition (global):** every page slides in from the right (right → left) and back out to the right on pop (left → right), on Android and iOS alike, with the edge swipe back. It is set once in `AppTheme.darkTheme.pageTransitionsTheme` (`CupertinoPageTransitionsBuilder` for Android; iOS uses it by default). Every `GoRoute` uses `pageBuilder: (context, state) => appPage(state, const XPage())` (`app_router.dart`), which returns a `MaterialPage` so the theme's transition applies (with plain `builder:` go_router chose a page without any transition here); `MaterialPageRoute`s pick it up too. Do not give single pages their own transition.
 
 ## 8. Responsive UI Development
 

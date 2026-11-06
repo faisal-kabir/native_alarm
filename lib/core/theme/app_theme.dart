@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -40,6 +41,11 @@ abstract final class AppTheme {
     dividerColor: AppColor.transparent,
     canvasColor: AppColor.cardColor,
     splashFactory: NoSplash.splashFactory,
+    // Android gets the iOS slide too (iOS already uses it by default): a new page slides
+    // in from the right and goes back out to the right, for every route.
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
+    ),
     hoverColor: AppColor.transparent,
     splashColor: AppColor.transparent,
     highlightColor: AppColor.transparent,
