@@ -78,18 +78,26 @@ import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.da
     as _i798;
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart'
     as _i946;
+import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.dart'
+    as _i64;
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart'
     as _i874;
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart'
     as _i1005;
 import 'package:eala/features/reasons/data/datasources/reason_local_data_source.dart'
     as _i429;
+import 'package:eala/features/reasons/data/datasources/reason_remote_data_source.dart'
+    as _i981;
 import 'package:eala/features/reasons/data/repositories/reason_repository_impl.dart'
     as _i534;
 import 'package:eala/features/reasons/domain/repositories/reason_repository.dart'
     as _i23;
-import 'package:eala/features/reasons/domain/usecases/get_reasons_usecase.dart'
-    as _i838;
+import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart'
+    as _i1004;
+import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart'
+    as _i836;
+import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart'
+    as _i305;
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart'
     as _i743;
 import 'package:eala/features/settings/data/datasources/app_info_data_source.dart'
@@ -108,6 +116,16 @@ import 'package:eala/features/settings/domain/usecases/save_settings_usecase.dar
     as _i936;
 import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart'
     as _i678;
+import 'package:eala/features/sound/data/datasources/sound_remote_data_source.dart'
+    as _i546;
+import 'package:eala/features/sound/data/repositories/sound_repository_impl.dart'
+    as _i727;
+import 'package:eala/features/sound/domain/repositories/sound_repository.dart'
+    as _i1064;
+import 'package:eala/features/sound/domain/usecases/get_sound_quote_usecase.dart'
+    as _i262;
+import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart'
+    as _i902;
 import 'package:eala/features/voice/data/datasources/voice_local_data_source.dart'
     as _i580;
 import 'package:eala/features/voice/data/datasources/voice_remote_data_source.dart'
@@ -183,8 +201,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i570.AuthRemoteDataSource>(
       () => _i570.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
+    gh.lazySingleton<_i546.SoundRemoteDataSource>(
+      () => _i546.SoundRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
     gh.lazySingleton<_i22.VoiceRemoteDataSource>(
       () => _i22.VoiceRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
+    gh.lazySingleton<_i981.ReasonRemoteDataSource>(
+      () => _i981.ReasonRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i209.SettingsLocalDataSource>(
       () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
@@ -219,8 +243,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i84.DictationController>(
       () => _i84.SpeechDictationController(gh<_i965.SpeechRecognizer>()),
     );
-    gh.lazySingleton<_i23.ReasonRepository>(
-      () => _i534.ReasonRepositoryImpl(gh<_i429.ReasonLocalDataSource>()),
+    gh.lazySingleton<_i1064.SoundRepository>(
+      () => _i727.SoundRepositoryImpl(gh<_i546.SoundRemoteDataSource>()),
     );
     gh.lazySingleton<_i582.SettingsRepository>(
       () => _i807.SettingsRepositoryImpl(
@@ -253,8 +277,20 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i125.UserProfileLocalDataSource>(),
       ),
     );
+    gh.lazySingleton<_i262.GetSoundQuoteUseCase>(
+      () => _i262.GetSoundQuoteUseCase(gh<_i1064.SoundRepository>()),
+    );
+    gh.lazySingleton<_i902.GetSoundTypesUseCase>(
+      () => _i902.GetSoundTypesUseCase(gh<_i1064.SoundRepository>()),
+    );
     gh.lazySingleton<_i131.EnsureSignedInUseCase>(
       () => _i131.EnsureSignedInUseCase(gh<_i653.AuthRepository>()),
+    );
+    gh.lazySingleton<_i23.ReasonRepository>(
+      () => _i534.ReasonRepositoryImpl(
+        gh<_i981.ReasonRemoteDataSource>(),
+        gh<_i429.ReasonLocalDataSource>(),
+      ),
     );
     gh.lazySingleton<_i334.VoiceRepository>(
       () => _i63.VoiceRepositoryImpl(
@@ -268,8 +304,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i504.AreaOfLifeLocalDataSource>(),
       ),
     );
-    gh.lazySingleton<_i838.GetReasonsUseCase>(
-      () => _i838.GetReasonsUseCase(gh<_i23.ReasonRepository>()),
+    gh.lazySingleton<_i1004.CreateReasonUseCase>(
+      () => _i1004.CreateReasonUseCase(gh<_i23.ReasonRepository>()),
+    );
+    gh.lazySingleton<_i836.RenameReasonUseCase>(
+      () => _i836.RenameReasonUseCase(gh<_i23.ReasonRepository>()),
+    );
+    gh.lazySingleton<_i305.WatchReasonsUseCase>(
+      () => _i305.WatchReasonsUseCase(gh<_i23.ReasonRepository>()),
     );
     gh.lazySingleton<_i962.DeleteAlarmUseCase>(
       () => _i962.DeleteAlarmUseCase(gh<_i1032.AlarmRepository>()),
@@ -299,7 +341,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i904.WatchVoicesUseCase(gh<_i334.VoiceRepository>()),
     );
     gh.factory<_i743.ReasonsBloc>(
-      () => _i743.ReasonsBloc(gh<_i838.GetReasonsUseCase>()),
+      () => _i743.ReasonsBloc(gh<_i305.WatchReasonsUseCase>()),
+    );
+    gh.factory<_i64.ReasonReadyBloc>(
+      () => _i64.ReasonReadyBloc(gh<_i836.RenameReasonUseCase>()),
     );
     gh.factory<_i874.DashboardBloc>(
       () => _i874.DashboardBloc(
@@ -338,6 +383,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i414.RefreshVoicesUseCase>(),
         gh<_i879.GetPurposeSuggestionsUseCase>(),
         gh<_i478.GetMatterSuggestionsUseCase>(),
+        gh<_i902.GetSoundTypesUseCase>(),
+        gh<_i262.GetSoundQuoteUseCase>(),
+        gh<_i1004.CreateReasonUseCase>(),
       ),
     );
     return this;

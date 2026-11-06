@@ -5,10 +5,16 @@ import '../../../../core/utils/text_utils.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
 import '../../../area_of_life/domain/entities/matter_suggestion.dart';
 import '../../../area_of_life/domain/entities/purpose_suggestion.dart';
+import '../../../reasons/domain/entities/reason.dart';
+import '../../../sound/domain/entities/sound_quote.dart';
+import '../../../sound/domain/entities/sound_type.dart';
 import '../../../voice/domain/entities/voice.dart';
 
 /// Where a list loaded from the server stands (only matters while there is nothing to
 /// show yet).
+/// Where saving the reason stands ("Create Reason" on the last step).
+enum SaveStatus { idle, saving, saved, failed }
+
 enum LoadStatus {
   /// Waiting for the first answer from the server.
   loading,
@@ -63,6 +69,21 @@ class CreateReasonState extends Equatable {
   final (int, int?)? matterSuggestionsFor;
   final LoadStatus matterSuggestionsStatus;
 
+  /// Step 5 data: the sound types (loaded when the page opens), the chosen one (the
+  /// first until the user picks), the example line for [soundQuoteFor] (area id, sound
+  /// id; loaded fresh every time, never saved) and the chosen length in seconds.
+  final List<SoundType> soundTypes;
+  final LoadStatus soundTypesStatus;
+  final int? selectedSoundId;
+  final SoundQuote? soundQuote;
+  final (int, int)? soundQuoteFor;
+  final LoadStatus soundQuoteStatus;
+  final int lengthSeconds;
+
+  /// Saving the reason, and the saved reason (server id, unique name) once it is.
+  final SaveStatus saveStatus;
+  final Reason? createdReason;
+
   const CreateReasonState({
     this.stepIndex = 0,
     this.areas = const [],
@@ -80,6 +101,15 @@ class CreateReasonState extends Equatable {
     this.matterSuggestions = const [],
     this.matterSuggestionsFor,
     this.matterSuggestionsStatus = LoadStatus.loading,
+    this.soundTypes = const [],
+    this.soundTypesStatus = LoadStatus.loading,
+    this.selectedSoundId,
+    this.soundQuote,
+    this.soundQuoteFor,
+    this.soundQuoteStatus = LoadStatus.loading,
+    this.lengthSeconds = AppConstant.defaultReasonLengthSeconds,
+    this.saveStatus = SaveStatus.idle,
+    this.createdReason,
   });
 
   /// What the "why it matters" suggestions must be loaded for now: the selected area
@@ -103,6 +133,28 @@ class CreateReasonState extends Equatable {
 
   /// On the optional step with nothing written, "Continue" reads "Skip for now".
   bool get continueSkips => stepIndex == 3 && matter.trim().isEmpty;
+
+  /// The chosen sound type: the picked one, else the first.
+  SoundType? get selectedSound {
+    for (final sound in soundTypes) {
+      if (sound.id == selectedSoundId) return sound;
+    }
+    return soundTypes.isEmpty ? null : soundTypes.first;
+  }
+
+  /// What the example line must be loaded for now: the selected area and sound.
+  (int, int)? get soundQuoteKey {
+    final areaId = selectedAreaId;
+    final soundId = selectedSound?.id;
+    return areaId == null || soundId == null ? null : (areaId, soundId);
+  }
+
+  /// The example line for the current area and sound only.
+  SoundQuote? get soundQuoteShown =>
+      soundQuoteFor == soundQuoteKey ? soundQuote : null;
+
+  /// On the last step the button reads "Create Reason".
+  bool get isLastStep => stepIndex == AppConstant.createReasonStepCount - 1;
 
   Voice? get selectedVoice {
     for (final voice in voices) {
@@ -157,6 +209,7 @@ class CreateReasonState extends Equatable {
     1 => _purposeReady && !dictating,
     2 => selectedVoice != null,
     3 => !matterTooShort && !dictating,
+    4 => selectedSound != null && saveStatus != SaveStatus.saving,
     _ => false,
   };
 
@@ -180,6 +233,15 @@ class CreateReasonState extends Equatable {
     List<MatterSuggestion>? matterSuggestions,
     (int, int?)? Function()? matterSuggestionsFor,
     LoadStatus? matterSuggestionsStatus,
+    List<SoundType>? soundTypes,
+    LoadStatus? soundTypesStatus,
+    int? Function()? selectedSoundId,
+    SoundQuote? Function()? soundQuote,
+    (int, int)? Function()? soundQuoteFor,
+    LoadStatus? soundQuoteStatus,
+    int? lengthSeconds,
+    SaveStatus? saveStatus,
+    Reason? Function()? createdReason,
   }) => CreateReasonState(
     stepIndex: stepIndex ?? this.stepIndex,
     areas: areas ?? this.areas,
@@ -206,6 +268,17 @@ class CreateReasonState extends Equatable {
         : matterSuggestionsFor(),
     matterSuggestionsStatus:
         matterSuggestionsStatus ?? this.matterSuggestionsStatus,
+    soundTypes: soundTypes ?? this.soundTypes,
+    soundTypesStatus: soundTypesStatus ?? this.soundTypesStatus,
+    selectedSoundId: selectedSoundId == null
+        ? this.selectedSoundId
+        : selectedSoundId(),
+    soundQuote: soundQuote == null ? this.soundQuote : soundQuote(),
+    soundQuoteFor: soundQuoteFor == null ? this.soundQuoteFor : soundQuoteFor(),
+    soundQuoteStatus: soundQuoteStatus ?? this.soundQuoteStatus,
+    lengthSeconds: lengthSeconds ?? this.lengthSeconds,
+    saveStatus: saveStatus ?? this.saveStatus,
+    createdReason: createdReason == null ? this.createdReason : createdReason(),
   );
 
   @override
@@ -226,5 +299,14 @@ class CreateReasonState extends Equatable {
     matterSuggestions,
     matterSuggestionsFor,
     matterSuggestionsStatus,
+    soundTypes,
+    soundTypesStatus,
+    selectedSoundId,
+    soundQuote,
+    soundQuoteFor,
+    soundQuoteStatus,
+    lengthSeconds,
+    saveStatus,
+    createdReason,
   ];
 }

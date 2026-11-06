@@ -105,6 +105,43 @@
       }
     }
   },
+  "create_reason_sound_title": "How should it *sound*?",
+  "@create_reason_sound_title": {
+    "description": "Heading of the last Create Reason step. Words between stars are drawn in the brand colour."
+  },
+  "create_reason_sound_semantics": "Sound",
+  "create_reason_example": "Example",
+  "create_reason_example_failed": "Couldn’t load the example.",
+  "create_reason_length": "Length",
+  "create_reason_length_30": "Short",
+  "create_reason_length_30_note": "Quick and to the point.",
+  "create_reason_length_45": "Standard",
+  "create_reason_length_45_note": "A full thought, not a ramble.",
+  "create_reason_create": "Create Reason",
+  "seconds_short": "{seconds} sec",
+  "@seconds_short": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "reason_ready_title": "Your reason is *ready*.",
+  "@reason_ready_title": {
+    "description": "Heading after a reason is saved. Words between stars are drawn in the brand colour."
+  },
+  "reason_ready_announcement": "Your reason is ready.",
+  "reason_ready_why": "Why it matters",
+  "reason_ready_voice": "Voice",
+  "reason_ready_tone": "Tone",
+  "reason_ready_use_with_alarm": "Use with alarm",
+  "reason_ready_save_for_later": "Save for later",
+  "reason_name_hint": "Name this reason",
+  "reason_name_label": "Reason name",
+  "reason_name_save": "Save name",
+  "reason_save_failed": "Couldn’t save your reason. Check your connection and try again.",
+  "reason_rename_failed": "Couldn’t rename it. Check your connection and try again.",
+  "common_saving": "Saving…",
   "create_reason_voice_title": "Who should *say it*?",
   "@create_reason_voice_title": {
     "description": "Heading of the third Create Reason step. Words between stars are drawn in the brand colour."

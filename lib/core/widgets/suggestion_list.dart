@@ -180,12 +180,14 @@ class SuggestionListSkeleton extends StatelessWidget {
   }
 }
 
-/// In place of [SuggestionList] when the suggestions could not be loaded: a short
-/// note and "Try again".
+/// In place of [SuggestionList] (or any small piece of loaded content) when it could
+/// not be loaded: a short note ([text], "Couldn't load ideas." by default) and "Try
+/// again".
 class SuggestionError extends StatelessWidget {
-  const SuggestionError({super.key, required this.onRetry});
+  const SuggestionError({super.key, required this.onRetry, this.text});
 
   final VoidCallback onRetry;
+  final String? text;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +197,7 @@ class SuggestionError extends StatelessWidget {
       children: [
         Flexible(
           child: Text(
-            strings.suggestions_load_failed,
+            text ?? strings.suggestions_load_failed,
             style: textTheme.bodySmall!.copyWith(color: AppColor.textTertiary),
           ),
         ),

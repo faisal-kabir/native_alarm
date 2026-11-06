@@ -20,6 +20,13 @@ abstract final class SelectionMotion {
     damping: 24,
   );
 
+  /// A chosen marker gliding between options in a row (the sound dials).
+  static const pickerSpring = SpringDescription(
+    mass: 1,
+    stiffness: 420,
+    damping: 32,
+  );
+
   /// Corner radius of a choice card (scaled with `.r` where used).
   static const double radius = 12;
 }

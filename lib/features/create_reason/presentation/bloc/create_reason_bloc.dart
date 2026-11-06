@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../../core/constants/app_constant.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
@@ -9,6 +10,10 @@ import '../../../area_of_life/domain/usecases/get_matter_suggestions_usecase.dar
 import '../../../area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
 import '../../../area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
 import '../../../area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
+import '../../../reasons/domain/entities/new_reason.dart';
+import '../../../reasons/domain/usecases/create_reason_usecase.dart';
+import '../../../sound/domain/usecases/get_sound_quote_usecase.dart';
+import '../../../sound/domain/usecases/get_sound_types_usecase.dart';
 import '../../../voice/domain/entities/voice.dart';
 import '../../../voice/domain/usecases/refresh_voices_usecase.dart';
 import '../../../voice/domain/usecases/watch_voices_usecase.dart';
@@ -21,7 +26,7 @@ import 'create_reason_state.dart';
 class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
   /// How many step pages exist so far. Raise it by one whenever a step page is added
   /// to `CreateReasonPage` (and give `CreateReasonState.canContinue` its case).
-  static const int builtStepCount = 4;
+  static const int builtStepCount = 5;
 
   final WatchAreasOfLifeUseCase watchAreasUseCase;
   final RefreshAreasOfLifeUseCase refreshAreasUseCase;
@@ -29,6 +34,9 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
   final RefreshVoicesUseCase refreshVoicesUseCase;
   final GetPurposeSuggestionsUseCase getPurposeSuggestionsUseCase;
   final GetMatterSuggestionsUseCase getMatterSuggestionsUseCase;
+  final GetSoundTypesUseCase getSoundTypesUseCase;
+  final GetSoundQuoteUseCase getSoundQuoteUseCase;
+  final CreateReasonUseCase createReasonUseCase;
 
   CreateReasonBloc(
     this.watchAreasUseCase,
@@ -37,6 +45,9 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     this.refreshVoicesUseCase,
     this.getPurposeSuggestionsUseCase,
     this.getMatterSuggestionsUseCase,
+    this.getSoundTypesUseCase,
+    this.getSoundQuoteUseCase,
+    this.createReasonUseCase,
   ) : super(const CreateReasonState()) {
     on<LoadVoicesEvent>(_onLoadVoices);
     on<RefreshVoicesEvent>(_onRefreshVoices);
@@ -50,6 +61,19 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
       if (event.text != state.matter) emit(state.copyWith(matter: event.text));
     });
     on<LoadMatterSuggestionsEvent>(_onLoadMatterSuggestions);
+    on<LoadSoundTypesEvent>(_onLoadSoundTypes);
+    on<CreateReasonSubmittedEvent>(_onSubmitted);
+    on<SoundSelectedEvent>((event, emit) {
+      if (!state.soundTypes.any((s) => s.id == event.soundId)) return;
+      emit(state.copyWith(selectedSoundId: () => event.soundId));
+      _ensureSoundQuote();
+    });
+    on<LoadSoundQuoteEvent>(_onLoadSoundQuote);
+    on<LengthSelectedEvent>((event, emit) {
+      if (AppConstant.reasonLengthsSeconds.contains(event.seconds)) {
+        emit(state.copyWith(lengthSeconds: event.seconds));
+      }
+    });
     on<VoiceSelectedEvent>((event, emit) {
       if (!state.voices.any((v) => v.id == event.voiceId)) return;
       emit(state.copyWith(selectedVoiceId: () => event.voiceId));
@@ -267,6 +291,115 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     final next = state.stepIndex + 1;
     if (next >= builtStepCount) return;
     emit(state.copyWith(stepIndex: next));
+    if (next == 4) _ensureSoundQuote();
+  }
+
+  /// Saves everything the steps collected as a new reason (unique name, server and
+  /// device). The page opens the "ready" screen once [SaveStatus.saved].
+  Future<void> _onSubmitted(
+    CreateReasonSubmittedEvent event,
+    Emitter<CreateReasonState> emit,
+  ) async {
+    final area = state.selectedArea;
+    final voiceId = state.selectedVoiceId;
+    final sound = state.selectedSound;
+    if (area == null ||
+        voiceId == null ||
+        sound == null ||
+        state.saveStatus == SaveStatus.saving) {
+      return;
+    }
+    emit(state.copyWith(saveStatus: SaveStatus.saving));
+    final why = state.matter.trim();
+    final result = await createReasonUseCase(
+      NewReason(
+        areaId: area.id,
+        baseName: area.name.trim().isEmpty ? area.title : area.name,
+        purpose: state.purpose.trim(),
+        why: why.isEmpty ? null : why,
+        soundTypeId: sound.id,
+        voiceId: voiceId,
+        lengthSeconds: state.lengthSeconds,
+        areaTitle: area.title,
+        areaColor: area.color,
+        soundTitle: sound.title,
+      ),
+    );
+    result.fold(
+      (failure) => emit(state.copyWith(saveStatus: SaveStatus.failed)),
+      (reason) => emit(
+        state.copyWith(
+          saveStatus: SaveStatus.saved,
+          createdReason: () => reason,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onLoadSoundTypes(
+    LoadSoundTypesEvent event,
+    Emitter<CreateReasonState> emit,
+  ) async {
+    emit(state.copyWith(soundTypesStatus: LoadStatus.loading));
+    final result = await getSoundTypesUseCase(NoParams());
+    result.fold(
+      (failure) => emit(state.copyWith(soundTypesStatus: LoadStatus.failed)),
+      (sounds) {
+        // The first sound is chosen until the user picks one.
+        final keep = sounds.any((s) => s.id == state.selectedSoundId);
+        emit(
+          state.copyWith(
+            soundTypes: sounds,
+            soundTypesStatus: LoadStatus.loaded,
+            selectedSoundId: keep
+                ? null
+                : () => sounds.isEmpty ? null : sounds.first.id,
+          ),
+        );
+      },
+    );
+    if (state.stepIndex == 4) _ensureSoundQuote();
+  }
+
+  /// Asks for the example line of the current area and sound unless it is already
+  /// there or on its way.
+  void _ensureSoundQuote() {
+    final key = state.soundQuoteKey;
+    if (key == null) return;
+    if (state.soundQuoteFor == key &&
+        state.soundQuoteStatus != LoadStatus.failed) {
+      return;
+    }
+    add(LoadSoundQuoteEvent(key.$1, key.$2));
+  }
+
+  /// Never saved: every sound change asks the server; a late answer for another area
+  /// or sound is dropped.
+  Future<void> _onLoadSoundQuote(
+    LoadSoundQuoteEvent event,
+    Emitter<CreateReasonState> emit,
+  ) async {
+    final key = (event.areaId, event.soundId);
+    emit(
+      state.copyWith(
+        soundQuote: () => null,
+        soundQuoteFor: () => key,
+        soundQuoteStatus: LoadStatus.loading,
+      ),
+    );
+    final result = await getSoundQuoteUseCase(
+      SoundQuoteParams(event.areaId, event.soundId),
+    );
+    if (state.soundQuoteFor != key) return;
+    result.fold(
+      (failure) => emit(state.copyWith(soundQuoteStatus: LoadStatus.failed)),
+      (quote) => emit(
+        state.copyWith(
+          soundQuote: () => quote,
+          soundQuoteStatus: LoadStatus.loaded,
+        ),
+      ),
+    );
   }
 
   void _onPreviousStep(

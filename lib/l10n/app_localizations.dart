@@ -375,6 +375,150 @@ abstract class AppLocalizations {
   /// **'“{text}”'**
   String quoted_text(String text);
 
+  /// Heading of the last Create Reason step. Words between stars are drawn in the brand colour.
+  ///
+  /// In en, this message translates to:
+  /// **'How should it *sound*?'**
+  String get create_reason_sound_title;
+
+  /// No description provided for @create_reason_sound_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get create_reason_sound_semantics;
+
+  /// No description provided for @create_reason_example.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get create_reason_example;
+
+  /// No description provided for @create_reason_example_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load the example.'**
+  String get create_reason_example_failed;
+
+  /// No description provided for @create_reason_length.
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get create_reason_length;
+
+  /// No description provided for @create_reason_length_30.
+  ///
+  /// In en, this message translates to:
+  /// **'Short'**
+  String get create_reason_length_30;
+
+  /// No description provided for @create_reason_length_30_note.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick and to the point.'**
+  String get create_reason_length_30_note;
+
+  /// No description provided for @create_reason_length_45.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get create_reason_length_45;
+
+  /// No description provided for @create_reason_length_45_note.
+  ///
+  /// In en, this message translates to:
+  /// **'A full thought, not a ramble.'**
+  String get create_reason_length_45_note;
+
+  /// No description provided for @create_reason_create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Reason'**
+  String get create_reason_create;
+
+  /// No description provided for @seconds_short.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} sec'**
+  String seconds_short(int seconds);
+
+  /// Heading after a reason is saved. Words between stars are drawn in the brand colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reason is *ready*.'**
+  String get reason_ready_title;
+
+  /// No description provided for @reason_ready_announcement.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reason is ready.'**
+  String get reason_ready_announcement;
+
+  /// No description provided for @reason_ready_why.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it matters'**
+  String get reason_ready_why;
+
+  /// No description provided for @reason_ready_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get reason_ready_voice;
+
+  /// No description provided for @reason_ready_tone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tone'**
+  String get reason_ready_tone;
+
+  /// No description provided for @reason_ready_use_with_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Use with alarm'**
+  String get reason_ready_use_with_alarm;
+
+  /// No description provided for @reason_ready_save_for_later.
+  ///
+  /// In en, this message translates to:
+  /// **'Save for later'**
+  String get reason_ready_save_for_later;
+
+  /// No description provided for @reason_name_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this reason'**
+  String get reason_name_hint;
+
+  /// No description provided for @reason_name_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason name'**
+  String get reason_name_label;
+
+  /// No description provided for @reason_name_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save name'**
+  String get reason_name_save;
+
+  /// No description provided for @reason_save_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save your reason. Check your connection and try again.'**
+  String get reason_save_failed;
+
+  /// No description provided for @reason_rename_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t rename it. Check your connection and try again.'**
+  String get reason_rename_failed;
+
+  /// No description provided for @common_saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get common_saving;
+
   /// Heading of the third Create Reason step. Words between stars are drawn in the brand colour.
   ///
   /// In en, this message translates to:

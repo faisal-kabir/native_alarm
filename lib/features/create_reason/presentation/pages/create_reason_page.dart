@@ -4,15 +4,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../../../../core/widgets/step_top_bar.dart';
 import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
+import 'reason_ready_page.dart';
 import '../widgets/matter_step.dart';
 import '../widgets/purpose_step.dart';
 import '../widgets/select_area_step.dart';
+import '../widgets/select_sound_step.dart';
 import '../widgets/select_voice_step.dart';
 
 /// The mother page of the Create Reason flow. It owns the top progress bar, the
@@ -29,7 +32,8 @@ class CreateReasonPage extends StatelessWidget {
     return BlocProvider(
       create: (BuildContext context) => instance<CreateReasonBloc>()
         ..add(const LoadAreasEvent())
-        ..add(const LoadVoicesEvent()),
+        ..add(const LoadVoicesEvent())
+        ..add(const LoadSoundTypesEvent()),
       child: const _CreateReasonView(),
     );
   }
@@ -49,6 +53,7 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
     PurposeStep(),
     SelectVoiceStep(),
     MatterStep(),
+    SelectSoundStep(),
   ];
 
   final PageController _pages = PageController();
@@ -59,21 +64,57 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
     super.dispose();
   }
 
+  /// The reason is saved: the ready screen takes this page's place, so back from it
+  /// lands on the reasons list, not on a finished form.
+  void _openReady(BuildContext context, CreateReasonState state) {
+    final reason = state.createdReason;
+    final area = state.selectedArea;
+    final voice = state.selectedVoice;
+    final sound = state.selectedSound;
+    if (reason == null || area == null || voice == null || sound == null)
+      return;
+    context.pushReplacement(
+      RouteNames.reasonReadyPath,
+      extra: ReasonReadyArgs(
+        reason: reason,
+        purpose: state.purpose.trim(),
+        why: state.matter.trim(),
+        area: area,
+        voice: voice,
+        sound: sound,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     final bloc = context.read<CreateReasonBloc>();
     return BlocConsumer<CreateReasonBloc, CreateReasonState>(
-      listenWhen: (a, b) => a.stepIndex != b.stepIndex,
-      listener: (context, state) => _pages.animateToPage(
-        state.stepIndex,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      ),
+      listenWhen: (a, b) =>
+          a.stepIndex != b.stepIndex || a.saveStatus != b.saveStatus,
+      listener: (context, state) {
+        switch (state.saveStatus) {
+          case SaveStatus.saved:
+            _openReady(context, state);
+          case SaveStatus.failed:
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(strings.reason_save_failed)));
+          case SaveStatus.idle || SaveStatus.saving:
+            _pages.animateToPage(
+              state.stepIndex,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+            );
+        }
+      },
       buildWhen: (a, b) =>
           a.stepIndex != b.stepIndex ||
           a.canContinue != b.canContinue ||
-          a.continueSkips != b.continueSkips,
+          a.continueSkips != b.continueSkips ||
+          a.isLastStep != b.isLastStep ||
+          a.saveStatus != b.saveStatus,
       builder: (context, state) {
         final first = state.stepIndex == 0;
         return PopScope(
@@ -104,10 +145,18 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
                     child: PillButton(
                       label: state.continueSkips
                           ? strings.common_skip_for_now
-                          : strings.common_continue,
+                          : !state.isLastStep
+                          ? strings.common_continue
+                          : state.saveStatus == SaveStatus.saving
+                          ? strings.common_saving
+                          : strings.create_reason_create,
                       quiet: state.continueSkips,
                       enabled: state.canContinue,
-                      onPressed: () => bloc.add(const NextStepEvent()),
+                      onPressed: () => bloc.add(
+                        state.isLastStep
+                            ? const CreateReasonSubmittedEvent()
+                            : const NextStepEvent(),
+                      ),
                     ),
                   ),
                 ],

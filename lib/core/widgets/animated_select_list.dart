@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../gen/assets.gen.dart';
 import '../../main.dart';
 import '../theme/app_color.dart';
 import '../theme/dimension.dart';
-import 'app_svg_icon.dart';
 import 'cached_svg_icon.dart';
+import 'check_circle.dart';
 import 'rise_in.dart';
 import 'sliding_border.dart';
 
@@ -112,15 +110,12 @@ class SelectRow extends StatefulWidget {
   State<SelectRow> createState() => _SelectRowState();
 }
 
-class _SelectRowState extends State<SelectRow> with TickerProviderStateMixin {
+class _SelectRowState extends State<SelectRow>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _pop = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 450),
     value: 1,
-  );
-  late final AnimationController _check = AnimationController.unbounded(
-    vsync: this,
-    value: widget.selected ? 1 : 0,
   );
 
   // Keyframes [1, 0.84, 1.12, 1], evenly spaced, ease-out on each leg.
@@ -138,20 +133,12 @@ class _SelectRowState extends State<SelectRow> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(SelectRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selected && !oldWidget.selected) {
-      _pop.forward(from: 0);
-      _check
-        ..value = 0
-        ..animateWith(SpringSimulation(SelectionMotion.checkSpring, 0, 1, 0));
-    } else if (!widget.selected && oldWidget.selected) {
-      _check.value = 0; // the check goes at once, with no exit animation
-    }
+    if (widget.selected && !oldWidget.selected) _pop.forward(from: 0);
   }
 
   @override
   void dispose() {
     _pop.dispose();
-    _check.dispose();
     super.dispose();
   }
 
@@ -247,39 +234,7 @@ class _SelectRowState extends State<SelectRow> with TickerProviderStateMixin {
                 ),
               ),
               SizedBox(width: 13.w),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.ease,
-                width: 28.r,
-                height: 28.r,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: on
-                      ? AppColor.primary
-                      : AppColor.primary.withValues(alpha: 0),
-                  border: Border.all(
-                    color: on
-                        ? AppColor.selectRing.withValues(alpha: 0)
-                        : AppColor.selectRing,
-                    width: 1.5.r,
-                  ),
-                ),
-                child: on
-                    ? AnimatedBuilder(
-                        animation: _check,
-                        builder: (_, child) => Transform.scale(
-                          scale: _check.value.clamp(0.0, 2.0),
-                          child: child,
-                        ),
-                        child: AppSvgIcon(
-                          Assets.icons.check,
-                          size: 15.r,
-                          color: AppColor.onPrimary,
-                        ),
-                      )
-                    : null,
-              ),
+              CheckCircle(on: on),
             ],
           ),
         ),

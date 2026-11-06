@@ -121,3 +121,44 @@ class LoadMatterSuggestionsEvent extends CreateReasonEvent {
   @override
   List<Object?> get props => [areaId, purposeSuggestionId];
 }
+
+/// The page opened: load the sound types (the last step needs them).
+class LoadSoundTypesEvent extends CreateReasonEvent {
+  const LoadSoundTypesEvent();
+}
+
+/// The user chose a sound type.
+class SoundSelectedEvent extends CreateReasonEvent {
+  final int soundId;
+
+  const SoundSelectedEvent(this.soundId);
+
+  @override
+  List<Object?> get props => [soundId];
+}
+
+/// Load the example line of [areaId] in sound [soundId] ("Try again" too).
+class LoadSoundQuoteEvent extends CreateReasonEvent {
+  final int areaId;
+  final int soundId;
+
+  const LoadSoundQuoteEvent(this.areaId, this.soundId);
+
+  @override
+  List<Object?> get props => [areaId, soundId];
+}
+
+/// The user chose a length (seconds).
+class LengthSelectedEvent extends CreateReasonEvent {
+  final int seconds;
+
+  const LengthSelectedEvent(this.seconds);
+
+  @override
+  List<Object?> get props => [seconds];
+}
+
+/// "Create Reason" on the last step: save the reason.
+class CreateReasonSubmittedEvent extends CreateReasonEvent {
+  const CreateReasonSubmittedEvent();
+}

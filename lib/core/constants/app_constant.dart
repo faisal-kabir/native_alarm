@@ -20,6 +20,14 @@ abstract final class AppConstant {
   /// many characters; at most [purposeMaxLength].
   static const int matterMinLength = 8;
 
+  /// How long a reason can be, in seconds (the length choice on the sound step), and
+  /// the one chosen at first.
+  static const List<int> reasonLengthsSeconds = [30, 45];
+  static const int defaultReasonLengthSeconds = 30;
+
+  /// Longest name a reason can be given.
+  static const int reasonNameMaxLength = 32;
+
   /// Suggestions are shown this many at a time ("More ideas" adds as many again).
   static const int suggestionsPerPage = 3;
 

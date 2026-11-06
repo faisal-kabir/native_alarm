@@ -124,21 +124,29 @@ class VoiceRow extends StatelessWidget {
 /// in its tint; the first letter of its name when it has no picture or it fails.
 /// While its sample plays it wears the breathing [PlayingRing].
 class VoiceAvatar extends StatelessWidget {
-  const VoiceAvatar({super.key, required this.voice, this.playing = false});
+  const VoiceAvatar({
+    super.key,
+    required this.voice,
+    this.playing = false,
+    this.size = 42,
+  });
 
   final Voice voice;
   final bool playing;
 
+  /// Diameter before scaling (`.r` is applied here).
+  final double size;
+
   @override
   Widget build(BuildContext context) {
-    final size = 42.r;
+    final size = this.size.r;
     final tint = Color(voice.color ?? AppColor.primary.toARGB32());
     final name = voice.name.trim();
     final letter = Center(
       child: Text(
         name.isEmpty ? '' : name.characters.first.toUpperCase(),
         style: appTheme(context).textTheme.titleMedium!
-            .copyWith(fontSize: 18.spMin, color: tint),
+            .copyWith(fontSize: size * 0.43, color: tint),
       ),
     );
     final url = voice.avatarUrl;

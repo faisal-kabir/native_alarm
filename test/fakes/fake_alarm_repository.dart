@@ -37,6 +37,11 @@ import 'package:eala/features/area_of_life/domain/entities/matter_suggestion.dar
 import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
 import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
+import 'package:eala/features/sound/domain/entities/sound_quote.dart';
+import 'package:eala/features/sound/domain/entities/sound_type.dart';
+import 'package:eala/features/sound/domain/repositories/sound_repository.dart';
+import 'package:eala/features/sound/domain/usecases/get_sound_quote_usecase.dart';
+import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart';
 import 'package:eala/features/voice/domain/entities/voice.dart';
 import 'package:eala/features/voice/domain/repositories/voice_repository.dart';
 import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
@@ -47,7 +52,12 @@ import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_u
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/repositories/reason_repository.dart';
-import 'package:eala/features/reasons/domain/usecases/get_reasons_usecase.dart';
+import 'package:eala/features/reasons/domain/entities/new_reason.dart';
+import 'package:eala/features/reasons/domain/entities/reason_name.dart';
+import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
+import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
+import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart';
+import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
 
 /// In-memory [AlarmRepository] so BLoC tests run without a database.
@@ -127,14 +137,64 @@ class FakeAnalyticsService implements AnalyticsService {
   Future<void> logScreen(String name) async => screens.add(name);
 }
 
-/// In-memory [ReasonRepository].
+/// In-memory [ReasonRepository]: [reasons] is the device list (watched), a created
+/// reason gets the next id and its area name (numbered like the server does), and
+/// [offline] makes create and rename fail. [created] and [renames] record the calls.
 class FakeReasonRepository implements ReasonRepository {
-  FakeReasonRepository([this.reasons = const []]);
+  FakeReasonRepository([List<Reason> reasons = const []])
+    : reasons = [...reasons];
 
   final List<Reason> reasons;
+  final List<NewReason> created = [];
+  final List<(String, String)> renames = [];
+  bool offline = false;
+  int _nextId = 100;
+  final StreamController<List<Reason>> _changes = StreamController.broadcast();
 
   @override
-  Future<Either<Failure, List<Reason>>> getReasons() async => Right(reasons);
+  Stream<Either<Failure, List<Reason>>> watchReasons() async* {
+    await Future<void>.delayed(Duration.zero);
+    yield Right(List.of(reasons));
+    yield* _changes.stream.map((list) => Right(list));
+  }
+
+  @override
+  Future<Either<Failure, Reason>> createReason(NewReason reason) async {
+    if (offline) return const Left(ServerFailure('offline'));
+    created.add(reason);
+    final reasonName = nextReasonName(reason.baseName, [
+      for (final r in reasons) r.name,
+    ]);
+    final saved = Reason(
+      id: '${_nextId++}',
+      name: reasonName,
+      areaName: reason.areaTitle,
+      areaColor: reason.areaColor,
+      toneName: reason.soundTitle,
+    );
+    reasons.add(saved);
+    _changes.add(List.of(reasons));
+    return Right(saved);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> renameReason(String id, String name) async {
+    if (offline) return const Left(ServerFailure('offline'));
+    renames.add((id, name));
+    final i = reasons.indexWhere((r) => r.id == id);
+    if (i >= 0) {
+      final r = reasons[i];
+      reasons[i] = Reason(
+        id: r.id,
+        name: name,
+        areaName: r.areaName,
+        areaColor: r.areaColor,
+        toneName: r.toneName,
+      );
+      _changes.add(List.of(reasons));
+    }
+    return const Right(unit);
+  }
 }
 
 /// In-memory [AreaOfLifeRepository]. [saved] is what is "on the device"; a refresh
@@ -303,6 +363,44 @@ FakeSamplePlayer? lastFakeSamplePlayer;
 /// The [FakeDictation] the last screen asked for.
 FakeDictation? lastFakeDictation;
 
+/// In-memory [SoundRepository]: [sounds] and [quotes]; [quoteAnswer] delays the
+/// example line, [offline] fails both calls.
+class FakeSoundRepository implements SoundRepository {
+  FakeSoundRepository({
+    this.sounds = const [],
+    this.quotes = const [],
+    this.quoteAnswer,
+    this.offline = false,
+  });
+
+  List<SoundType> sounds;
+  List<SoundQuote> quotes;
+  Future<void>? quoteAnswer;
+  bool offline;
+  final List<(int, int)> quoteRequests = [];
+
+  @override
+  Future<Either<Failure, List<SoundType>>> getSoundTypes() async {
+    await Future<void>.delayed(Duration.zero);
+    if (offline) return const Left(ServerFailure('offline'));
+    return Right(sounds);
+  }
+
+  @override
+  Future<Either<Failure, SoundQuote?>> getSoundQuote(
+    int areaId,
+    int soundId,
+  ) async {
+    quoteRequests.add((areaId, soundId));
+    await (quoteAnswer ?? Future<void>.delayed(Duration.zero));
+    if (offline) return const Left(ServerFailure('offline'));
+    for (final q in quotes) {
+      if (q.areaId == areaId && q.soundId == soundId) return Right(q);
+    }
+    return const Right(null);
+  }
+}
+
 /// In-memory [SettingsRepository]; [saved] records what was stored last.
 class FakeSettingsRepository implements SettingsRepository {
   FakeSettingsRepository([this.settings = const UserSettings()]);
@@ -339,6 +437,7 @@ Future<void> registerFakeAlarmDependencies(
   SettingsRepository? settingsRepository,
   AreaOfLifeRepository? areaOfLifeRepository,
   VoiceRepository? voiceRepository,
+  SoundRepository? soundRepository,
 }) async {
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
@@ -359,14 +458,17 @@ Future<void> registerFakeAlarmDependencies(
   instance.registerFactory<MyAlarmsBloc>(
     () => MyAlarmsBloc(GetAlarmsUseCase(repository)),
   );
+  final reasons = reasonRepository ?? FakeReasonRepository();
   instance.registerFactory<ReasonsBloc>(
-    () => ReasonsBloc(
-      GetReasonsUseCase(reasonRepository ?? FakeReasonRepository()),
-    ),
+    () => ReasonsBloc(WatchReasonsUseCase(reasons)),
+  );
+  instance.registerFactory<ReasonReadyBloc>(
+    () => ReasonReadyBloc(RenameReasonUseCase(reasons)),
   );
   instance.registerFactory<CreateReasonBloc>(() {
     final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
     final voices = voiceRepository ?? FakeVoiceRepository();
+    final sound = soundRepository ?? FakeSoundRepository();
     return CreateReasonBloc(
       WatchAreasOfLifeUseCase(areas),
       RefreshAreasOfLifeUseCase(areas),
@@ -374,6 +476,9 @@ Future<void> registerFakeAlarmDependencies(
       RefreshVoicesUseCase(voices),
       GetPurposeSuggestionsUseCase(areas),
       GetMatterSuggestionsUseCase(areas),
+      GetSoundTypesUseCase(sound),
+      GetSoundQuoteUseCase(sound),
+      CreateReasonUseCase(reasons),
     );
   });
   instance.registerFactory<SamplePlayer>(

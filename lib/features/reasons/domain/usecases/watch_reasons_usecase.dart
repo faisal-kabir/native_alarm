@@ -6,14 +6,13 @@ import '../../../../core/usecase/usecase.dart';
 import '../entities/reason.dart';
 import '../repositories/reason_repository.dart';
 
-/// Loads the saved reasons, oldest first.
+/// Streams the user's saved reasons, oldest first.
 @lazySingleton
-class GetReasonsUseCase implements UseCase<List<Reason>, NoParams> {
+class WatchReasonsUseCase {
   final ReasonRepository repository;
 
-  GetReasonsUseCase(this.repository);
+  WatchReasonsUseCase(this.repository);
 
-  @override
-  Future<Either<Failure, List<Reason>>> call(NoParams params) =>
-      repository.getReasons();
+  Stream<Either<Failure, List<Reason>>> call(NoParams params) =>
+      repository.watchReasons();
 }

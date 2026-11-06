@@ -40,6 +40,9 @@ class $AssetsIconsGen {
   /// Directory path: assets/icons/page
   $AssetsIconsPageGen get page => const $AssetsIconsPageGen();
 
+  /// File path: assets/icons/pencil.svg
+  SvgGenImage get pencil => const SvgGenImage('assets/icons/pencil.svg');
+
   /// File path: assets/icons/quote.svg
   SvgGenImage get quote => const SvgGenImage('assets/icons/quote.svg');
 
@@ -53,7 +56,7 @@ class $AssetsIconsGen {
   $AssetsIconsVoiceGen get voice => const $AssetsIconsVoiceGen();
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarm, check, info, quote];
+  List<SvgGenImage> get values => [alarm, check, info, pencil, quote];
 }
 
 class $AssetsTranscriptsGen {

@@ -4,6 +4,8 @@ import 'package:eala/core/constants/app_constant.dart';
 import 'package:eala/core/router/app_router.dart';
 import 'package:eala/core/router/route_names.dart';
 import 'package:eala/core/widgets/animated_select_list.dart';
+import 'package:eala/core/widgets/add_card.dart';
+import 'package:eala/core/widgets/shimmer.dart';
 import 'package:eala/core/widgets/sliding_border.dart';
 import 'package:eala/core/widgets/dictation_bar.dart';
 import 'package:eala/core/widgets/pill_button.dart';
@@ -17,6 +19,10 @@ import 'package:eala/features/area_of_life/domain/entities/matter_suggestion.dar
 import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
+import 'package:eala/features/sound/domain/entities/sound_quote.dart';
+import 'package:eala/features/sound/domain/entities/sound_type.dart';
+import 'package:eala/features/sound/domain/usecases/get_sound_quote_usecase.dart';
+import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart';
 import 'package:eala/features/voice/domain/entities/voice.dart';
 import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
 import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart';
@@ -26,6 +32,12 @@ import 'package:eala/features/create_reason/presentation/bloc/create_reason_even
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_state.dart';
 import 'package:eala/main.dart';
 import 'package:flutter/material.dart';
+import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
+import 'package:eala/features/create_reason/presentation/pages/create_reason_page.dart';
+import 'package:eala/features/create_reason/presentation/pages/reason_ready_page.dart';
+import 'package:eala/features/create_reason/presentation/widgets/reason_name_field.dart';
+import 'package:eala/features/reasons/domain/entities/reason.dart';
+import 'package:eala/features/reasons/presentation/widgets/reason_row.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes/fake_alarm_repository.dart';
@@ -47,8 +59,11 @@ const work = AreaOfLife(
 CreateReasonBloc buildBloc(
   FakeAreaOfLifeRepository repo, [
   FakeVoiceRepository? voices,
+  FakeSoundRepository? sound,
+  FakeReasonRepository? reasons,
 ]) {
   final voiceRepo = voices ?? FakeVoiceRepository();
+  final soundRepo = sound ?? FakeSoundRepository();
   return CreateReasonBloc(
     WatchAreasOfLifeUseCase(repo),
     RefreshAreasOfLifeUseCase(repo),
@@ -56,6 +71,9 @@ CreateReasonBloc buildBloc(
     RefreshVoicesUseCase(voiceRepo),
     GetPurposeSuggestionsUseCase(repo),
     GetMatterSuggestionsUseCase(repo),
+    GetSoundTypesUseCase(soundRepo),
+    GetSoundQuoteUseCase(soundRepo),
+    CreateReasonUseCase(reasons ?? FakeReasonRepository()),
   );
 }
 
@@ -706,6 +724,106 @@ void main() {
       });
     });
 
+    group('sound (step 5)', () {
+      const encouraging = SoundType(
+        id: 1,
+        title: 'Encouraging',
+        description: 'Warm.',
+      );
+      const calmSound = SoundType(id: 2, title: 'Calm', description: 'Steady.');
+      const q1 = SoundQuote(id: 1, areaId: 1, soundId: 1, text: 'You can.');
+      const q2 = SoundQuote(id: 2, areaId: 1, soundId: 2, text: 'Breathe.');
+
+      Future<(CreateReasonBloc, FakeSoundRepository)> atSoundStep({
+        Future<void>? quoteAnswer,
+      }) async {
+        final sound = FakeSoundRepository(
+          sounds: [encouraging, calmSound],
+          quotes: [q1, q2],
+          quoteAnswer: quoteAnswer,
+        );
+        final bloc =
+            buildBloc(
+                FakeAreaOfLifeRepository(saved: [health], server: [health]),
+                FakeVoiceRepository(saved: [bold], server: [bold]),
+                sound,
+              )
+              ..add(const LoadAreasEvent())
+              ..add(const LoadVoicesEvent())
+              ..add(const LoadSoundTypesEvent());
+        await settle();
+        await settle();
+        bloc
+          ..add(const AreaSelectedEvent(1))
+          ..add(const NextStepEvent())
+          ..add(const PurposeChangedEvent('Run a marathon in spring'))
+          ..add(const NextStepEvent())
+          ..add(const VoiceSelectedEvent(2))
+          ..add(const NextStepEvent())
+          ..add(const NextStepEvent());
+        for (var i = 0; i < 6; i++) {
+          await settle();
+        }
+        expect(bloc.state.stepIndex, 4);
+        return (bloc, sound);
+      }
+
+      test(
+        'the first sound is chosen; its example loads for the area',
+        () async {
+          final (bloc, sound) = await atSoundStep();
+          expect(bloc.state.selectedSound, encouraging);
+          expect(sound.quoteRequests, [(1, 1)]);
+          expect(bloc.state.soundQuoteShown, q1);
+          expect(bloc.state.isLastStep, isTrue);
+          expect(bloc.state.canContinue, isTrue);
+          expect(bloc.state.lengthSeconds, 30);
+          await bloc.close();
+        },
+      );
+
+      test('another sound loads its example again, from the server', () async {
+        final (bloc, sound) = await atSoundStep();
+        bloc.add(const SoundSelectedEvent(2));
+        await settle();
+        expect(bloc.state.soundQuoteStatus, LoadStatus.loading);
+        expect(bloc.state.soundQuoteShown, isNull);
+        await settle();
+        await settle();
+        expect(bloc.state.soundQuoteShown, q2);
+
+        bloc.add(const SoundSelectedEvent(1));
+        await settle();
+        await settle();
+        expect(sound.quoteRequests, [(1, 1), (1, 2), (1, 1)]);
+        await bloc.close();
+      });
+
+      test('a late example for an old sound is dropped', () async {
+        final gate = Completer<void>();
+        final (bloc, _) = await atSoundStep(quoteAnswer: gate.future);
+        bloc.add(const SoundSelectedEvent(2));
+        await settle();
+        gate.complete();
+        await settle();
+        await settle();
+        expect(bloc.state.selectedSound, calmSound);
+        expect(bloc.state.soundQuoteShown, q2);
+        await bloc.close();
+      });
+
+      test('length is 30 or 45 seconds only', () async {
+        final (bloc, _) = await atSoundStep();
+        bloc.add(const LengthSelectedEvent(45));
+        await settle();
+        expect(bloc.state.lengthSeconds, 45);
+        bloc.add(const LengthSelectedEvent(60));
+        await settle();
+        expect(bloc.state.lengthSeconds, 45);
+        await bloc.close();
+      });
+    });
+
     test('Previous on the first step does nothing', () async {
       final bloc = buildBloc(FakeAreaOfLifeRepository())
         ..add(const PreviousStepEvent());
@@ -1210,6 +1328,268 @@ void main() {
         await tester.pump(const Duration(milliseconds: 600));
         final field = tester.widget<TextField>(find.byType(TextField));
         expect(field.controller!.text, 'it keeps me going');
+      });
+    });
+
+    group('sound step', () {
+      const encouraging = SoundType(
+        id: 1,
+        title: 'Encouraging',
+        description: 'Positive, warm and uplifting.',
+      );
+      const calmSound = SoundType(
+        id: 2,
+        title: 'Calm',
+        description: 'Calm, peaceful and reassuring.',
+      );
+      const astra = Voice(id: 1, name: 'Astra', voiceId: 'a');
+
+      Future<FakeSoundRepository> toSoundStep(
+        WidgetTester tester, {
+        Future<void>? quoteAnswer,
+        FakeReasonRepository? reasons,
+      }) async {
+        final sound = FakeSoundRepository(
+          sounds: [encouraging, calmSound],
+          quotes: [
+            const SoundQuote(
+              id: 1,
+              areaId: 1,
+              soundId: 1,
+              text: 'You can do this.',
+            ),
+            const SoundQuote(
+              id: 2,
+              areaId: 1,
+              soundId: 2,
+              text: 'Slow down, breathe.',
+            ),
+          ],
+          quoteAnswer: quoteAnswer,
+        );
+        await registerFakeAlarmDependencies(
+          FakeAlarmRepository(),
+          areaOfLifeRepository: FakeAreaOfLifeRepository(
+            saved: [health],
+            server: [health],
+          ),
+          voiceRepository: FakeVoiceRepository(saved: [astra], server: [astra]),
+          soundRepository: sound,
+          reasonRepository: reasons,
+        );
+        await tester.pumpWidget(const MyApp());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reasons').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(AddCard));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Health'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField),
+          'Sleep well every night',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Astra'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Skip for now'));
+        return sound;
+      }
+
+      testWidgets('first sound chosen, its example, description and lengths', (
+        tester,
+      ) async {
+        await toSoundStep(tester);
+        await tester.pumpAndSettle();
+        expect(find.textContaining('sound'), findsWidgets);
+        expect(find.text('Example'), findsOneWidget);
+        expect(find.text('You'), findsOneWidget); // word by word
+        expect(find.text('Positive, warm and uplifting.'), findsOneWidget);
+        expect(find.text('LENGTH'), findsOneWidget);
+        expect(find.text('30 sec'), findsOneWidget);
+        expect(find.text('45 sec'), findsOneWidget);
+        final pill = tester.widget<PillButton>(find.byType(PillButton));
+        expect(pill.label, 'Create Reason');
+        expect(pill.enabled, isTrue);
+      });
+
+      testWidgets('changing the sound shows a shimmer, then its own example', (
+        tester,
+      ) async {
+        final sound = await toSoundStep(tester);
+        await tester.pumpAndSettle();
+        // Hold the next answer so the loading look can be seen.
+        final gate = Completer<void>();
+        sound.quoteAnswer = gate.future;
+        await tester.tap(find.bySemanticsLabel('Calm'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.byType(Shimmer), findsOneWidget);
+        expect(find.text('You'), findsNothing);
+
+        gate.complete();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.byType(Shimmer), findsNothing);
+        expect(find.text('Slow'), findsOneWidget);
+        expect(find.text('Calm, peaceful and reassuring.'), findsOneWidget);
+        expect(sound.quoteRequests, [(1, 1), (1, 2)]);
+      });
+
+      testWidgets('the length border moves to the chosen box', (tester) async {
+        await toSoundStep(tester);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('45 sec'));
+        await tester.pumpAndSettle();
+        expect(find.text('A full thought, not a ramble.'), findsOneWidget);
+      });
+
+      group('save and ready', () {
+        // Reuses the sound group's walk through the steps.
+        Future<FakeReasonRepository> toReady(
+          WidgetTester tester, {
+          List<Reason> existing = const [],
+        }) async {
+          final reasons = FakeReasonRepository(existing);
+          await toSoundStep(tester, reasons: reasons);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Create Reason'));
+          await tester.pumpAndSettle();
+          return reasons;
+        }
+
+        testWidgets('Create Reason saves what was chosen and shows it ready', (
+          tester,
+        ) async {
+          final reasons = await toReady(tester);
+          final saved = reasons.created.single;
+          expect(saved.areaId, 1);
+          expect(saved.baseName, 'health');
+          expect(saved.purpose, 'Sleep well every night');
+          expect(saved.why, isNull);
+          expect(saved.soundTypeId, 1);
+          expect(saved.voiceId, 1);
+          expect(saved.lengthSeconds, 30);
+
+          expect(find.byType(ReasonReadyPage), findsOneWidget);
+          expect(find.byType(CreateReasonPage), findsNothing);
+          expect(
+            find.textContaining('ready', findRichText: true),
+            findsWidgets,
+          );
+          expect(find.text('health'), findsWidgets);
+          expect(find.text('Sleep well every night'), findsOneWidget);
+          expect(find.text('Astra'), findsOneWidget);
+          expect(find.text('Encouraging'), findsOneWidget);
+        });
+
+        testWidgets('a name already used gets the next number', (tester) async {
+          await toReady(
+            tester,
+            existing: const [
+              Reason(
+                id: '1',
+                name: 'health',
+                areaName: 'Health',
+                toneName: 'x',
+              ),
+              Reason(
+                id: '2',
+                name: 'health 3',
+                areaName: 'Health',
+                toneName: 'x',
+              ),
+            ],
+          );
+          expect(
+            find.descendant(
+              of: find.byType(ReasonReadyPage),
+              matching: find.text('health 4'),
+            ),
+            findsWidgets,
+          );
+        });
+
+        testWidgets('renaming saves the new name for that reason', (
+          tester,
+        ) async {
+          final reasons = await toReady(tester);
+          final field = find.descendant(
+            of: find.byType(ReasonNameField),
+            matching: find.byType(TextField),
+          );
+          await tester.tap(find.byType(ReasonNameField));
+          await tester.pumpAndSettle();
+          expect(find.bySemanticsLabel('Save name'), findsOneWidget);
+          await tester.enterText(field, '  Morning health ');
+          await tester.testTextInput.receiveAction(TextInputAction.done);
+          await tester.pumpAndSettle();
+          expect(reasons.renames, [('100', 'Morning health')]);
+          expect(find.text('Morning health'), findsWidgets);
+        });
+
+        testWidgets('a rename that fails puts the old name back and says so', (
+          tester,
+        ) async {
+          final reasons = await toReady(tester);
+          reasons.offline = true;
+          await tester.tap(find.byType(ReasonNameField));
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.descendant(
+              of: find.byType(ReasonNameField),
+              matching: find.byType(TextField),
+            ),
+            'Other',
+          );
+          await tester.testTextInput.receiveAction(TextInputAction.done);
+          await tester.pumpAndSettle();
+          expect(find.textContaining('Couldn’t rename it'), findsOneWidget);
+          expect(find.text('health'), findsWidgets);
+          expect(find.text('Other'), findsNothing);
+        });
+
+        testWidgets('Save for later returns to the list with the new reason', (
+          tester,
+        ) async {
+          await toReady(tester);
+          await tester.tap(find.text('Save for later'));
+          await tester.pumpAndSettle();
+          expect(find.byType(ReasonReadyPage), findsNothing);
+          expect(find.byType(ReasonRow), findsOneWidget);
+          expect(find.text('health'), findsOneWidget);
+        });
+
+        testWidgets('back does what Save for later does', (tester) async {
+          await toReady(tester);
+          await tester.binding.handlePopRoute();
+          await tester.pumpAndSettle();
+          expect(find.byType(ReasonReadyPage), findsNothing);
+          expect(find.byType(CreateReasonPage), findsNothing);
+          expect(find.byType(ReasonRow), findsOneWidget);
+        });
+
+        testWidgets('a failed save says so and stays on the sound step', (
+          tester,
+        ) async {
+          final reasons = FakeReasonRepository()..offline = true;
+          await toSoundStep(tester, reasons: reasons);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Create Reason'));
+          await tester.pumpAndSettle();
+          expect(
+            find.textContaining('Couldn’t save your reason'),
+            findsOneWidget,
+          );
+          expect(find.byType(CreateReasonPage), findsOneWidget);
+          expect(find.byType(ReasonReadyPage), findsNothing);
+        });
       });
     });
   });

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../features/alarm/presentation/pages/alarm_list_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/create_reason/presentation/pages/create_reason_page.dart';
+import '../../features/create_reason/presentation/pages/reason_ready_page.dart';
 import 'route_names.dart';
 
 import 'package:go_router/go_router.dart';
@@ -33,6 +34,17 @@ final GoRouter appRouter = GoRouter(
       path: RouteNames.createReasonPath,
       name: RouteNames.createReason,
       pageBuilder: (context, state) => appPage(state, const CreateReasonPage()),
+    ),
+    GoRoute(
+      path: RouteNames.reasonReadyPath,
+      name: RouteNames.reasonReady,
+      // Only reachable from a just-saved reason; anything else goes home.
+      redirect: (context, state) =>
+          state.extra is ReasonReadyArgs ? null : RouteNames.dashboardPath,
+      pageBuilder: (context, state) => appPage(
+        state,
+        ReasonReadyPage(args: state.extra! as ReasonReadyArgs),
+      ),
     ),
   ],
   errorBuilder: (context, state) =>

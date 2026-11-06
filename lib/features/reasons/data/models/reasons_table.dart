@@ -31,3 +31,13 @@ extension ReasonRecordMapper on ReasonRecord {
     toneName: toneName,
   );
 }
+
+extension ReasonCompanionMapper on Reason {
+  ReasonsTableCompanion toCompanion() => ReasonsTableCompanion(
+    reasonId: Value(id),
+    name: Value(name),
+    areaName: Value(areaName),
+    areaColor: Value(areaColor),
+    toneName: Value(toneName),
+  );
+}

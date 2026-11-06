@@ -170,6 +170,82 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get create_reason_sound_title => 'How should it *sound*?';
+
+  @override
+  String get create_reason_sound_semantics => 'Sound';
+
+  @override
+  String get create_reason_example => 'Example';
+
+  @override
+  String get create_reason_example_failed => 'Couldn’t load the example.';
+
+  @override
+  String get create_reason_length => 'Length';
+
+  @override
+  String get create_reason_length_30 => 'Short';
+
+  @override
+  String get create_reason_length_30_note => 'Quick and to the point.';
+
+  @override
+  String get create_reason_length_45 => 'Standard';
+
+  @override
+  String get create_reason_length_45_note => 'A full thought, not a ramble.';
+
+  @override
+  String get create_reason_create => 'Create Reason';
+
+  @override
+  String seconds_short(int seconds) {
+    return '$seconds sec';
+  }
+
+  @override
+  String get reason_ready_title => 'Your reason is *ready*.';
+
+  @override
+  String get reason_ready_announcement => 'Your reason is ready.';
+
+  @override
+  String get reason_ready_why => 'Why it matters';
+
+  @override
+  String get reason_ready_voice => 'Voice';
+
+  @override
+  String get reason_ready_tone => 'Tone';
+
+  @override
+  String get reason_ready_use_with_alarm => 'Use with alarm';
+
+  @override
+  String get reason_ready_save_for_later => 'Save for later';
+
+  @override
+  String get reason_name_hint => 'Name this reason';
+
+  @override
+  String get reason_name_label => 'Reason name';
+
+  @override
+  String get reason_name_save => 'Save name';
+
+  @override
+  String get reason_save_failed =>
+      'Couldn’t save your reason. Check your connection and try again.';
+
+  @override
+  String get reason_rename_failed =>
+      'Couldn’t rename it. Check your connection and try again.';
+
+  @override
+  String get common_saving => 'Saving…';
+
+  @override
   String get create_reason_voice_title => 'Who should *say it*?';
 
   @override

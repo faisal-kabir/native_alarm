@@ -44,6 +44,9 @@ abstract final class AppColor {
     0x2EEBEBF5,
   ); // rgba(235,235,245,.18)
 
+  // Success (the "reason is ready" seal).
+  static const Color success = Color(0xFF30D158);
+
   // Alarm mark on a reason whose alarm is switched off.
   static const Color badgeOff = Color(0xFF3A3A3C);
 

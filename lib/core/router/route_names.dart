@@ -7,4 +7,6 @@ abstract class RouteNames {
   static const alarmListPath = '/alarmList';
   static const createReason = 'createReason';
   static const createReasonPath = '/createReason';
+  static const reasonReady = 'reasonReady';
+  static const reasonReadyPath = '/reasonReady';
 }
