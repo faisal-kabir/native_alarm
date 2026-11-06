@@ -39,6 +39,10 @@ abstract final class AppColor {
   static const Color fieldHint = Color(0x47F7F5F1); // rgba(247,245,241,.28)
   static const Color fieldRule = Color(0x80545458); // rgba(84,84,88,.5)
   static const Color textTertiary = Color(0x73EBEBF5); // rgba(235,235,245,.45)
+  // Outline of the round play button before its row is chosen.
+  static const Color playIdleBorder = Color(
+    0x2EEBEBF5,
+  ); // rgba(235,235,245,.18)
 
   // Alarm mark on a reason whose alarm is switched off.
   static const Color badgeOff = Color(0xFF3A3A3C);

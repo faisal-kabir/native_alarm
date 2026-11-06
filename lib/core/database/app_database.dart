@@ -23,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,7 +43,13 @@ class AppDatabase extends _$AppDatabase {
       // v5: the areas_of_life table (the device's copy of the server's list) was added.
       if (from < 5) await m.createTable(areasOfLifeTable);
       // v6: the voices table (the device's copy of the server's voice list) was added.
-      if (from < 6) await m.createTable(voicesTable);
+      if (from < 6) {
+        await m.createTable(voicesTable);
+      } else if (from < 7) {
+        // v7: voices keep their group (title, description) from the server join.
+        await m.addColumn(voicesTable, voicesTable.groupTitle);
+        await m.addColumn(voicesTable, voicesTable.groupDescription);
+      }
     },
   );
 }

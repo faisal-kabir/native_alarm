@@ -2,9 +2,11 @@ import 'package:drift/drift.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../domain/entities/voice.dart';
+import '../../domain/entities/voice_group.dart';
 
 /// SQL table `voices`: the device's copy of the server's `voice` table, keyed by the
-/// server's id. Rows come back as [VoiceRecord].
+/// server's id. The voice's group (title, description) is kept on the row, as the
+/// server's join returns it. Rows come back as [VoiceRecord].
 @DataClassName('VoiceRecord')
 class VoicesTable extends Table {
   @override
@@ -16,6 +18,8 @@ class VoicesTable extends Table {
   TextColumn get audio => text().nullable()();
   TextColumn get avatar => text().nullable()();
   IntColumn get groupId => integer().nullable()();
+  TextColumn get groupTitle => text().nullable()();
+  TextColumn get groupDescription => text().nullable()();
   TextColumn get gender => text().nullable()();
   TextColumn get accent => text().nullable()();
   TextColumn get traits => text().nullable()();
@@ -34,6 +38,13 @@ extension VoiceRecordMapper on VoiceRecord {
     audio: audio,
     avatar: avatar,
     groupId: groupId,
+    group: groupId == null || groupTitle == null
+        ? null
+        : VoiceGroup(
+            id: groupId!,
+            title: groupTitle!,
+            description: groupDescription,
+          ),
     gender: gender,
     accent: accent,
     traits: traits,
@@ -50,6 +61,8 @@ extension VoiceCompanionMapper on Voice {
     audio: Value(audio),
     avatar: Value(avatar),
     groupId: Value(groupId),
+    groupTitle: Value(group?.title),
+    groupDescription: Value(group?.description),
     gender: Value(gender),
     accent: Value(accent),
     traits: Value(traits),

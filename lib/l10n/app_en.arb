@@ -88,6 +88,39 @@
   "suggestions_more_ideas": "More ideas",
   "suggestions_more_ideas_semantics": "Show more ideas",
   "create_reason_ideas_error": "Couldn’t load ideas.",
+  "create_reason_voice_title": "Who should *say it*?",
+  "@create_reason_voice_title": {
+    "description": "Heading of the third Create Reason step. Words between stars are drawn in the brand colour."
+  },
+  "voice_play": "Hear {name}",
+  "@voice_play": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voice_stop": "Stop {name}",
+  "@voice_stop": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voice_group_semantics": "{group} voices",
+  "@voice_group_semantics": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "voice_play_failed": "Couldn’t play this voice. Check your connection and try again.",
+  "list_separator": " · ",
+  "@list_separator": {
+    "description": "Between short facts on one line, e.g. Female · American · Warm."
+  },
   "dictation_start": "Say it out loud",
   "dictation_discard": "Discard what you said",
   "dictation_stop": "Stop and use what you said",

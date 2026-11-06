@@ -5,7 +5,8 @@ import '../../../../core/error/exceptions.dart';
 import '../models/voice_model.dart';
 
 abstract class VoiceRemoteDataSource {
-  /// Every row of the server's `voice` table, ordered by id.
+  /// Every row of the server's `voice` table, ordered by id, each with its
+  /// `voice_group` row joined in (needs the `group_id` foreign key).
   Future<List<VoiceModel>> fetchVoices();
 }
 
@@ -20,7 +21,7 @@ class VoiceRemoteDataSourceImpl implements VoiceRemoteDataSource {
     try {
       final rows = await client
           .from('voice')
-          .select()
+          .select('*, voice_group(id, title, description)')
           .order('id', ascending: true);
       return rows.map(VoiceModel.fromJson).toList();
     } catch (e) {

@@ -23,7 +23,7 @@ import 'create_reason_state.dart';
 class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
   /// How many step pages exist so far. Raise it by one whenever a step page is added
   /// to `CreateReasonPage` (and give `CreateReasonState.canContinue` its case).
-  static const int builtStepCount = 2;
+  static const int builtStepCount = 3;
 
   final WatchAreasOfLifeUseCase watchAreasUseCase;
   final RefreshAreasOfLifeUseCase refreshAreasUseCase;
@@ -46,6 +46,10 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     on<AreaSelectedEvent>(_onAreaSelected);
     on<PurposeChangedEvent>(_onPurposeChanged);
     on<SuggestionPickedEvent>(_onSuggestionPicked);
+    on<VoiceSelectedEvent>((event, emit) {
+      if (!state.voices.any((v) => v.id == event.voiceId)) return;
+      emit(state.copyWith(selectedVoiceId: () => event.voiceId));
+    });
     on<DictationChangedEvent>(
       (event, emit) => emit(state.copyWith(dictating: event.listening)),
     );
@@ -107,7 +111,14 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
       watchVoicesUseCase(NoParams()),
       onData: (result) => result.fold(
         (failure) => state.copyWith(voicesStatus: LoadStatus.failed),
-        (voices) => state.copyWith(voices: voices),
+        (voices) {
+          // A choice the server has removed since can not stay chosen.
+          final stillThere = voices.any((v) => v.id == state.selectedVoiceId);
+          return state.copyWith(
+            voices: voices,
+            selectedVoiceId: stillThere ? null : () => null,
+          );
+        },
       ),
     );
   }

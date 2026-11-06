@@ -9,6 +9,7 @@ import '../theme/dimension.dart';
 import 'app_svg_icon.dart';
 import 'cached_svg_icon.dart';
 import 'rise_in.dart';
+import 'sliding_border.dart';
 
 /// One row of [AnimatedSelectList].
 class SelectItem {
@@ -32,27 +33,11 @@ class SelectItem {
   final String? iconPath;
 }
 
-/// The motion of the choice list, as designed (framer-motion springs).
-abstract final class _SelectMotion {
-  static const borderSpring = SpringDescription(
-    mass: 1,
-    stiffness: 420,
-    damping: 36,
-  );
-  static const checkSpring = SpringDescription(
-    mass: 1,
-    stiffness: 520,
-    damping: 24,
-  );
-  static const double radius = 12;
-}
-
 /// A single-choice list of cards (area of life, tone, ...) with the app's selection
 /// animation, so every choice list moves the same way:
 ///
-/// * The orange 1 dp border is ONE shared element, not one per row. When the selection
-///   changes it springs from the old row to the new row; tapping again mid-flight sets
-///   off from wherever it is. The first selection just appears.
+/// * The orange 1 dp border is ONE shared element ([SlidingBorderScope]), not one per
+///   row: it springs from the old row to the new one.
 /// * The chosen row's icon pops (scale 1 → 0.84 → 1.12 → 1 over 450 ms).
 /// * Its subtitle turns orange and medium weight; the right circle fills orange and the
 ///   check springs in with a small overshoot.
@@ -60,7 +45,7 @@ abstract final class _SelectMotion {
 ///   the server animate in too while the existing ones stay still.
 ///
 /// It lays rows out in a Column: put it inside the page's scroll view.
-class AnimatedSelectList extends StatefulWidget {
+class AnimatedSelectList extends StatelessWidget {
   const AnimatedSelectList({
     super.key,
     required this.items,
@@ -75,182 +60,38 @@ class AnimatedSelectList extends StatefulWidget {
   final bool animateIn;
 
   @override
-  State<AnimatedSelectList> createState() => AnimatedSelectListState();
-}
-
-class AnimatedSelectListState extends State<AnimatedSelectList>
-    with SingleTickerProviderStateMixin {
-  final _stackKey = GlobalKey();
-  final _rowKeys = <Object, GlobalKey>{};
-
-  // 0 -> 1 between [_from] and [_to]; unbounded so the spring may overshoot.
-  late final AnimationController _move = AnimationController.unbounded(
-    vsync: this,
-    value: 1,
-  );
-  Rect? _from;
-  Rect? _to;
-
-  /// Where the border is drawn right now (null = nothing selected).
-  @visibleForTesting
-  Rect? get indicatorRect {
-    if (_to == null) return null;
-    if (_from == null) return _to;
-    return Rect.lerp(_from, _to, _move.value);
-  }
-
-  GlobalKey _keyFor(Object id) => _rowKeys.putIfAbsent(id, GlobalKey.new);
-
-  Rect? _rectOf(Object? id) {
-    if (id == null) return null;
-    final row = _rowKeys[id]?.currentContext?.findRenderObject() as RenderBox?;
-    final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
-    if (row == null || stack == null || !row.hasSize) return null;
-    return row.localToGlobal(Offset.zero, ancestor: stack) & row.size;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToSelected());
-  }
-
-  @override
-  void didUpdateWidget(AnimatedSelectList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedId != widget.selectedId) {
-      // Rows are laid out after this build; slide once their rects are known.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _slideToSelected());
-    }
-  }
-
-  void _jumpToSelected() {
-    if (!mounted) return;
-    setState(() {
-      _from = null;
-      _to = _rectOf(widget.selectedId);
-      _move.value = 1;
-    });
-  }
-
-  void _slideToSelected() {
-    if (!mounted) return;
-    final target = _rectOf(widget.selectedId);
-    final current = indicatorRect;
-    if (target == null || current == null) {
-      // Nothing was selected before (or nothing is now): appear / disappear in place.
-      _jumpToSelected();
-      return;
-    }
-    _from = current;
-    _to = target;
-    _move
-      ..value = 0
-      ..animateWith(SpringSimulation(_SelectMotion.borderSpring, 0, 1, 0));
-  }
-
-  /// Keeps the border on its row if the layout changes while it is at rest
-  /// (rotation, text scale, rows arriving from the server).
-  void _followLayout() {
-    if (!mounted || _move.isAnimating) return;
-    final target = _rectOf(widget.selectedId);
-    if (target != _to || _from != null) {
-      setState(() {
-        _from = null;
-        _to = target;
-        _move.value = 1;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _move.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _followLayout());
-    final items = widget.items;
     return Semantics(
       container: true,
       explicitChildNodes: true,
-      child: Stack(
-        key: _stackKey,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                if (i > 0) SizedBox(height: 8.h),
-                // The key sits outside the rise-in transform, so the border is
-                // measured against where the row rests, not where it is rising from.
-                KeyedSubtree(
-                  key: _keyFor(items[i].id),
-                  child: RiseIn(
-                    enabled: widget.animateIn,
-                    delay: Duration(milliseconds: 80 + i * 30),
-                    child: SelectRow(
-                      key: ValueKey(items[i].id),
-                      item: items[i],
-                      selected: items[i].id == widget.selectedId,
-                      onTap: () => widget.onSelected(items[i]),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          // The one shared border, drawn above the rows and never taking taps.
-          Positioned.fill(
-            // Its own layer: while the border springs, only it repaints, not the rows.
-            child: IgnorePointer(
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  painter: _SelectionBorderPainter(
-                    this,
-                    _SelectMotion.radius.r,
+      child: SlidingBorderScope(
+        selectedId: selectedId,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) SizedBox(height: 8.h),
+              // The target sits outside the rise-in transform, so the border is
+              // measured against where the row rests, not where it is rising from.
+              SlidingBorderTarget(
+                id: items[i].id,
+                child: RiseIn(
+                  enabled: animateIn,
+                  delay: Duration(milliseconds: 80 + i * 30),
+                  child: SelectRow(
+                    key: ValueKey(items[i].id),
+                    item: items[i],
+                    selected: items[i].id == selectedId,
+                    onTap: () => onSelected(items[i]),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }
-}
-
-/// Paints the orange 1 dp inside border at the list's current indicator rect.
-class _SelectionBorderPainter extends CustomPainter {
-  _SelectionBorderPainter(this.state, this.radius)
-    : super(repaint: state._move);
-
-  final AnimatedSelectListState state;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final r = state.indicatorRect;
-    if (r == null) return;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        r.deflate(
-          0.5,
-        ), // a 1 dp stroke centred 0.5 dp in = fully inside the card
-        Radius.circular(radius - 0.5),
-      ),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = AppColor.primary
-        ..isAntiAlias = true,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SelectionBorderPainter old) => true;
 }
 
 /// One card row. It draws no border of its own: [AnimatedSelectList] moves one border
@@ -301,7 +142,7 @@ class _SelectRowState extends State<SelectRow> with TickerProviderStateMixin {
       _pop.forward(from: 0);
       _check
         ..value = 0
-        ..animateWith(SpringSimulation(_SelectMotion.checkSpring, 0, 1, 0));
+        ..animateWith(SpringSimulation(SelectionMotion.checkSpring, 0, 1, 0));
     } else if (!widget.selected && oldWidget.selected) {
       _check.value = 0; // the check goes at once, with no exit animation
     }
@@ -352,7 +193,7 @@ class _SelectRowState extends State<SelectRow> with TickerProviderStateMixin {
           padding: REdgeInsets.fromLTRB(12, 10, 14, 10),
           decoration: BoxDecoration(
             color: AppColor.cardColor,
-            borderRadius: BorderRadius.circular(_SelectMotion.radius.r),
+            borderRadius: BorderRadius.circular(SelectionMotion.radius.r),
           ),
           child: Row(
             children: [

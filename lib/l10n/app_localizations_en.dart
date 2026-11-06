@@ -146,6 +146,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_reason_ideas_error => 'Couldn’t load ideas.';
 
   @override
+  String get create_reason_voice_title => 'Who should *say it*?';
+
+  @override
+  String voice_play(String name) {
+    return 'Hear $name';
+  }
+
+  @override
+  String voice_stop(String name) {
+    return 'Stop $name';
+  }
+
+  @override
+  String voice_group_semantics(String group) {
+    return '$group voices';
+  }
+
+  @override
+  String get voice_play_failed =>
+      'Couldn’t play this voice. Check your connection and try again.';
+
+  @override
+  String get list_separator => ' · ';
+
+  @override
   String get dictation_start => 'Say it out loud';
 
   @override

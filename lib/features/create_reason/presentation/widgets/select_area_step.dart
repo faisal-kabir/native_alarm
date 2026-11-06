@@ -10,6 +10,7 @@ import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
+import 'step_message.dart';
 
 /// Step 1 of Create Reason: "What do you want to wake up for?" - the areas of life,
 /// from the saved copy (so it opens at once, offline too) while the server update runs
@@ -53,14 +54,14 @@ class SelectAreaStep extends StatelessWidget {
               else
                 switch (state.areasStatus) {
                   LoadStatus.loading => const SelectListSkeleton(),
-                  LoadStatus.failed => _Message(
+                  LoadStatus.failed => StepMessage(
                     text: strings.create_reason_areas_error,
                     actionLabel: strings.common_try_again,
                     onAction: () => context.read<CreateReasonBloc>().add(
                       const RefreshAreasEvent(),
                     ),
                   ),
-                  LoadStatus.loaded => _Message(
+                  LoadStatus.loaded => StepMessage(
                     text: strings.create_reason_areas_empty,
                   ),
                 },
@@ -68,44 +69,6 @@ class SelectAreaStep extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// A centred note under the heading, with an optional text button.
-class _Message extends StatelessWidget {
-  const _Message({required this.text, this.actionLabel, this.onAction});
-
-  final String text;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = appTheme(context).textTheme;
-    return Padding(
-      padding: REdgeInsets.symmetric(vertical: 32),
-      child: Column(
-        children: [
-          Text(text, textAlign: TextAlign.center, style: textTheme.bodySmall),
-          if (actionLabel != null) ...[
-            SizedBox(height: 16.h),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onAction,
-              child: Padding(
-                padding: REdgeInsets.all(8),
-                child: Text(
-                  actionLabel!,
-                  style: textTheme.labelLarge!.copyWith(
-                    color: AppColor.primary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

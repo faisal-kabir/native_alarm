@@ -172,11 +172,14 @@ class $AssetsIconsVoiceGen {
   /// File path: assets/icons/voice/mic.svg
   SvgGenImage get mic => const SvgGenImage('assets/icons/voice/mic.svg');
 
+  /// File path: assets/icons/voice/play.svg
+  SvgGenImage get play => const SvgGenImage('assets/icons/voice/play.svg');
+
   /// File path: assets/icons/voice/stop.svg
   SvgGenImage get stop => const SvgGenImage('assets/icons/voice/stop.svg');
 
   /// List of all assets
-  List<SvgGenImage> get values => [close, mic, stop];
+  List<SvgGenImage> get values => [close, mic, play, stop];
 }
 
 class Assets {

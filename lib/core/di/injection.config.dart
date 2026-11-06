@@ -10,6 +10,7 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
+import 'package:eala/core/audio/sample_player.dart' as _i327;
 import 'package:eala/core/database/app_database.dart' as _i81;
 import 'package:eala/core/database/database_module.dart' as _i26;
 import 'package:eala/core/firebase/analytics_service.dart' as _i36;
@@ -165,6 +166,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i558.FlutterSecureStorage>(),
       ),
     );
+    gh.factory<_i327.SamplePlayer>(() => _i327.CachedSamplePlayer());
     gh.lazySingleton<_i965.SpeechRecognizer>(
       () => _i965.SpeechRecognizer(gh<_i941.SpeechToText>()),
     );

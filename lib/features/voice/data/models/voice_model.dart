@@ -1,7 +1,9 @@
 import '../../../../core/utils/server_value.dart';
 import '../../domain/entities/voice.dart';
+import 'voice_group_model.dart';
 
-/// A `voice` row as the server sends it (snake_case keys).
+/// A `voice` row as the server sends it (snake_case keys), with its group joined in
+/// under `voice_group`.
 class VoiceModel extends Voice {
   const VoiceModel({
     required super.id,
@@ -10,6 +12,7 @@ class VoiceModel extends Voice {
     super.audio,
     super.avatar,
     super.groupId,
+    super.group,
     super.gender,
     super.accent,
     super.traits,
@@ -26,6 +29,10 @@ class VoiceModel extends Voice {
       audio: cleanText(json['audio']),
       avatar: cleanText(json['avatar']),
       groupId: (json['group_id'] as num?)?.toInt(),
+      group: switch (json['voice_group']) {
+        final Map<String, dynamic> row => VoiceGroupModel.fromJson(row),
+        _ => null,
+      },
       gender: cleanText(json['gender']),
       accent: cleanText(json['accent']),
       traits: cleanText(json['traits']),

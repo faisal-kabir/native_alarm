@@ -38,6 +38,7 @@ VoiceModel voice(int id, String name, {String? audio = 'voices/a.mp3'}) =>
       'traits': 'calm, warm',
       'color': '#112233',
       'is_premium': id.isEven,
+      'voice_group': {'id': 7, 'title': 'Warm', 'description': 'Kind'},
     });
 
 class FakeAreaRemote implements AreaOfLifeRemoteDataSource {
@@ -72,6 +73,8 @@ void main() {
       expect(model.audio, 'voices/a.mp3');
       expect(model.avatar, 'voices/2.png');
       expect(model.groupId, 7);
+      expect(model.group?.title, 'Warm');
+      expect(model.group?.description, 'Kind');
       expect(model.gender, 'female');
       expect(model.accent, 'British');
       expect(model.traits, 'calm, warm');
@@ -93,6 +96,7 @@ void main() {
       expect(model.audio, isNull);
       expect(model.avatar, isNull);
       expect(model.groupId, isNull);
+      expect(model.group, isNull);
       expect(model.color, isNull);
       expect(model.isPremium, isFalse);
     });
@@ -123,6 +127,10 @@ void main() {
       expect(calm.audio, 'voices/a.mp3');
       expect(calm.avatar, 'voices/2.png');
       expect(calm.groupId, 7);
+      // The joined group is kept on the device with the voice.
+      expect(calm.group?.id, 7);
+      expect(calm.group?.title, 'Warm');
+      expect(calm.group?.description, 'Kind');
       expect(calm.traits, 'calm, warm');
       expect(calm.color, 0xFF112233);
       expect(calm.isPremium, isTrue);

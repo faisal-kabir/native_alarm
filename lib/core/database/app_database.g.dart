@@ -1728,6 +1728,28 @@ class $VoicesTableTable extends VoicesTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _groupTitleMeta = const VerificationMeta(
+    'groupTitle',
+  );
+  @override
+  late final GeneratedColumn<String> groupTitle = GeneratedColumn<String>(
+    'group_title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _groupDescriptionMeta = const VerificationMeta(
+    'groupDescription',
+  );
+  @override
+  late final GeneratedColumn<String> groupDescription = GeneratedColumn<String>(
+    'group_description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _genderMeta = const VerificationMeta('gender');
   @override
   late final GeneratedColumn<String> gender = GeneratedColumn<String>(
@@ -1787,6 +1809,8 @@ class $VoicesTableTable extends VoicesTable
     audio,
     avatar,
     groupId,
+    groupTitle,
+    groupDescription,
     gender,
     accent,
     traits,
@@ -1840,6 +1864,21 @@ class $VoicesTableTable extends VoicesTable
       context.handle(
         _groupIdMeta,
         groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('group_title')) {
+      context.handle(
+        _groupTitleMeta,
+        groupTitle.isAcceptableOrUnknown(data['group_title']!, _groupTitleMeta),
+      );
+    }
+    if (data.containsKey('group_description')) {
+      context.handle(
+        _groupDescriptionMeta,
+        groupDescription.isAcceptableOrUnknown(
+          data['group_description']!,
+          _groupDescriptionMeta,
+        ),
       );
     }
     if (data.containsKey('gender')) {
@@ -1905,6 +1944,14 @@ class $VoicesTableTable extends VoicesTable
         DriftSqlType.int,
         data['${effectivePrefix}group_id'],
       ),
+      groupTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_title'],
+      ),
+      groupDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_description'],
+      ),
       gender: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}gender'],
@@ -1941,6 +1988,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
   final String? audio;
   final String? avatar;
   final int? groupId;
+  final String? groupTitle;
+  final String? groupDescription;
   final String? gender;
   final String? accent;
   final String? traits;
@@ -1953,6 +2002,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
     this.audio,
     this.avatar,
     this.groupId,
+    this.groupTitle,
+    this.groupDescription,
     this.gender,
     this.accent,
     this.traits,
@@ -1973,6 +2024,12 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
     }
     if (!nullToAbsent || groupId != null) {
       map['group_id'] = Variable<int>(groupId);
+    }
+    if (!nullToAbsent || groupTitle != null) {
+      map['group_title'] = Variable<String>(groupTitle);
+    }
+    if (!nullToAbsent || groupDescription != null) {
+      map['group_description'] = Variable<String>(groupDescription);
     }
     if (!nullToAbsent || gender != null) {
       map['gender'] = Variable<String>(gender);
@@ -2004,6 +2061,12 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
       groupId: groupId == null && nullToAbsent
           ? const Value.absent()
           : Value(groupId),
+      groupTitle: groupTitle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupTitle),
+      groupDescription: groupDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupDescription),
       gender: gender == null && nullToAbsent
           ? const Value.absent()
           : Value(gender),
@@ -2032,6 +2095,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
       audio: serializer.fromJson<String?>(json['audio']),
       avatar: serializer.fromJson<String?>(json['avatar']),
       groupId: serializer.fromJson<int?>(json['groupId']),
+      groupTitle: serializer.fromJson<String?>(json['groupTitle']),
+      groupDescription: serializer.fromJson<String?>(json['groupDescription']),
       gender: serializer.fromJson<String?>(json['gender']),
       accent: serializer.fromJson<String?>(json['accent']),
       traits: serializer.fromJson<String?>(json['traits']),
@@ -2049,6 +2114,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
       'audio': serializer.toJson<String?>(audio),
       'avatar': serializer.toJson<String?>(avatar),
       'groupId': serializer.toJson<int?>(groupId),
+      'groupTitle': serializer.toJson<String?>(groupTitle),
+      'groupDescription': serializer.toJson<String?>(groupDescription),
       'gender': serializer.toJson<String?>(gender),
       'accent': serializer.toJson<String?>(accent),
       'traits': serializer.toJson<String?>(traits),
@@ -2064,6 +2131,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
     Value<String?> audio = const Value.absent(),
     Value<String?> avatar = const Value.absent(),
     Value<int?> groupId = const Value.absent(),
+    Value<String?> groupTitle = const Value.absent(),
+    Value<String?> groupDescription = const Value.absent(),
     Value<String?> gender = const Value.absent(),
     Value<String?> accent = const Value.absent(),
     Value<String?> traits = const Value.absent(),
@@ -2076,6 +2145,10 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
     audio: audio.present ? audio.value : this.audio,
     avatar: avatar.present ? avatar.value : this.avatar,
     groupId: groupId.present ? groupId.value : this.groupId,
+    groupTitle: groupTitle.present ? groupTitle.value : this.groupTitle,
+    groupDescription: groupDescription.present
+        ? groupDescription.value
+        : this.groupDescription,
     gender: gender.present ? gender.value : this.gender,
     accent: accent.present ? accent.value : this.accent,
     traits: traits.present ? traits.value : this.traits,
@@ -2090,6 +2163,12 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
       audio: data.audio.present ? data.audio.value : this.audio,
       avatar: data.avatar.present ? data.avatar.value : this.avatar,
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      groupTitle: data.groupTitle.present
+          ? data.groupTitle.value
+          : this.groupTitle,
+      groupDescription: data.groupDescription.present
+          ? data.groupDescription.value
+          : this.groupDescription,
       gender: data.gender.present ? data.gender.value : this.gender,
       accent: data.accent.present ? data.accent.value : this.accent,
       traits: data.traits.present ? data.traits.value : this.traits,
@@ -2107,6 +2186,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
           ..write('audio: $audio, ')
           ..write('avatar: $avatar, ')
           ..write('groupId: $groupId, ')
+          ..write('groupTitle: $groupTitle, ')
+          ..write('groupDescription: $groupDescription, ')
           ..write('gender: $gender, ')
           ..write('accent: $accent, ')
           ..write('traits: $traits, ')
@@ -2124,6 +2205,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
     audio,
     avatar,
     groupId,
+    groupTitle,
+    groupDescription,
     gender,
     accent,
     traits,
@@ -2140,6 +2223,8 @@ class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
           other.audio == this.audio &&
           other.avatar == this.avatar &&
           other.groupId == this.groupId &&
+          other.groupTitle == this.groupTitle &&
+          other.groupDescription == this.groupDescription &&
           other.gender == this.gender &&
           other.accent == this.accent &&
           other.traits == this.traits &&
@@ -2154,6 +2239,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
   final Value<String?> audio;
   final Value<String?> avatar;
   final Value<int?> groupId;
+  final Value<String?> groupTitle;
+  final Value<String?> groupDescription;
   final Value<String?> gender;
   final Value<String?> accent;
   final Value<String?> traits;
@@ -2166,6 +2253,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
     this.audio = const Value.absent(),
     this.avatar = const Value.absent(),
     this.groupId = const Value.absent(),
+    this.groupTitle = const Value.absent(),
+    this.groupDescription = const Value.absent(),
     this.gender = const Value.absent(),
     this.accent = const Value.absent(),
     this.traits = const Value.absent(),
@@ -2179,6 +2268,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
     this.audio = const Value.absent(),
     this.avatar = const Value.absent(),
     this.groupId = const Value.absent(),
+    this.groupTitle = const Value.absent(),
+    this.groupDescription = const Value.absent(),
     this.gender = const Value.absent(),
     this.accent = const Value.absent(),
     this.traits = const Value.absent(),
@@ -2193,6 +2284,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
     Expression<String>? audio,
     Expression<String>? avatar,
     Expression<int>? groupId,
+    Expression<String>? groupTitle,
+    Expression<String>? groupDescription,
     Expression<String>? gender,
     Expression<String>? accent,
     Expression<String>? traits,
@@ -2206,6 +2299,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
       if (audio != null) 'audio': audio,
       if (avatar != null) 'avatar': avatar,
       if (groupId != null) 'group_id': groupId,
+      if (groupTitle != null) 'group_title': groupTitle,
+      if (groupDescription != null) 'group_description': groupDescription,
       if (gender != null) 'gender': gender,
       if (accent != null) 'accent': accent,
       if (traits != null) 'traits': traits,
@@ -2221,6 +2316,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
     Value<String?>? audio,
     Value<String?>? avatar,
     Value<int?>? groupId,
+    Value<String?>? groupTitle,
+    Value<String?>? groupDescription,
     Value<String?>? gender,
     Value<String?>? accent,
     Value<String?>? traits,
@@ -2234,6 +2331,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
       audio: audio ?? this.audio,
       avatar: avatar ?? this.avatar,
       groupId: groupId ?? this.groupId,
+      groupTitle: groupTitle ?? this.groupTitle,
+      groupDescription: groupDescription ?? this.groupDescription,
       gender: gender ?? this.gender,
       accent: accent ?? this.accent,
       traits: traits ?? this.traits,
@@ -2263,6 +2362,12 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
     if (groupId.present) {
       map['group_id'] = Variable<int>(groupId.value);
     }
+    if (groupTitle.present) {
+      map['group_title'] = Variable<String>(groupTitle.value);
+    }
+    if (groupDescription.present) {
+      map['group_description'] = Variable<String>(groupDescription.value);
+    }
     if (gender.present) {
       map['gender'] = Variable<String>(gender.value);
     }
@@ -2290,6 +2395,8 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
           ..write('audio: $audio, ')
           ..write('avatar: $avatar, ')
           ..write('groupId: $groupId, ')
+          ..write('groupTitle: $groupTitle, ')
+          ..write('groupDescription: $groupDescription, ')
           ..write('gender: $gender, ')
           ..write('accent: $accent, ')
           ..write('traits: $traits, ')
@@ -3255,6 +3362,8 @@ typedef $$VoicesTableTableCreateCompanionBuilder =
       Value<String?> audio,
       Value<String?> avatar,
       Value<int?> groupId,
+      Value<String?> groupTitle,
+      Value<String?> groupDescription,
       Value<String?> gender,
       Value<String?> accent,
       Value<String?> traits,
@@ -3269,6 +3378,8 @@ typedef $$VoicesTableTableUpdateCompanionBuilder =
       Value<String?> audio,
       Value<String?> avatar,
       Value<int?> groupId,
+      Value<String?> groupTitle,
+      Value<String?> groupDescription,
       Value<String?> gender,
       Value<String?> accent,
       Value<String?> traits,
@@ -3312,6 +3423,16 @@ class $$VoicesTableTableFilterComposer
 
   ColumnFilters<int> get groupId => $composableBuilder(
     column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupTitle => $composableBuilder(
+    column: $table.groupTitle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupDescription => $composableBuilder(
+    column: $table.groupDescription,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3380,6 +3501,16 @@ class $$VoicesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get groupTitle => $composableBuilder(
+    column: $table.groupTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupDescription => $composableBuilder(
+    column: $table.groupDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get gender => $composableBuilder(
     column: $table.gender,
     builder: (column) => ColumnOrderings(column),
@@ -3432,6 +3563,16 @@ class $$VoicesTableTableAnnotationComposer
 
   GeneratedColumn<int> get groupId =>
       $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupTitle => $composableBuilder(
+    column: $table.groupTitle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get groupDescription => $composableBuilder(
+    column: $table.groupDescription,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get gender =>
       $composableBuilder(column: $table.gender, builder: (column) => column);
@@ -3486,6 +3627,8 @@ class $$VoicesTableTableTableManager
                 Value<String?> audio = const Value.absent(),
                 Value<String?> avatar = const Value.absent(),
                 Value<int?> groupId = const Value.absent(),
+                Value<String?> groupTitle = const Value.absent(),
+                Value<String?> groupDescription = const Value.absent(),
                 Value<String?> gender = const Value.absent(),
                 Value<String?> accent = const Value.absent(),
                 Value<String?> traits = const Value.absent(),
@@ -3498,6 +3641,8 @@ class $$VoicesTableTableTableManager
                 audio: audio,
                 avatar: avatar,
                 groupId: groupId,
+                groupTitle: groupTitle,
+                groupDescription: groupDescription,
                 gender: gender,
                 accent: accent,
                 traits: traits,
@@ -3512,6 +3657,8 @@ class $$VoicesTableTableTableManager
                 Value<String?> audio = const Value.absent(),
                 Value<String?> avatar = const Value.absent(),
                 Value<int?> groupId = const Value.absent(),
+                Value<String?> groupTitle = const Value.absent(),
+                Value<String?> groupDescription = const Value.absent(),
                 Value<String?> gender = const Value.absent(),
                 Value<String?> accent = const Value.absent(),
                 Value<String?> traits = const Value.absent(),
@@ -3524,6 +3671,8 @@ class $$VoicesTableTableTableManager
                 audio: audio,
                 avatar: avatar,
                 groupId: groupId,
+                groupTitle: groupTitle,
+                groupDescription: groupDescription,
                 gender: gender,
                 accent: accent,
                 traits: traits,

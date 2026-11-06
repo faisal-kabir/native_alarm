@@ -29,6 +29,7 @@ import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart';
 
 import 'dart:async';
 
+import 'package:eala/core/audio/sample_player.dart';
 import 'package:eala/core/speech/dictation_controller.dart';
 
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
@@ -244,6 +245,36 @@ class FakeDictation extends DictationController {
   void cancel() => finish(keep: false);
 }
 
+/// A sample player for tests: records what was played; [fail] makes playing throw;
+/// [finish] ends the current sample.
+class FakeSamplePlayer implements SamplePlayer {
+  final played = <String>[];
+  int stops = 0;
+  bool fail = false;
+  bool disposed = false;
+  final _done = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get onComplete => _done.stream;
+
+  @override
+  Future<void> play(String url) async {
+    if (fail) throw Exception('cannot play');
+    played.add(url);
+  }
+
+  @override
+  Future<void> stop() async => stops++;
+
+  @override
+  Future<void> dispose() async => disposed = true;
+
+  void finish() => _done.add(null);
+}
+
+/// The [FakeSamplePlayer] the last screen asked for.
+FakeSamplePlayer? lastFakeSamplePlayer;
+
 /// The [FakeDictation] the last screen asked for.
 FakeDictation? lastFakeDictation;
 
@@ -319,6 +350,9 @@ Future<void> registerFakeAlarmDependencies(
       GetPurposeSuggestionsUseCase(areas),
     );
   });
+  instance.registerFactory<SamplePlayer>(
+    () => lastFakeSamplePlayer = FakeSamplePlayer(),
+  );
   instance.registerFactory<DictationController>(
     () => lastFakeDictation = FakeDictation(),
   );

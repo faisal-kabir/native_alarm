@@ -4,7 +4,12 @@ import 'package:eala/core/constants/app_constant.dart';
 import 'package:eala/core/router/app_router.dart';
 import 'package:eala/core/router/route_names.dart';
 import 'package:eala/core/widgets/animated_select_list.dart';
+import 'package:eala/core/widgets/sliding_border.dart';
 import 'package:eala/core/widgets/dictation_bar.dart';
+import 'package:eala/core/widgets/pill_button.dart';
+import 'package:eala/core/widgets/play_button.dart';
+import 'package:eala/features/create_reason/presentation/widgets/voice_row.dart';
+import 'package:eala/features/voice/domain/entities/voice_group.dart';
 import 'package:eala/core/widgets/select_list_skeleton.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
@@ -495,6 +500,50 @@ void main() {
       );
     });
 
+    test('choosing a voice; Continue on the voice step needs one', () async {
+      final bloc = buildBloc(
+        FakeAreaOfLifeRepository(),
+        FakeVoiceRepository(saved: [calm, bold], server: [calm, bold]),
+      )..add(const LoadVoicesEvent());
+      await settle();
+      await settle();
+      expect(bloc.state.selectedVoice, isNull);
+
+      bloc.add(const VoiceSelectedEvent(99)); // not a voice
+      await settle();
+      expect(bloc.state.selectedVoiceId, isNull);
+
+      bloc.add(const VoiceSelectedEvent(2));
+      await settle();
+      expect(bloc.state.selectedVoice, bold);
+      expect(
+        bloc.state.copyWith(stepIndex: 2).canContinue,
+        isTrue,
+        reason: 'step 3 is complete once a voice is chosen',
+      );
+      expect(
+        bloc.state
+            .copyWith(stepIndex: 2, selectedVoiceId: () => null)
+            .canContinue,
+        isFalse,
+      );
+      await bloc.close();
+    });
+
+    test('a chosen voice the server removed is no longer chosen', () async {
+      final voices = FakeVoiceRepository(saved: [calm, bold], server: [calm]);
+      final bloc = buildBloc(FakeAreaOfLifeRepository(), voices)
+        ..add(const LoadVoicesEvent());
+      await settle();
+      bloc.add(const VoiceSelectedEvent(2));
+      await settle();
+      await settle();
+      await settle();
+      expect(bloc.state.voices, [calm]);
+      expect(bloc.state.selectedVoiceId, isNull);
+      await bloc.close();
+    });
+
     test('Previous on the first step does nothing', () async {
       final bloc = buildBloc(FakeAreaOfLifeRepository())
         ..add(const PreviousStepEvent());
@@ -564,8 +613,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final list = tester.state<AnimatedSelectListState>(
-          find.byType(AnimatedSelectList),
+        final list = tester.state<SlidingBorderScopeState>(
+          find.byType(SlidingBorderScope),
         );
         expect(list.indicatorRect, isNull);
 
@@ -718,10 +767,173 @@ void main() {
         await tester.tap(find.bySemanticsLabel('Back'));
         await tester.pumpAndSettle();
         expect(find.textContaining('wake up for'), findsOneWidget);
-        final list = tester.state<AnimatedSelectListState>(
-          find.byType(AnimatedSelectList),
+        final list = tester.state<SlidingBorderScopeState>(
+          find.byType(SlidingBorderScope),
         );
         expect(list.indicatorRect, isNotNull);
+      });
+    });
+
+    group('voice step', () {
+      const warm = VoiceGroup(
+        id: 1,
+        title: 'Warm',
+        description: 'Kind, and on your side',
+      );
+      const calmGroup = VoiceGroup(id: 2, title: 'Calm', description: 'Steady');
+      const astra = Voice(
+        id: 1,
+        name: 'Astra',
+        voiceId: 'a',
+        audio: 'audio/astra.mp3',
+        group: warm,
+        groupId: 1,
+        gender: 'Female',
+        accent: 'American',
+        traits: 'Warm · Encouraging',
+      );
+      const orion = Voice(
+        id: 2,
+        name: 'Orion',
+        voiceId: 'o',
+        audio: 'audio/orion.mp3',
+        group: calmGroup,
+        groupId: 2,
+        gender: 'Male',
+        accent: 'British',
+        traits: 'Calm',
+      );
+
+      Finder playOf(String name) => find.descendant(
+        of: find.ancestor(of: find.text(name), matching: find.byType(VoiceRow)),
+        matching: find.byType(PlayButton),
+      );
+
+      Future<void> toVoiceStep(WidgetTester tester) async {
+        await registerFakeAlarmDependencies(
+          FakeAlarmRepository(),
+          areaOfLifeRepository: FakeAreaOfLifeRepository(
+            saved: [health],
+            server: [health],
+          ),
+          voiceRepository: FakeVoiceRepository(
+            saved: [orion, astra],
+            server: [orion, astra],
+          ),
+        );
+        await tester.pumpWidget(const MyApp());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reasons').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Add your first Reason'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Health'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField),
+          'Sleep well every night',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('voices sit under their group headings, in group order', (
+        tester,
+      ) async {
+        await toVoiceStep(tester);
+        expect(find.textContaining('Who should'), findsOneWidget);
+        expect(find.text('Warm'), findsOneWidget);
+        expect(find.text('Kind, and on your side'), findsOneWidget);
+        expect(find.text('Calm'), findsOneWidget);
+        expect(find.text('Female · American · Warm'), findsOneWidget);
+        expect(find.text('Male · British · Calm'), findsOneWidget);
+        // Group 1 (Warm, Astra) comes before group 2 (Calm, Orion).
+        expect(
+          tester.getTopLeft(find.text('Astra')).dy,
+          lessThan(tester.getTopLeft(find.text('Orion')).dy),
+        );
+        // Continue waits for a voice.
+        final pill = tester.widget<PillButton>(find.byType(PillButton));
+        expect(pill.enabled, isFalse);
+      });
+
+      testWidgets('choosing moves the one border across groups', (
+        tester,
+      ) async {
+        await toVoiceStep(tester);
+        final border = tester.state<SlidingBorderScopeState>(
+          find.byType(SlidingBorderScope),
+        );
+        await tester.tap(find.text('Astra'));
+        await tester.pumpAndSettle();
+        final first = border.indicatorRect!;
+        await tester.tap(find.text('Orion'));
+        await tester.pumpAndSettle();
+        expect(border.indicatorRect!.top, greaterThan(first.top));
+        expect(
+          tester.widget<PillButton>(find.byType(PillButton)).enabled,
+          isTrue,
+        );
+      });
+
+      testWidgets(
+        'play plays the sample (base URL added), shows the animation, '
+        'and stops',
+        (tester) async {
+          await toVoiceStep(tester);
+          await tester.tap(playOf('Astra'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          final player = lastFakeSamplePlayer!;
+          expect(player.played, ['${AppConstant.baseUrl}audio/astra.mp3']);
+          expect(find.byType(PlayBars), findsOneWidget);
+          expect(
+            tester.widget<PlayButton>(playOf('Astra')).label,
+            'Stop Astra',
+          );
+          // Playing a voice also chooses it.
+          expect(
+            tester.widget<PillButton>(find.byType(PillButton)).enabled,
+            isTrue,
+          );
+
+          await tester.tap(playOf('Astra'));
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(player.stops, 1);
+          expect(find.byType(PlayBars), findsNothing);
+
+          // Playing another, then letting it finish on its own.
+          await tester.tap(playOf('Orion'));
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(PlayBars), findsOneWidget);
+          player.finish();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(PlayBars), findsNothing);
+        },
+      );
+
+      testWidgets('a sample that cannot play says so', (tester) async {
+        await toVoiceStep(tester);
+        lastFakeSamplePlayer!.fail = true;
+        await tester.tap(playOf('Astra'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(PlayBars), findsNothing);
+        expect(find.textContaining('Couldn’t play this voice'), findsOneWidget);
+      });
+
+      testWidgets('leaving the step stops and releases the player', (
+        tester,
+      ) async {
+        await toVoiceStep(tester);
+        final player = lastFakeSamplePlayer!;
+        await tester.tap(find.bySemanticsLabel('Back'));
+        await tester.pumpAndSettle();
+        expect(player.disposed, isTrue);
       });
     });
   });

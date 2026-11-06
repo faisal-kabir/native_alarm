@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/network/media_url.dart';
+import 'voice_group.dart';
 
 /// A voice the user can pick for a reason (table `voice` on the server).
 ///
@@ -16,6 +17,10 @@ class Voice extends Equatable {
   final String? audio;
   final String? avatar;
   final int? groupId;
+
+  /// The heading this voice is listed under (from `voice_group`, joined on
+  /// `group_id`); null when it has none.
+  final VoiceGroup? group;
   final String? gender;
   final String? accent;
 
@@ -33,6 +38,7 @@ class Voice extends Equatable {
     this.audio,
     this.avatar,
     this.groupId,
+    this.group,
     this.gender,
     this.accent,
     this.traits,
@@ -54,6 +60,7 @@ class Voice extends Equatable {
     audio,
     avatar,
     groupId,
+    group,
     gender,
     accent,
     traits,

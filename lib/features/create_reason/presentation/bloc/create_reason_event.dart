@@ -88,3 +88,13 @@ class DictationChangedEvent extends CreateReasonEvent {
   @override
   List<Object?> get props => [listening];
 }
+
+/// The user chose a voice (tapping its row or its play button).
+class VoiceSelectedEvent extends CreateReasonEvent {
+  final int voiceId;
+
+  const VoiceSelectedEvent(this.voiceId);
+
+  @override
+  List<Object?> get props => [voiceId];
+}

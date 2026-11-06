@@ -333,6 +333,42 @@ abstract class AppLocalizations {
   /// **'Couldn’t load ideas.'**
   String get create_reason_ideas_error;
 
+  /// Heading of the third Create Reason step. Words between stars are drawn in the brand colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Who should *say it*?'**
+  String get create_reason_voice_title;
+
+  /// No description provided for @voice_play.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear {name}'**
+  String voice_play(String name);
+
+  /// No description provided for @voice_stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop {name}'**
+  String voice_stop(String name);
+
+  /// No description provided for @voice_group_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{group} voices'**
+  String voice_group_semantics(String group);
+
+  /// No description provided for @voice_play_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t play this voice. Check your connection and try again.'**
+  String get voice_play_failed;
+
+  /// Between short facts on one line, e.g. Female · American · Warm.
+  ///
+  /// In en, this message translates to:
+  /// **' · '**
+  String get list_separator;
+
   /// No description provided for @dictation_start.
   ///
   /// In en, this message translates to:

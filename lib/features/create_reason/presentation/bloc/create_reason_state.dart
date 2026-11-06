@@ -53,6 +53,9 @@ class CreateReasonState extends Equatable {
   /// The microphone is listening on the purpose step (Continue waits for it).
   final bool dictating;
 
+  /// Step 3 data: the chosen voice (from [voices]).
+  final int? selectedVoiceId;
+
   const CreateReasonState({
     this.stepIndex = 0,
     this.areas = const [],
@@ -66,7 +69,15 @@ class CreateReasonState extends Equatable {
     this.purpose = '',
     this.purposeSuggestion,
     this.dictating = false,
+    this.selectedVoiceId,
   });
+
+  Voice? get selectedVoice {
+    for (final voice in voices) {
+      if (voice.id == selectedVoiceId) return voice;
+    }
+    return null;
+  }
 
   /// True when the purpose is exactly a picked suggestion; false when the user wrote it
   /// (typed or spoken) or changed a picked suggestion. The next steps suggest
@@ -94,6 +105,7 @@ class CreateReasonState extends Equatable {
   bool get canContinue => switch (stepIndex) {
     0 => selectedArea != null,
     1 => _purposeReady && !dictating,
+    2 => selectedVoice != null,
     _ => false,
   };
 
@@ -113,6 +125,7 @@ class CreateReasonState extends Equatable {
     String? purpose,
     PurposeSuggestion? Function()? purposeSuggestion,
     bool? dictating,
+    int? Function()? selectedVoiceId,
   }) => CreateReasonState(
     stepIndex: stepIndex ?? this.stepIndex,
     areas: areas ?? this.areas,
@@ -132,6 +145,9 @@ class CreateReasonState extends Equatable {
         ? this.purposeSuggestion
         : purposeSuggestion(),
     dictating: dictating ?? this.dictating,
+    selectedVoiceId: selectedVoiceId == null
+        ? this.selectedVoiceId
+        : selectedVoiceId(),
   );
 
   @override
@@ -148,5 +164,6 @@ class CreateReasonState extends Equatable {
     purpose,
     purposeSuggestion,
     dictating,
+    selectedVoiceId,
   ];
 }

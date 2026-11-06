@@ -12,6 +12,7 @@ import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
 import '../widgets/purpose_step.dart';
 import '../widgets/select_area_step.dart';
+import '../widgets/select_voice_step.dart';
 
 /// The mother page of the Create Reason flow. It owns the top progress bar, the
 /// "Continue" button and a PageView whose pages are the steps, in order; every step's
@@ -42,7 +43,11 @@ class _CreateReasonView extends StatefulWidget {
 
 class _CreateReasonViewState extends State<_CreateReasonView> {
   /// The step pages, in order.
-  static const List<Widget> _steps = [SelectAreaStep(), PurposeStep()];
+  static const List<Widget> _steps = [
+    SelectAreaStep(),
+    PurposeStep(),
+    SelectVoiceStep(),
+  ];
 
   final PageController _pages = PageController();
 
