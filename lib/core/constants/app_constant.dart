@@ -10,6 +10,15 @@ abstract final class AppConstant {
   /// on the first one).
   static const int createReasonStepCount = 5;
 
+  /// The "What are you working toward?" text: at most this many characters, and at
+  /// least [purposeMinLength] characters and [purposeMinWords] words to continue.
+  static const int purposeMaxLength = 180;
+  static const int purposeMinLength = 12;
+  static const int purposeMinWords = 2;
+
+  /// Suggestions are shown this many at a time ("More ideas" adds as many again).
+  static const int suggestionsPerPage = 3;
+
   /// Where the server's files (icons, images) live. The database stores only their
   /// path; add it to this with `mediaUrl()` (`lib/core/network/media_url.dart`) -
   /// never build a file URL by hand. This is Supabase Storage's public address; change

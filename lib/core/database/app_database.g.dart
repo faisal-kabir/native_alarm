@@ -1664,6 +1664,642 @@ class AreasOfLifeTableCompanion extends UpdateCompanion<AreaOfLifeRecord> {
   }
 }
 
+class $VoicesTableTable extends VoicesTable
+    with TableInfo<$VoicesTableTable, VoiceRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VoicesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _voiceIdMeta = const VerificationMeta(
+    'voiceId',
+  );
+  @override
+  late final GeneratedColumn<String> voiceId = GeneratedColumn<String>(
+    'voice_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _audioMeta = const VerificationMeta('audio');
+  @override
+  late final GeneratedColumn<String> audio = GeneratedColumn<String>(
+    'audio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avatarMeta = const VerificationMeta('avatar');
+  @override
+  late final GeneratedColumn<String> avatar = GeneratedColumn<String>(
+    'avatar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
+  @override
+  late final GeneratedColumn<String> gender = GeneratedColumn<String>(
+    'gender',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _accentMeta = const VerificationMeta('accent');
+  @override
+  late final GeneratedColumn<String> accent = GeneratedColumn<String>(
+    'accent',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _traitsMeta = const VerificationMeta('traits');
+  @override
+  late final GeneratedColumn<String> traits = GeneratedColumn<String>(
+    'traits',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<int> color = GeneratedColumn<int>(
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isPremiumMeta = const VerificationMeta(
+    'isPremium',
+  );
+  @override
+  late final GeneratedColumn<bool> isPremium = GeneratedColumn<bool>(
+    'is_premium',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_premium" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    voiceId,
+    audio,
+    avatar,
+    groupId,
+    gender,
+    accent,
+    traits,
+    color,
+    isPremium,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'voices';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VoiceRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('voice_id')) {
+      context.handle(
+        _voiceIdMeta,
+        voiceId.isAcceptableOrUnknown(data['voice_id']!, _voiceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_voiceIdMeta);
+    }
+    if (data.containsKey('audio')) {
+      context.handle(
+        _audioMeta,
+        audio.isAcceptableOrUnknown(data['audio']!, _audioMeta),
+      );
+    }
+    if (data.containsKey('avatar')) {
+      context.handle(
+        _avatarMeta,
+        avatar.isAcceptableOrUnknown(data['avatar']!, _avatarMeta),
+      );
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('gender')) {
+      context.handle(
+        _genderMeta,
+        gender.isAcceptableOrUnknown(data['gender']!, _genderMeta),
+      );
+    }
+    if (data.containsKey('accent')) {
+      context.handle(
+        _accentMeta,
+        accent.isAcceptableOrUnknown(data['accent']!, _accentMeta),
+      );
+    }
+    if (data.containsKey('traits')) {
+      context.handle(
+        _traitsMeta,
+        traits.isAcceptableOrUnknown(data['traits']!, _traitsMeta),
+      );
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    }
+    if (data.containsKey('is_premium')) {
+      context.handle(
+        _isPremiumMeta,
+        isPremium.isAcceptableOrUnknown(data['is_premium']!, _isPremiumMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VoiceRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VoiceRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      voiceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}voice_id'],
+      )!,
+      audio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}audio'],
+      ),
+      avatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avatar'],
+      ),
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      ),
+      gender: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gender'],
+      ),
+      accent: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}accent'],
+      ),
+      traits: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}traits'],
+      ),
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color'],
+      ),
+      isPremium: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_premium'],
+      )!,
+    );
+  }
+
+  @override
+  $VoicesTableTable createAlias(String alias) {
+    return $VoicesTableTable(attachedDatabase, alias);
+  }
+}
+
+class VoiceRecord extends DataClass implements Insertable<VoiceRecord> {
+  final int id;
+  final String name;
+  final String voiceId;
+  final String? audio;
+  final String? avatar;
+  final int? groupId;
+  final String? gender;
+  final String? accent;
+  final String? traits;
+  final int? color;
+  final bool isPremium;
+  const VoiceRecord({
+    required this.id,
+    required this.name,
+    required this.voiceId,
+    this.audio,
+    this.avatar,
+    this.groupId,
+    this.gender,
+    this.accent,
+    this.traits,
+    this.color,
+    required this.isPremium,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['voice_id'] = Variable<String>(voiceId);
+    if (!nullToAbsent || audio != null) {
+      map['audio'] = Variable<String>(audio);
+    }
+    if (!nullToAbsent || avatar != null) {
+      map['avatar'] = Variable<String>(avatar);
+    }
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = Variable<int>(groupId);
+    }
+    if (!nullToAbsent || gender != null) {
+      map['gender'] = Variable<String>(gender);
+    }
+    if (!nullToAbsent || accent != null) {
+      map['accent'] = Variable<String>(accent);
+    }
+    if (!nullToAbsent || traits != null) {
+      map['traits'] = Variable<String>(traits);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<int>(color);
+    }
+    map['is_premium'] = Variable<bool>(isPremium);
+    return map;
+  }
+
+  VoicesTableCompanion toCompanion(bool nullToAbsent) {
+    return VoicesTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      voiceId: Value(voiceId),
+      audio: audio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audio),
+      avatar: avatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(avatar),
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
+      gender: gender == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gender),
+      accent: accent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accent),
+      traits: traits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(traits),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
+      isPremium: Value(isPremium),
+    );
+  }
+
+  factory VoiceRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VoiceRecord(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      voiceId: serializer.fromJson<String>(json['voiceId']),
+      audio: serializer.fromJson<String?>(json['audio']),
+      avatar: serializer.fromJson<String?>(json['avatar']),
+      groupId: serializer.fromJson<int?>(json['groupId']),
+      gender: serializer.fromJson<String?>(json['gender']),
+      accent: serializer.fromJson<String?>(json['accent']),
+      traits: serializer.fromJson<String?>(json['traits']),
+      color: serializer.fromJson<int?>(json['color']),
+      isPremium: serializer.fromJson<bool>(json['isPremium']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'voiceId': serializer.toJson<String>(voiceId),
+      'audio': serializer.toJson<String?>(audio),
+      'avatar': serializer.toJson<String?>(avatar),
+      'groupId': serializer.toJson<int?>(groupId),
+      'gender': serializer.toJson<String?>(gender),
+      'accent': serializer.toJson<String?>(accent),
+      'traits': serializer.toJson<String?>(traits),
+      'color': serializer.toJson<int?>(color),
+      'isPremium': serializer.toJson<bool>(isPremium),
+    };
+  }
+
+  VoiceRecord copyWith({
+    int? id,
+    String? name,
+    String? voiceId,
+    Value<String?> audio = const Value.absent(),
+    Value<String?> avatar = const Value.absent(),
+    Value<int?> groupId = const Value.absent(),
+    Value<String?> gender = const Value.absent(),
+    Value<String?> accent = const Value.absent(),
+    Value<String?> traits = const Value.absent(),
+    Value<int?> color = const Value.absent(),
+    bool? isPremium,
+  }) => VoiceRecord(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    voiceId: voiceId ?? this.voiceId,
+    audio: audio.present ? audio.value : this.audio,
+    avatar: avatar.present ? avatar.value : this.avatar,
+    groupId: groupId.present ? groupId.value : this.groupId,
+    gender: gender.present ? gender.value : this.gender,
+    accent: accent.present ? accent.value : this.accent,
+    traits: traits.present ? traits.value : this.traits,
+    color: color.present ? color.value : this.color,
+    isPremium: isPremium ?? this.isPremium,
+  );
+  VoiceRecord copyWithCompanion(VoicesTableCompanion data) {
+    return VoiceRecord(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      voiceId: data.voiceId.present ? data.voiceId.value : this.voiceId,
+      audio: data.audio.present ? data.audio.value : this.audio,
+      avatar: data.avatar.present ? data.avatar.value : this.avatar,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      gender: data.gender.present ? data.gender.value : this.gender,
+      accent: data.accent.present ? data.accent.value : this.accent,
+      traits: data.traits.present ? data.traits.value : this.traits,
+      color: data.color.present ? data.color.value : this.color,
+      isPremium: data.isPremium.present ? data.isPremium.value : this.isPremium,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VoiceRecord(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('voiceId: $voiceId, ')
+          ..write('audio: $audio, ')
+          ..write('avatar: $avatar, ')
+          ..write('groupId: $groupId, ')
+          ..write('gender: $gender, ')
+          ..write('accent: $accent, ')
+          ..write('traits: $traits, ')
+          ..write('color: $color, ')
+          ..write('isPremium: $isPremium')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    voiceId,
+    audio,
+    avatar,
+    groupId,
+    gender,
+    accent,
+    traits,
+    color,
+    isPremium,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VoiceRecord &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.voiceId == this.voiceId &&
+          other.audio == this.audio &&
+          other.avatar == this.avatar &&
+          other.groupId == this.groupId &&
+          other.gender == this.gender &&
+          other.accent == this.accent &&
+          other.traits == this.traits &&
+          other.color == this.color &&
+          other.isPremium == this.isPremium);
+}
+
+class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> voiceId;
+  final Value<String?> audio;
+  final Value<String?> avatar;
+  final Value<int?> groupId;
+  final Value<String?> gender;
+  final Value<String?> accent;
+  final Value<String?> traits;
+  final Value<int?> color;
+  final Value<bool> isPremium;
+  const VoicesTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.voiceId = const Value.absent(),
+    this.audio = const Value.absent(),
+    this.avatar = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.gender = const Value.absent(),
+    this.accent = const Value.absent(),
+    this.traits = const Value.absent(),
+    this.color = const Value.absent(),
+    this.isPremium = const Value.absent(),
+  });
+  VoicesTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String voiceId,
+    this.audio = const Value.absent(),
+    this.avatar = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.gender = const Value.absent(),
+    this.accent = const Value.absent(),
+    this.traits = const Value.absent(),
+    this.color = const Value.absent(),
+    this.isPremium = const Value.absent(),
+  }) : name = Value(name),
+       voiceId = Value(voiceId);
+  static Insertable<VoiceRecord> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? voiceId,
+    Expression<String>? audio,
+    Expression<String>? avatar,
+    Expression<int>? groupId,
+    Expression<String>? gender,
+    Expression<String>? accent,
+    Expression<String>? traits,
+    Expression<int>? color,
+    Expression<bool>? isPremium,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (voiceId != null) 'voice_id': voiceId,
+      if (audio != null) 'audio': audio,
+      if (avatar != null) 'avatar': avatar,
+      if (groupId != null) 'group_id': groupId,
+      if (gender != null) 'gender': gender,
+      if (accent != null) 'accent': accent,
+      if (traits != null) 'traits': traits,
+      if (color != null) 'color': color,
+      if (isPremium != null) 'is_premium': isPremium,
+    });
+  }
+
+  VoicesTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? voiceId,
+    Value<String?>? audio,
+    Value<String?>? avatar,
+    Value<int?>? groupId,
+    Value<String?>? gender,
+    Value<String?>? accent,
+    Value<String?>? traits,
+    Value<int?>? color,
+    Value<bool>? isPremium,
+  }) {
+    return VoicesTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      voiceId: voiceId ?? this.voiceId,
+      audio: audio ?? this.audio,
+      avatar: avatar ?? this.avatar,
+      groupId: groupId ?? this.groupId,
+      gender: gender ?? this.gender,
+      accent: accent ?? this.accent,
+      traits: traits ?? this.traits,
+      color: color ?? this.color,
+      isPremium: isPremium ?? this.isPremium,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (voiceId.present) {
+      map['voice_id'] = Variable<String>(voiceId.value);
+    }
+    if (audio.present) {
+      map['audio'] = Variable<String>(audio.value);
+    }
+    if (avatar.present) {
+      map['avatar'] = Variable<String>(avatar.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
+    }
+    if (gender.present) {
+      map['gender'] = Variable<String>(gender.value);
+    }
+    if (accent.present) {
+      map['accent'] = Variable<String>(accent.value);
+    }
+    if (traits.present) {
+      map['traits'] = Variable<String>(traits.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<int>(color.value);
+    }
+    if (isPremium.present) {
+      map['is_premium'] = Variable<bool>(isPremium.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VoicesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('voiceId: $voiceId, ')
+          ..write('audio: $audio, ')
+          ..write('avatar: $avatar, ')
+          ..write('groupId: $groupId, ')
+          ..write('gender: $gender, ')
+          ..write('accent: $accent, ')
+          ..write('traits: $traits, ')
+          ..write('color: $color, ')
+          ..write('isPremium: $isPremium')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1673,6 +2309,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AreasOfLifeTableTable areasOfLifeTable = $AreasOfLifeTableTable(
     this,
   );
+  late final $VoicesTableTable voicesTable = $VoicesTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1682,6 +2319,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     reasonsTable,
     settingsTable,
     areasOfLifeTable,
+    voicesTable,
   ];
 }
 
@@ -2609,6 +3247,323 @@ typedef $$AreasOfLifeTableTableProcessedTableManager =
       AreaOfLifeRecord,
       PrefetchHooks Function()
     >;
+typedef $$VoicesTableTableCreateCompanionBuilder =
+    VoicesTableCompanion Function({
+      Value<int> id,
+      required String name,
+      required String voiceId,
+      Value<String?> audio,
+      Value<String?> avatar,
+      Value<int?> groupId,
+      Value<String?> gender,
+      Value<String?> accent,
+      Value<String?> traits,
+      Value<int?> color,
+      Value<bool> isPremium,
+    });
+typedef $$VoicesTableTableUpdateCompanionBuilder =
+    VoicesTableCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> voiceId,
+      Value<String?> audio,
+      Value<String?> avatar,
+      Value<int?> groupId,
+      Value<String?> gender,
+      Value<String?> accent,
+      Value<String?> traits,
+      Value<int?> color,
+      Value<bool> isPremium,
+    });
+
+class $$VoicesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $VoicesTableTable> {
+  $$VoicesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get voiceId => $composableBuilder(
+    column: $table.voiceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get audio => $composableBuilder(
+    column: $table.audio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avatar => $composableBuilder(
+    column: $table.avatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get accent => $composableBuilder(
+    column: $table.accent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get traits => $composableBuilder(
+    column: $table.traits,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPremium => $composableBuilder(
+    column: $table.isPremium,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VoicesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $VoicesTableTable> {
+  $$VoicesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get voiceId => $composableBuilder(
+    column: $table.voiceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get audio => $composableBuilder(
+    column: $table.audio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avatar => $composableBuilder(
+    column: $table.avatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get accent => $composableBuilder(
+    column: $table.accent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get traits => $composableBuilder(
+    column: $table.traits,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPremium => $composableBuilder(
+    column: $table.isPremium,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VoicesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VoicesTableTable> {
+  $$VoicesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get voiceId =>
+      $composableBuilder(column: $table.voiceId, builder: (column) => column);
+
+  GeneratedColumn<String> get audio =>
+      $composableBuilder(column: $table.audio, builder: (column) => column);
+
+  GeneratedColumn<String> get avatar =>
+      $composableBuilder(column: $table.avatar, builder: (column) => column);
+
+  GeneratedColumn<int> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get gender =>
+      $composableBuilder(column: $table.gender, builder: (column) => column);
+
+  GeneratedColumn<String> get accent =>
+      $composableBuilder(column: $table.accent, builder: (column) => column);
+
+  GeneratedColumn<String> get traits =>
+      $composableBuilder(column: $table.traits, builder: (column) => column);
+
+  GeneratedColumn<int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPremium =>
+      $composableBuilder(column: $table.isPremium, builder: (column) => column);
+}
+
+class $$VoicesTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VoicesTableTable,
+          VoiceRecord,
+          $$VoicesTableTableFilterComposer,
+          $$VoicesTableTableOrderingComposer,
+          $$VoicesTableTableAnnotationComposer,
+          $$VoicesTableTableCreateCompanionBuilder,
+          $$VoicesTableTableUpdateCompanionBuilder,
+          (
+            VoiceRecord,
+            BaseReferences<_$AppDatabase, $VoicesTableTable, VoiceRecord>,
+          ),
+          VoiceRecord,
+          PrefetchHooks Function()
+        > {
+  $$VoicesTableTableTableManager(_$AppDatabase db, $VoicesTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VoicesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VoicesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VoicesTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> voiceId = const Value.absent(),
+                Value<String?> audio = const Value.absent(),
+                Value<String?> avatar = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
+                Value<String?> gender = const Value.absent(),
+                Value<String?> accent = const Value.absent(),
+                Value<String?> traits = const Value.absent(),
+                Value<int?> color = const Value.absent(),
+                Value<bool> isPremium = const Value.absent(),
+              }) => VoicesTableCompanion(
+                id: id,
+                name: name,
+                voiceId: voiceId,
+                audio: audio,
+                avatar: avatar,
+                groupId: groupId,
+                gender: gender,
+                accent: accent,
+                traits: traits,
+                color: color,
+                isPremium: isPremium,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String voiceId,
+                Value<String?> audio = const Value.absent(),
+                Value<String?> avatar = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
+                Value<String?> gender = const Value.absent(),
+                Value<String?> accent = const Value.absent(),
+                Value<String?> traits = const Value.absent(),
+                Value<int?> color = const Value.absent(),
+                Value<bool> isPremium = const Value.absent(),
+              }) => VoicesTableCompanion.insert(
+                id: id,
+                name: name,
+                voiceId: voiceId,
+                audio: audio,
+                avatar: avatar,
+                groupId: groupId,
+                gender: gender,
+                accent: accent,
+                traits: traits,
+                color: color,
+                isPremium: isPremium,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$VoicesTableTable, VoiceRecord>(table),
+                  BaseReferences<_$AppDatabase, $VoicesTableTable, VoiceRecord>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VoicesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VoicesTableTable,
+      VoiceRecord,
+      $$VoicesTableTableFilterComposer,
+      $$VoicesTableTableOrderingComposer,
+      $$VoicesTableTableAnnotationComposer,
+      $$VoicesTableTableCreateCompanionBuilder,
+      $$VoicesTableTableUpdateCompanionBuilder,
+      (
+        VoiceRecord,
+        BaseReferences<_$AppDatabase, $VoicesTableTable, VoiceRecord>,
+      ),
+      VoiceRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2621,4 +3576,6 @@ class $AppDatabaseManager {
       $$SettingsTableTableTableManager(_db, _db.settingsTable);
   $$AreasOfLifeTableTableTableManager get areasOfLifeTable =>
       $$AreasOfLifeTableTableTableManager(_db, _db.areasOfLifeTable);
+  $$VoicesTableTableTableManager get voicesTable =>
+      $$VoicesTableTableTableManager(_db, _db.voicesTable);
 }

@@ -10,6 +10,7 @@ import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
+import '../widgets/purpose_step.dart';
 import '../widgets/select_area_step.dart';
 
 /// The mother page of the Create Reason flow. It owns the top progress bar, the
@@ -24,8 +25,9 @@ class CreateReasonPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (BuildContext context) =>
-          instance<CreateReasonBloc>()..add(const LoadAreasEvent()),
+      create: (BuildContext context) => instance<CreateReasonBloc>()
+        ..add(const LoadAreasEvent())
+        ..add(const LoadVoicesEvent()),
       child: const _CreateReasonView(),
     );
   }
@@ -40,7 +42,7 @@ class _CreateReasonView extends StatefulWidget {
 
 class _CreateReasonViewState extends State<_CreateReasonView> {
   /// The step pages, in order.
-  static const List<Widget> _steps = [SelectAreaStep()];
+  static const List<Widget> _steps = [SelectAreaStep(), PurposeStep()];
 
   final PageController _pages = PageController();
 

@@ -127,6 +127,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_reason_areas_empty => 'Nothing to choose from yet.';
 
   @override
+  String get create_reason_purpose_title => 'What are you\n*working toward*?';
+
+  @override
+  String get create_reason_purpose_hint =>
+      'I’m working toward something that matters to me because…';
+
+  @override
+  String get create_reason_suggestions_label => 'Or start from one of these';
+
+  @override
+  String get suggestions_more_ideas => 'More ideas';
+
+  @override
+  String get suggestions_more_ideas_semantics => 'Show more ideas';
+
+  @override
+  String get create_reason_ideas_error => 'Couldn’t load ideas.';
+
+  @override
+  String get dictation_start => 'Say it out loud';
+
+  @override
+  String get dictation_discard => 'Discard what you said';
+
+  @override
+  String get dictation_stop => 'Stop and use what you said';
+
+  @override
+  String get dictation_listening => 'Listening… say it however it comes out.';
+
+  @override
+  String get dictation_unavailable =>
+      'Voice input isn’t available. Allow the microphone and speech recognition for Eala in Settings.';
+
+  @override
+  String text_counter(int count, int max) {
+    return '$count/$max';
+  }
+
+  @override
   String get reason_alarm_on_note => ' Played by an alarm.';
 
   @override

@@ -79,6 +79,32 @@
   },
   "create_reason_areas_error": "Couldn’t load the list. Check your connection and try again.",
   "create_reason_areas_empty": "Nothing to choose from yet.",
+  "create_reason_purpose_title": "What are you\n*working toward*?",
+  "@create_reason_purpose_title": {
+    "description": "Heading of the second Create Reason step. Words between stars are drawn in the brand colour."
+  },
+  "create_reason_purpose_hint": "I’m working toward something that matters to me because…",
+  "create_reason_suggestions_label": "Or start from one of these",
+  "suggestions_more_ideas": "More ideas",
+  "suggestions_more_ideas_semantics": "Show more ideas",
+  "create_reason_ideas_error": "Couldn’t load ideas.",
+  "dictation_start": "Say it out loud",
+  "dictation_discard": "Discard what you said",
+  "dictation_stop": "Stop and use what you said",
+  "dictation_listening": "Listening… say it however it comes out.",
+  "dictation_unavailable": "Voice input isn’t available. Allow the microphone and speech recognition for Eala in Settings.",
+  "text_counter": "{count}/{max}",
+  "@text_counter": {
+    "description": "Characters typed out of the maximum, shown under a text field near its limit.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "reason_alarm_on_note": " Played by an alarm.",
   "reason_alarm_off_note": " Its alarm is off.",
   "settings_title": "Settings",

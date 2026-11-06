@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Eala uses the microphone so you can say your reason out loud instead of typing it.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Eala turns what you say into text so you can write your reason by voice.</string>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>This app requires AlarmKit to schedule and trigger synchronized alarms.</string>
 	<key>UIApplicationSceneManifest</key>

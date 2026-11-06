@@ -53,7 +53,10 @@ class StepTopBar extends StatelessWidget {
               ),
             ),
             SizedBox(width: 10.w),
-            Expanded(child: _ProgressLine(progress: progress)),
+            // Its own layer: the 900 ms fill does not repaint the back button.
+            Expanded(
+              child: RepaintBoundary(child: _ProgressLine(progress: progress)),
+            ),
           ],
         ),
       ),

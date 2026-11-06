@@ -1,16 +1,24 @@
 import 'dart:async';
 
+import 'package:eala/core/constants/app_constant.dart';
 import 'package:eala/core/router/app_router.dart';
 import 'package:eala/core/router/route_names.dart';
 import 'package:eala/core/widgets/animated_select_list.dart';
+import 'package:eala/core/widgets/dictation_bar.dart';
 import 'package:eala/core/widgets/select_list_skeleton.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
+import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
+import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
+import 'package:eala/features/voice/domain/entities/voice.dart';
+import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
+import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_event.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_state.dart';
 import 'package:eala/main.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes/fake_alarm_repository.dart';
@@ -29,10 +37,29 @@ const work = AreaOfLife(
   description: 'Get things done',
 );
 
-CreateReasonBloc buildBloc(FakeAreaOfLifeRepository repo) => CreateReasonBloc(
-  WatchAreasOfLifeUseCase(repo),
-  RefreshAreasOfLifeUseCase(repo),
+CreateReasonBloc buildBloc(
+  FakeAreaOfLifeRepository repo, [
+  FakeVoiceRepository? voices,
+]) {
+  final voiceRepo = voices ?? FakeVoiceRepository();
+  return CreateReasonBloc(
+    WatchAreasOfLifeUseCase(repo),
+    RefreshAreasOfLifeUseCase(repo),
+    WatchVoicesUseCase(voiceRepo),
+    RefreshVoicesUseCase(voiceRepo),
+    GetPurposeSuggestionsUseCase(repo),
+  );
+}
+
+const calm = Voice(
+  id: 1,
+  name: 'Calm',
+  voiceId: 'v_calm',
+  audio: 'voices/calm.mp3',
+  avatar: '/voices/calm.png',
+  isPremium: true,
 );
+const bold = Voice(id: 2, name: 'Bold', voiceId: 'v_bold');
 
 Future<void> settle() => Future<void>.delayed(Duration.zero);
 
@@ -49,13 +76,13 @@ void main() {
         final bloc = buildBloc(repo)..add(const LoadAreasEvent());
         await settle();
         expect(bloc.state.areas, isEmpty);
-        expect(bloc.state.areasStatus, AreasStatus.loading);
+        expect(bloc.state.areasStatus, LoadStatus.loading);
 
         answer.complete();
         await settle();
         await settle();
         expect(bloc.state.areas, [health, work]);
-        expect(bloc.state.areasStatus, AreasStatus.loaded);
+        expect(bloc.state.areasStatus, LoadStatus.loaded);
         await bloc.close();
       },
     );
@@ -88,14 +115,14 @@ void main() {
         final bloc = buildBloc(repo)..add(const LoadAreasEvent());
         await settle();
         await settle();
-        expect(bloc.state.areasStatus, AreasStatus.failed);
+        expect(bloc.state.areasStatus, LoadStatus.failed);
 
         repo.offline = false;
         bloc.add(const RefreshAreasEvent());
         await settle();
         await settle();
         expect(bloc.state.areas, [health]);
-        expect(bloc.state.areasStatus, AreasStatus.loaded);
+        expect(bloc.state.areasStatus, LoadStatus.loaded);
         await bloc.close();
       },
     );
@@ -127,10 +154,12 @@ void main() {
         expect(bloc.state.selectedArea, work);
         expect(bloc.state.canContinue, isTrue);
 
-        // No second step page exists yet, so Continue stays on the first.
+        // On to step 2 (the purpose); nothing to continue to from there yet.
         bloc.add(const NextStepEvent());
         await settle();
-        expect(bloc.state.stepIndex, 0);
+        expect(bloc.state.stepIndex, 1);
+        expect(bloc.state.progress, closeTo(0.4, 1e-9));
+        expect(bloc.state.canContinue, isFalse);
         await bloc.close();
       },
     );
@@ -165,6 +194,305 @@ void main() {
       await settle();
       expect(bloc.state.selectedAreaId, isNull);
       await bloc.close();
+    });
+
+    test(
+      'voices load when asked: saved first, then the server update',
+      () async {
+        final voices = FakeVoiceRepository(saved: [calm], server: [calm, bold]);
+        final bloc = buildBloc(FakeAreaOfLifeRepository(), voices)
+          ..add(const LoadVoicesEvent());
+        await settle();
+        expect(bloc.state.voices, isNotEmpty);
+        await settle();
+        await settle();
+        expect(bloc.state.voices, [calm, bold]);
+        expect(bloc.state.voicesStatus, LoadStatus.loaded);
+        await bloc.close();
+      },
+    );
+
+    test(
+      'voices: offline with nothing saved is a failure; saved ones stay',
+      () async {
+        final empty = buildBloc(
+          FakeAreaOfLifeRepository(),
+          FakeVoiceRepository(offline: true),
+        )..add(const LoadVoicesEvent());
+        await settle();
+        await settle();
+        expect(empty.state.voicesStatus, LoadStatus.failed);
+        await empty.close();
+
+        final kept = buildBloc(
+          FakeAreaOfLifeRepository(),
+          FakeVoiceRepository(saved: [calm], offline: true),
+        )..add(const LoadVoicesEvent());
+        await settle();
+        await settle();
+        expect(kept.state.voices, [calm]);
+        await kept.close();
+      },
+    );
+
+    test('voice files get the base URL from their paths', () {
+      expect(calm.audioUrl, '${AppConstant.baseUrl}voices/calm.mp3');
+      expect(calm.avatarUrl, '${AppConstant.baseUrl}voices/calm.png');
+      expect(bold.audioUrl, isNull);
+      expect(bold.avatarUrl, isNull);
+    });
+
+    test(
+      'Continue loads the areaSuggestions of the chosen area, from the server',
+      () async {
+        const q1 = PurposeSuggestion(id: 1, areaId: 1, text: 'Rise.');
+        const q2 = PurposeSuggestion(id: 2, areaId: 2, text: 'Work.');
+        final repo = FakeAreaOfLifeRepository(
+          saved: [health, work],
+          server: [health, work],
+          areaSuggestions: {
+            1: [q1],
+            2: [q2],
+          },
+        );
+        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+        await settle();
+        await settle();
+
+        // Nothing is asked for before the user continues.
+        expect(repo.suggestionRequests, isEmpty);
+
+        bloc.add(const AreaSelectedEvent(2));
+        await settle();
+        bloc.add(const NextStepEvent());
+        await settle();
+        await settle();
+        expect(repo.suggestionRequests, [2]);
+        expect(bloc.state.suggestionsAreaId, 2);
+        expect(bloc.state.areaSuggestions, [q2]);
+        expect(bloc.state.suggestionsStatus, LoadStatus.loaded);
+
+        // Back, another area, another request: suggestions are never reused.
+        bloc
+          ..add(const PreviousStepEvent())
+          ..add(const AreaSelectedEvent(1));
+        await settle();
+        bloc.add(const NextStepEvent());
+        await settle();
+        await settle();
+        expect(repo.suggestionRequests, [2, 1]);
+        expect(bloc.state.areaSuggestions, [q1]);
+        await bloc.close();
+      },
+    );
+
+    test('an old area\'s late areaSuggestions are dropped', () async {
+      const q1 = PurposeSuggestion(id: 1, areaId: 1, text: 'Rise.');
+      const q2 = PurposeSuggestion(id: 2, areaId: 2, text: 'Work.');
+      final slow = Completer<void>();
+      final repo = FakeAreaOfLifeRepository(
+        saved: [health, work],
+        server: [health, work],
+        areaSuggestions: {
+          1: [q1],
+          2: [q2],
+        },
+        suggestionsAnswer: slow.future,
+      );
+      final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+      await settle();
+      await settle();
+      bloc
+        ..add(const AreaSelectedEvent(1))
+        ..add(const NextStepEvent());
+      await settle();
+      // The user goes back for another area before the first answer arrives.
+      bloc
+        ..add(const PreviousStepEvent())
+        ..add(const AreaSelectedEvent(2))
+        ..add(const NextStepEvent());
+      await settle();
+      expect(bloc.state.suggestionsAreaId, 2);
+      expect(bloc.state.suggestionsStatus, LoadStatus.loading);
+      expect(bloc.state.areaSuggestions, isEmpty);
+
+      slow.complete();
+      await settle();
+      await settle();
+      expect(bloc.state.suggestionsAreaId, 2);
+      expect(bloc.state.areaSuggestions, [q2]);
+      await bloc.close();
+    });
+
+    test('areaSuggestions: offline is a failure (nothing is cached)', () async {
+      final repo = FakeAreaOfLifeRepository(
+        saved: [health],
+        server: [health],
+        suggestionsOffline: true,
+      );
+      final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+      await settle();
+      await settle();
+      bloc
+        ..add(const AreaSelectedEvent(1))
+        ..add(const NextStepEvent());
+      await settle();
+      await settle();
+      expect(bloc.state.suggestionsStatus, LoadStatus.failed);
+      expect(bloc.state.areaSuggestions, isEmpty);
+      await bloc.close();
+    });
+
+    test('Continue without a chosen area asks for nothing', () async {
+      final repo = FakeAreaOfLifeRepository(saved: [health], server: [health]);
+      final bloc = buildBloc(repo)
+        ..add(const LoadAreasEvent())
+        ..add(const NextStepEvent());
+      await settle();
+      expect(repo.suggestionRequests, isEmpty);
+      await bloc.close();
+    });
+
+    group('purpose (step 2)', () {
+      const q1 = PurposeSuggestion(
+        id: 11,
+        areaId: 1,
+        text: 'I want energy for my kids',
+      );
+      const q2 = PurposeSuggestion(
+        id: 12,
+        areaId: 1,
+        text: 'Sleep well, feel strong',
+      );
+      const other = PurposeSuggestion(
+        id: 21,
+        areaId: 2,
+        text: 'Ship the project',
+      );
+
+      Future<CreateReasonBloc> atPurposeStep({
+        Map<int, List<PurposeSuggestion>> areaSuggestions = const {
+          1: [q1, q2],
+          2: [other],
+        },
+      }) async {
+        final bloc = buildBloc(
+          FakeAreaOfLifeRepository(
+            saved: [health, work],
+            server: [health, work],
+            areaSuggestions: areaSuggestions,
+          ),
+        )..add(const LoadAreasEvent());
+        await settle();
+        await settle();
+        bloc
+          ..add(const AreaSelectedEvent(1))
+          ..add(const NextStepEvent());
+        await settle();
+        await settle();
+        expect(bloc.state.stepIndex, 1);
+        return bloc;
+      }
+
+      test(
+        'suggestions are the selected area\'s areaSuggestions only',
+        () async {
+          final bloc = await atPurposeStep();
+          expect(bloc.state.suggestions, [q1, q2]);
+          await bloc.close();
+        },
+      );
+
+      test(
+        'picking a suggestion fills the purpose and sets the flag',
+        () async {
+          final bloc = await atPurposeStep();
+          bloc.add(const SuggestionPickedEvent(11));
+          await settle();
+          expect(bloc.state.purpose, q1.text);
+          expect(bloc.state.purposeFromSuggestion, isTrue);
+          expect(bloc.state.purposeSuggestion, q1);
+          expect(bloc.state.canContinue, isTrue);
+
+          // The field echoing the same text back keeps it a suggestion.
+          bloc.add(PurposeChangedEvent(q1.text));
+          await settle();
+          expect(bloc.state.purposeFromSuggestion, isTrue);
+          await bloc.close();
+        },
+      );
+
+      test('editing a picked suggestion makes it the user\'s own', () async {
+        final bloc = await atPurposeStep();
+        bloc.add(const SuggestionPickedEvent(11));
+        await settle();
+        bloc.add(PurposeChangedEvent('${q1.text} every day'));
+        await settle();
+        expect(bloc.state.purposeFromSuggestion, isFalse);
+        expect(bloc.state.purposeSuggestion, isNull);
+        expect(bloc.state.purpose, '${q1.text} every day');
+        await bloc.close();
+      });
+
+      test(
+        'typed text is the user\'s own; too short cannot continue',
+        () async {
+          final bloc = await atPurposeStep();
+          bloc.add(const PurposeChangedEvent('Run'));
+          await settle();
+          expect(bloc.state.purposeFromSuggestion, isFalse);
+          expect(bloc.state.canContinue, isFalse);
+
+          bloc.add(const PurposeChangedEvent('Run a marathon in spring'));
+          await settle();
+          expect(bloc.state.canContinue, isTrue);
+          await bloc.close();
+        },
+      );
+
+      test('a quote that is not suggested cannot be picked', () async {
+        final bloc = await atPurposeStep();
+        bloc.add(const SuggestionPickedEvent(21)); // belongs to another area
+        await settle();
+        expect(bloc.state.purpose, isEmpty);
+        expect(bloc.state.purposeFromSuggestion, isFalse);
+        await bloc.close();
+      });
+
+      test('while the mic listens, Continue waits', () async {
+        final bloc = await atPurposeStep();
+        bloc
+          ..add(const PurposeChangedEvent('Run a marathon in spring'))
+          ..add(const DictationChangedEvent(true));
+        await settle();
+        expect(bloc.state.canContinue, isFalse);
+        bloc.add(const DictationChangedEvent(false));
+        await settle();
+        expect(bloc.state.canContinue, isTrue);
+        await bloc.close();
+      });
+
+      test(
+        'another area drops a picked suggestion but keeps own text',
+        () async {
+          final bloc = await atPurposeStep();
+          bloc.add(const SuggestionPickedEvent(11));
+          await settle();
+          bloc.add(const AreaSelectedEvent(2));
+          await settle();
+          expect(bloc.state.purpose, isEmpty);
+          expect(bloc.state.purposeSuggestion, isNull);
+
+          bloc
+            ..add(const AreaSelectedEvent(1))
+            ..add(const PurposeChangedEvent('My own words here'));
+          await settle();
+          bloc.add(const AreaSelectedEvent(2));
+          await settle();
+          expect(bloc.state.purpose, 'My own words here');
+          await bloc.close();
+        },
+      );
     });
 
     test('Previous on the first step does nothing', () async {
@@ -288,6 +616,113 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Health'), findsOneWidget);
       expect(find.textContaining('Couldn’t load'), findsNothing);
+    });
+
+    group('purpose step', () {
+      final areaSuggestions = [
+        for (var i = 1; i <= 5; i++)
+          PurposeSuggestion(
+            id: i,
+            areaId: 1,
+            text: 'Idea number $i for health',
+          ),
+      ];
+
+      Future<void> toPurposeStep(WidgetTester tester) async {
+        await openPage(
+          tester,
+          FakeAreaOfLifeRepository(
+            saved: [health, work],
+            server: [health, work],
+            areaSuggestions: {1: areaSuggestions},
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Health'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('shows the area, the heading and 3 ideas; More adds 3', (
+        tester,
+      ) async {
+        await toPurposeStep(tester);
+        expect(find.text('HEALTH'), findsOneWidget);
+        expect(find.textContaining('What are you'), findsOneWidget);
+        expect(find.text('OR START FROM ONE OF THESE'), findsOneWidget);
+        expect(find.text('Idea number 1 for health'), findsOneWidget);
+        expect(find.text('Idea number 3 for health'), findsOneWidget);
+        expect(find.text('Idea number 4 for health'), findsNothing);
+
+        await tester.tap(find.text('More ideas'));
+        await tester.pumpAndSettle();
+        expect(find.text('Idea number 5 for health'), findsOneWidget);
+        expect(find.text('More ideas'), findsNothing);
+      });
+
+      testWidgets('a picked idea fills the field, then the ideas go', (
+        tester,
+      ) async {
+        await toPurposeStep(tester);
+        await tester.tap(find.text('Idea number 2 for health'));
+        await tester.pumpAndSettle();
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.controller!.text, 'Idea number 2 for health');
+        expect(find.text('OR START FROM ONE OF THESE'), findsNothing);
+
+        // Clearing the field brings the ideas back.
+        await tester.enterText(find.byType(TextField), '');
+        await tester.pumpAndSettle();
+        expect(find.text('OR START FROM ONE OF THESE'), findsOneWidget);
+      });
+
+      testWidgets('speaking adds the words to the field', (tester) async {
+        await toPurposeStep(tester);
+        await tester.enterText(find.byType(TextField), 'I want');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.bySemanticsLabel('Say it out loud'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(find.byType(DictationBar), findsOneWidget);
+        expect(find.byType(LiveMeter), findsOneWidget);
+
+        lastFakeDictation!.speak(['to', 'feel'], 'strong');
+        await tester.pump(const Duration(milliseconds: 300));
+        lastFakeDictation!.commit();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        expect(find.byType(DictationBar), findsNothing);
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.controller!.text, 'I want to feel strong');
+      });
+
+      testWidgets('no speech input: a message explains it', (tester) async {
+        await toPurposeStep(tester);
+        lastFakeDictation!.available = false;
+        await tester.tap(find.bySemanticsLabel('Say it out loud'));
+        await tester.pump();
+        expect(
+          find.textContaining('Voice input isn’t available'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('back returns to the area step with the area still chosen', (
+        tester,
+      ) async {
+        await toPurposeStep(tester);
+        await tester.tap(find.bySemanticsLabel('Back'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('wake up for'), findsOneWidget);
+        final list = tester.state<AnimatedSelectListState>(
+          find.byType(AnimatedSelectList),
+        );
+        expect(list.indicatorRect, isNotNull);
+      });
     });
   });
 }

@@ -1,0 +1,281 @@
+import 'dart:async';
+import 'dart:ui' show ImageFilter;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../../gen/assets.gen.dart';
+import '../../main.dart';
+import '../constants/app_constant.dart';
+import '../theme/app_color.dart';
+import 'app_svg_icon.dart';
+import 'rise_in.dart';
+import 'shimmer.dart';
+
+/// One suggestion of [SuggestionList].
+class SuggestionItem {
+  const SuggestionItem({required this.id, required this.text});
+
+  final Object id;
+  final String text;
+}
+
+/// Suggested wording under a text field: a small upper-case [label], then
+/// [AppConstant.suggestionsPerPage] suggestions at a time; "More ideas" adds as many
+/// again. Each suggestion arrives on its own (10 up, out of a light blur, 420 ms).
+class SuggestionList extends StatefulWidget {
+  const SuggestionList({
+    super.key,
+    required this.label,
+    required this.items,
+    required this.onPick,
+  });
+
+  final String label;
+  final List<SuggestionItem> items;
+  final ValueChanged<SuggestionItem> onPick;
+
+  @override
+  State<SuggestionList> createState() => _SuggestionListState();
+}
+
+class _SuggestionListState extends State<SuggestionList> {
+  static const _per = AppConstant.suggestionsPerPage;
+  int _count = _per;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    final textTheme = appTheme(context).textTheme;
+    final shown = widget.items.take(_count).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SuggestionLabel(widget.label),
+        SizedBox(height: 10.h),
+        for (var i = 0; i < shown.length; i++) ...[
+          if (i > 0) SizedBox(height: 8.h),
+          _SuggestionIn(
+            key: ValueKey(shown[i].id),
+            delay: Duration(milliseconds: 40 + (i % _per) * 60),
+            child: _SuggestionPill(
+              text: shown[i].text,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                widget.onPick(shown[i]);
+              },
+            ),
+          ),
+        ],
+        if (_count < widget.items.length)
+          Padding(
+            padding: REdgeInsets.only(top: 10),
+            child: Semantics(
+              button: true,
+              label: strings.suggestions_more_ideas_semantics,
+              excludeSemantics: true,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _count += _per);
+                },
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: 44.h),
+                  child: Padding(
+                    padding: REdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          strings.suggestions_more_ideas,
+                          style: textTheme.bodyLarge!.copyWith(
+                            fontSize: 15.spMin,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.15,
+                            color: AppColor.textTertiary,
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                        // The forward chevron turned to point down.
+                        RotatedBox(
+                          quarterTurns: 1,
+                          child: AppSvgIcon(
+                            Assets.icons.page.chevron,
+                            size: 15.r,
+                            color: AppColor.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The small upper-case heading above suggestions ("OR START FROM ONE OF THESE").
+class SuggestionLabel extends StatelessWidget {
+  const SuggestionLabel(this.text, {super.key, this.color});
+
+  final String text;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: appTheme(context).textTheme.labelSmall!.copyWith(
+        fontSize: 11.5.spMin,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.61,
+        color: color ?? AppColor.textTertiary,
+      ),
+    );
+  }
+}
+
+/// Placeholder for [SuggestionList] while its suggestions load: three shimmering pills.
+class SuggestionListSkeleton extends StatelessWidget {
+  const SuggestionListSkeleton({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SuggestionLabel(label),
+        SizedBox(height: 10.h),
+        ExcludeSemantics(
+          child: Shimmer(
+            baseColor: AppColor.cardColor,
+            highlightColor: AppColor.surfaceSecondary,
+            child: Column(
+              children: [
+                for (var i = 0; i < AppConstant.suggestionsPerPage; i++) ...[
+                  if (i > 0) SizedBox(height: 8.h),
+                  Container(
+                    height: 46.h,
+                    decoration: BoxDecoration(
+                      color: AppColor.white,
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestionPill extends StatelessWidget {
+  const _SuggestionPill({required this.text, required this.onTap});
+
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColor.cardColor,
+      borderRadius: BorderRadius.circular(16.r),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: REdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            child: Text(
+              text,
+              style: appTheme(context).textTheme.bodyLarge!.copyWith(
+                fontSize: 15.spMin,
+                height: 1.35,
+                letterSpacing: 0,
+                color: AppColor.textSecondary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One suggestion arriving: 10 up, out of a 4 dp blur, 420 ms. The blur only exists
+/// while it animates (and never with reduced motion), so a settled list costs nothing.
+class _SuggestionIn extends StatefulWidget {
+  const _SuggestionIn({super.key, required this.delay, required this.child});
+
+  final Duration delay;
+  final Widget child;
+
+  @override
+  State<_SuggestionIn> createState() => _SuggestionInState();
+}
+
+class _SuggestionInState extends State<_SuggestionIn>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _c;
+  Animation<double>? _t;
+  Timer? _timer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_c != null || MediaQuery.disableAnimationsOf(context)) return;
+    final c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _c = c;
+    _t = CurvedAnimation(parent: c, curve: RiseIn.curve);
+    _timer = Timer(widget.delay, () {
+      if (mounted) c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _c?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _t;
+    if (t == null) return widget.child;
+    final dy = 10.h;
+    return FadeTransition(
+      opacity: t,
+      child: AnimatedBuilder(
+        animation: t,
+        child: widget.child,
+        builder: (_, child) {
+          final v = t.value;
+          final blur = 2 * (1 - v);
+          final moved = Transform.translate(
+            offset: Offset(0, dy * (1 - v)),
+            child: child,
+          );
+          if (blur < 0.05) return moved;
+          return ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: moved,
+          );
+        },
+      ),
+    );
+  }
+}

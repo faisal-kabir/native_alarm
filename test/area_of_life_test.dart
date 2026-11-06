@@ -3,9 +3,11 @@ import 'package:drift/native.dart';
 import 'package:eala/core/database/app_database.dart';
 import 'package:eala/core/error/exceptions.dart';
 import 'package:eala/core/error/failures.dart';
+import 'package:eala/core/utils/server_value.dart';
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_local_data_source.dart';
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_remote_data_source.dart';
 import 'package:eala/features/area_of_life/data/models/area_of_life_model.dart';
+import 'package:eala/features/area_of_life/data/models/purpose_suggestion_model.dart';
 import 'package:eala/features/area_of_life/data/repositories/area_of_life_repository_impl.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +21,11 @@ class FakeRemote implements AreaOfLifeRemoteDataSource {
     if (fail) throw const ServerException('offline');
     return rows;
   }
+
+  @override
+  Future<List<PurposeSuggestionModel>> fetchPurposeSuggestions(
+    int areaId,
+  ) async => [];
 }
 
 AreaOfLifeModel area(int id, String title, {String? color = '#112233'}) =>

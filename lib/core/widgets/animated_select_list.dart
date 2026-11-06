@@ -204,9 +204,15 @@ class AnimatedSelectListState extends State<AnimatedSelectList>
           ),
           // The one shared border, drawn above the rows and never taking taps.
           Positioned.fill(
+            // Its own layer: while the border springs, only it repaints, not the rows.
             child: IgnorePointer(
-              child: CustomPaint(
-                painter: _SelectionBorderPainter(this, _SelectMotion.radius.r),
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: _SelectionBorderPainter(
+                    this,
+                    _SelectMotion.radius.r,
+                  ),
+                ),
               ),
             ),
           ),

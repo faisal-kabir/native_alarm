@@ -35,6 +35,10 @@ abstract final class AppColor {
   // Choice lists and step screens
   static const Color selectRing = Color(0xCC545458); // rgba(84,84,88,.8)
   static const Color progressTrack = Color(0x1AFFFFFF); // rgba(255,255,255,.1)
+  // Big composer text field: placeholder, the rule under it, quiet labels.
+  static const Color fieldHint = Color(0x47F7F5F1); // rgba(247,245,241,.28)
+  static const Color fieldRule = Color(0x80545458); // rgba(84,84,88,.5)
+  static const Color textTertiary = Color(0x73EBEBF5); // rgba(235,235,245,.45)
 
   // Alarm mark on a reason whose alarm is switched off.
   static const Color badgeOff = Color(0xFF3A3A3C);

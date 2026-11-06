@@ -709,6 +709,9 @@ Common widgets live in `lib/core/widgets/`:
 | `HighlightedTitle` | Step heading; words in `*stars*` are drawn in the brand colour; rises in |
 | `PillButton` | The bottom "Continue" pill (58 tall, orange when enabled) |
 | `RiseIn` | The fade + lift entrance motion (`RiseIn.curve` is the app's settle curve) |
+| `DictationTextField` | Big free-text field the user can type **or speak** into: mic in the corner, warming rule, counter; while listening it cross-fades into `DictationBar`; spoken words are appended (clipped at a whole word) |
+| `DictationBar` / `LiveMeter` / `DictationTranscript` | The listening panel: live transcript (newest word brightens, blinking caret), discard + live loudness meter + stop |
+| `SuggestionList` / `SuggestionListSkeleton` / `SuggestionLabel` | Suggestions under a field, 3 at a time + "More ideas"; shimmer placeholder while they load; the small upper-case label |
 
 ### Liquid Glass (iOS 26 look)
 
@@ -770,6 +773,25 @@ Android needs nothing extra (the notification permission is already requested by
 
 The database stores only the **path** of a file (e.g. `icons/health.svg`). The address those paths live under is **`AppConstant.baseUrl`** (Supabase Storage's public URL by default: `<SUPABASE_URL>/storage/v1/object/public/`). To show any server file, turn the stored path into a URL with **`mediaUrl(path)`** (`lib/core/network/media_url.dart`); never build a file URL by hand and never put the base URL in the database or a widget. A value that already is a full `http(s)` URL is returned unchanged. Widgets that show server files (`CachedSvgIcon` now, an image widget later) take the *path* and call `mediaUrl` themselves, so the base URL is added in exactly one place. Network images and icons must be cached (README §5): `CachedSvgIcon` uses `flutter_cache_manager`.
 
+### Speech to text (dictation)
+
+Package **`speech_to_text`** (Apple Speech on iOS, Google on Android). `lib/core/speech/`:
+
+- `SpeechRecognizer` (lazy singleton) wraps the plugin: asks for permissions on first use, listens with partial results (stops after 3 s of silence or 1 min), maps the platform sound level to 0..1. The plugin keeps listeners from its first `initialize`, so there is exactly one instance (`SpeechModule`).
+- `DictationController` (abstract `ChangeNotifier`: `listening`, `said`, `saying`, `level`, `onFinished`) and `SpeechDictationController` (`@Injectable(as: DictationController)`, a new one per screen: `instance<DictationController>()`). Tests register `FakeDictation`.
+- Permissions: iOS `NSMicrophoneUsageDescription` + `NSSpeechRecognitionUsageDescription` (Info.plist); Android `RECORD_AUDIO` + the `android.speech.RecognitionService` `<queries>` entry. If speech is unavailable (denied, no recogniser) the field shows a SnackBar.
+
+### Animation performance rules
+
+Every animation must stay cheap; the app runs on low-end phones too.
+
+- Fade with `FadeTransition` (an opacity layer), not `Opacity` inside an `AnimatedBuilder`; rebuild only the small part that moves (a `Transform`).
+- Put anything that repaints every frame on its **own layer** with `RepaintBoundary` (shimmer, the select-list border, the progress line, the live meter), so the page around it is not repainted.
+- Never rebuild/lay out text on a repeating animation (the dictation caret is a `FadeTransition` inside the text, the transcript rebuilds only when a word changes).
+- Create no controller/timer when the motion is off: `RiseIn` and suggestion entrances skip themselves when `MediaQuery.disableAnimations` (reduce motion) is on; the meter stands still and the caret stops.
+- Expensive effects (blur) only while they animate, never on settled content.
+- Repeating animations (shimmer, caret, meter) live only as long as their widget; dispose every controller/ticker/timer.
+
 ### Area of Life Feature (server list, local first)
 
 `lib/features/area_of_life/` holds the list of areas of life from the Supabase table **`area_of_life`** (`id int8, name, title, description, icon, color (hex text), created_at, updated_at`). It is shared by Create Reason and, later, onboarding.
@@ -780,13 +802,28 @@ The database stores only the **path** of a file (e.g. `icons/health.svg`). The a
 - **Needs on the Supabase side:** Row Level Security must allow reading it, e.g. `create policy "read areas" on public.area_of_life for select to anon, authenticated using (true);` — without a select policy the server answers with an empty list and the page shows "Nothing to choose from yet."
 - `icon` holds only the **path** of a single-colour SVG on the server (see *Server files* below); it is painted in the area's `color`.
 
+### Voice Feature (server list, local first)
+
+`lib/features/voice/` mirrors Area of Life for the Supabase table **`voice`** (`id, name, voice_id, audio, avatar, group_id, gender, accent, traits, color, is_premium, created_at, updated_at`).
+
+- **Domain:** `Voice` (all columns; `color` as ARGB int, `isPremium` bool), `VoiceRepository` (`watchVoices()` + `refreshVoices()`), `WatchVoicesUseCase`, `RefreshVoicesUseCase`.
+- **Data:** `VoiceRemoteDataSource`, `VoiceLocalDataSource` (drift `VoicesTable` → `voices`, `AppDatabase.schemaVersion` **6**), `VoiceRepositoryImpl`, `VoiceModel.fromJson`. Same rules as areas: saved copy first, background refresh in one transaction, failures and empty answers never wipe the saved list.
+- **`audio` and `avatar` are server paths.** Always use `voice.audioUrl` / `voice.avatarUrl` (they call `mediaUrl`), never the raw path.
+- Needs a `select` RLS policy on `voice`, like `area_of_life`.
+
+### Purpose Suggestions of an Area (no cache)
+
+`purpose_suggestion` (`id, area_id, suggestion, created_at, updated_at`) belongs to the `area_of_life` feature: `PurposeSuggestion`, `PurposeSuggestionModel`, `AreaOfLifeRepository.getPurposeSuggestions(areaId)`, `GetPurposeSuggestionsUseCase(PurposeSuggestionsParams(areaId))`. Suggestions are **fully dynamic**, so they are **never saved on the device**: every call asks the server, and offline is a failure. Needs a `select` RLS policy on `purpose_suggestion`.
+
 ### Create Reason Feature (multi-step mother page)
 
 `lib/features/create_reason/` is its **own feature** (everything about creating a reason lives there: `presentation/bloc`, `pages`, `widgets`, and later its `domain`/`data` for saving the reason). Route `RouteNames.createReasonPath` (`/createReason`), opened by the Reasons tab's `AddCard`. It reads the areas through the shared `area_of_life` feature.
 
 - **`CreateReasonPage` is the mother page:** top `StepTopBar` (progress = `(stepIndex + 1) / AppConstant.createReasonStepCount`, 5 steps as designed), a `PageView` (no swiping) whose pages are the steps, and the bottom `PillButton` "Continue" (enabled by `CreateReasonState.canContinue`). The system back gesture goes one step back; only the first step closes the page.
-- **`CreateReasonBloc` holds every step's data** (`CreateReasonState`) so the last step can insert the reason into Supabase in one go. Events: `LoadAreasEvent`, `RefreshAreasEvent`, `AreaSelectedEvent`, `NextStepEvent`, `PreviousStepEvent`.
-- **To add a step:** build its page widget (like `SelectAreaStep`), append it to `_steps` in the page, raise `CreateReasonBloc.builtStepCount`, add its data to `CreateReasonState` and a case to `canContinue`. Until step 2 exists "Continue" does nothing after choosing an area.
+- **`CreateReasonBloc` holds every step's data** (`CreateReasonState`) so the last step can insert the reason into Supabase in one go. Events: `LoadAreasEvent`, `RefreshAreasEvent`, `LoadVoicesEvent`, `RefreshVoicesEvent`, `LoadSuggestionsEvent`, `AreaSelectedEvent`, `NextStepEvent`, `PreviousStepEvent`. `LoadStatus` (loading / loaded / failed) is shared by every list in the state.
+- **Data the later steps need is loaded ahead:** the page sends `LoadAreasEvent` and `LoadVoicesEvent` when it opens, so `state.voices` is ready (and cached) before the voice step. "Continue" on the area step sends `LoadSuggestionsEvent(selectedAreaId)`; `state.areaSuggestions` / `suggestionsStatus` then hold that area's suggestions (`suggestionsAreaId` says which area; an answer for an area the user has since left is dropped).
+- **To add a step:** build its page widget (like `SelectAreaStep`), append it to `_steps` in the page, raise `CreateReasonBloc.builtStepCount`, add its data to `CreateReasonState` and a case to `canContinue`. Steps built: 1 `SelectAreaStep`, 2 `PurposeStep` ("Continue" on step 2 waits for step 3).
+- **Step 2 `PurposeStep`** ("What are you working toward?"): the selected area's title on top (its tint mixed into white), the heading, a `DictationTextField` (type or speak), and while the field is empty the area's suggestions (`state.suggestions`, from `purpose_suggestion`) as a `SuggestionList` (shimmer while loading, "Try again" on failure). Picking a suggestion puts its text in the field. **Flag:** `state.purposeSuggestion` / `state.purposeFromSuggestion` is set only while the text is an unchanged suggestion; typing, speaking or editing makes it the user's own text (`purposeFromSuggestion == false`) - the next steps suggest differently for the two cases. Choosing another area drops a picked suggestion (own text stays). Continue needs ≥ 12 characters and 2 words (`AppConstant.purposeMin*`, max 180) and the mic off (`state.dictating`).
 - **Step 1 `SelectAreaStep`:** `AnimatedSelectList` of the areas (title, description, icon, colour from the server). First time with nothing saved → `SelectListSkeleton`; offline with nothing saved → message + "Try again"; later opens show the saved areas at once while the refresh runs, and areas that arrive or change update in place (new rows rise in). A chosen area the server has removed is un-chosen.
 
 ### Settings Feature

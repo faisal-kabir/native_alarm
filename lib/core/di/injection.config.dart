@@ -18,6 +18,9 @@ import 'package:eala/core/notification/local_notification_presenter.dart'
     as _i153;
 import 'package:eala/core/notification/notification_service.dart' as _i118;
 import 'package:eala/core/platform/alarm_platform_client.dart' as _i156;
+import 'package:eala/core/speech/dictation_controller.dart' as _i84;
+import 'package:eala/core/speech/speech_module.dart' as _i942;
+import 'package:eala/core/speech/speech_recognizer.dart' as _i965;
 import 'package:eala/core/storage/storage_module.dart' as _i964;
 import 'package:eala/core/supabase/supabase_module.dart' as _i543;
 import 'package:eala/features/alarm/data/datasources/alarm_local_data_source.dart'
@@ -42,6 +45,8 @@ import 'package:eala/features/area_of_life/data/repositories/area_of_life_reposi
     as _i925;
 import 'package:eala/features/area_of_life/domain/repositories/area_of_life_repository.dart'
     as _i650;
+import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart'
+    as _i879;
 import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart'
     as _i190;
 import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart'
@@ -100,6 +105,18 @@ import 'package:eala/features/settings/domain/usecases/save_settings_usecase.dar
     as _i936;
 import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart'
     as _i678;
+import 'package:eala/features/voice/data/datasources/voice_local_data_source.dart'
+    as _i580;
+import 'package:eala/features/voice/data/datasources/voice_remote_data_source.dart'
+    as _i22;
+import 'package:eala/features/voice/data/repositories/voice_repository_impl.dart'
+    as _i63;
+import 'package:eala/features/voice/domain/repositories/voice_repository.dart'
+    as _i334;
+import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart'
+    as _i414;
+import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart'
+    as _i904;
 import 'package:firebase_analytics/firebase_analytics.dart' as _i398;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart' as _i141;
 import 'package:firebase_messaging/firebase_messaging.dart' as _i892;
@@ -108,6 +125,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart'
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:speech_to_text/speech_to_text.dart' as _i941;
 import 'package:supabase_flutter/supabase_flutter.dart' as _i454;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -119,6 +137,7 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final databaseModule = _$DatabaseModule();
     final firebaseModule = _$FirebaseModule();
+    final speechModule = _$SpeechModule();
     final storageModule = _$StorageModule();
     final supabaseModule = _$SupabaseModule();
     gh.lazySingleton<_i81.AppDatabase>(() => databaseModule.database);
@@ -133,6 +152,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i156.AlarmPlatformClient>(
       () => _i156.AlarmPlatformClient(),
     );
+    gh.lazySingleton<_i941.SpeechToText>(() => speechModule.speechToText);
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => storageModule.secureStorage,
     );
@@ -145,6 +165,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i558.FlutterSecureStorage>(),
       ),
     );
+    gh.lazySingleton<_i965.SpeechRecognizer>(
+      () => _i965.SpeechRecognizer(gh<_i941.SpeechToText>()),
+    );
     gh.lazySingleton<_i504.AreaOfLifeLocalDataSource>(
       () => _i504.AreaOfLifeLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
@@ -156,11 +179,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i570.AuthRemoteDataSource>(
       () => _i570.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
+    gh.lazySingleton<_i22.VoiceRemoteDataSource>(
+      () => _i22.VoiceRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
     gh.lazySingleton<_i209.SettingsLocalDataSource>(
       () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
     gh.lazySingleton<_i36.AnalyticsService>(
       () => _i36.FirebaseAnalyticsService(gh<_i398.FirebaseAnalytics>()),
+    );
+    gh.lazySingleton<_i580.VoiceLocalDataSource>(
+      () => _i580.VoiceLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
     gh.lazySingleton<_i693.UserProfileRemoteDataSource>(
       () => _i693.UserProfileRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
@@ -182,6 +211,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i892.FirebaseMessaging>(),
         gh<_i153.LocalNotificationPresenter>(),
       ),
+    );
+    gh.factory<_i84.DictationController>(
+      () => _i84.SpeechDictationController(gh<_i965.SpeechRecognizer>()),
     );
     gh.lazySingleton<_i23.ReasonRepository>(
       () => _i534.ReasonRepositoryImpl(gh<_i429.ReasonLocalDataSource>()),
@@ -220,6 +252,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i131.EnsureSignedInUseCase>(
       () => _i131.EnsureSignedInUseCase(gh<_i653.AuthRepository>()),
     );
+    gh.lazySingleton<_i334.VoiceRepository>(
+      () => _i63.VoiceRepositoryImpl(
+        gh<_i22.VoiceRemoteDataSource>(),
+        gh<_i580.VoiceLocalDataSource>(),
+      ),
+    );
     gh.lazySingleton<_i650.AreaOfLifeRepository>(
       () => _i925.AreaOfLifeRepositoryImpl(
         gh<_i760.AreaOfLifeRemoteDataSource>(),
@@ -250,6 +288,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i1005.MyAlarmsBloc>(
       () => _i1005.MyAlarmsBloc(gh<_i586.GetAlarmsUseCase>()),
     );
+    gh.lazySingleton<_i414.RefreshVoicesUseCase>(
+      () => _i414.RefreshVoicesUseCase(gh<_i334.VoiceRepository>()),
+    );
+    gh.lazySingleton<_i904.WatchVoicesUseCase>(
+      () => _i904.WatchVoicesUseCase(gh<_i334.VoiceRepository>()),
+    );
     gh.factory<_i743.ReasonsBloc>(
       () => _i743.ReasonsBloc(gh<_i838.GetReasonsUseCase>()),
     );
@@ -261,6 +305,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i798.UpdateDeviceInfoUseCase>(),
         gh<_i49.GetAppInfoUseCase>(),
       ),
+    );
+    gh.lazySingleton<_i879.GetPurposeSuggestionsUseCase>(
+      () =>
+          _i879.GetPurposeSuggestionsUseCase(gh<_i650.AreaOfLifeRepository>()),
     );
     gh.lazySingleton<_i190.RefreshAreasOfLifeUseCase>(
       () => _i190.RefreshAreasOfLifeUseCase(gh<_i650.AreaOfLifeRepository>()),
@@ -279,6 +327,9 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i946.CreateReasonBloc(
         gh<_i375.WatchAreasOfLifeUseCase>(),
         gh<_i190.RefreshAreasOfLifeUseCase>(),
+        gh<_i904.WatchVoicesUseCase>(),
+        gh<_i414.RefreshVoicesUseCase>(),
+        gh<_i879.GetPurposeSuggestionsUseCase>(),
       ),
     );
     return this;
@@ -288,6 +339,8 @@ extension GetItInjectableX on _i174.GetIt {
 class _$DatabaseModule extends _i26.DatabaseModule {}
 
 class _$FirebaseModule extends _i101.FirebaseModule {}
+
+class _$SpeechModule extends _i942.SpeechModule {}
 
 class _$StorageModule extends _i964.StorageModule {}
 

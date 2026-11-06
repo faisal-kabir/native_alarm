@@ -297,6 +297,78 @@ abstract class AppLocalizations {
   /// **'Nothing to choose from yet.'**
   String get create_reason_areas_empty;
 
+  /// Heading of the second Create Reason step. Words between stars are drawn in the brand colour.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you\n*working toward*?'**
+  String get create_reason_purpose_title;
+
+  /// No description provided for @create_reason_purpose_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'I’m working toward something that matters to me because…'**
+  String get create_reason_purpose_hint;
+
+  /// No description provided for @create_reason_suggestions_label.
+  ///
+  /// In en, this message translates to:
+  /// **'Or start from one of these'**
+  String get create_reason_suggestions_label;
+
+  /// No description provided for @suggestions_more_ideas.
+  ///
+  /// In en, this message translates to:
+  /// **'More ideas'**
+  String get suggestions_more_ideas;
+
+  /// No description provided for @suggestions_more_ideas_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more ideas'**
+  String get suggestions_more_ideas_semantics;
+
+  /// No description provided for @create_reason_ideas_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load ideas.'**
+  String get create_reason_ideas_error;
+
+  /// No description provided for @dictation_start.
+  ///
+  /// In en, this message translates to:
+  /// **'Say it out loud'**
+  String get dictation_start;
+
+  /// No description provided for @dictation_discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard what you said'**
+  String get dictation_discard;
+
+  /// No description provided for @dictation_stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and use what you said'**
+  String get dictation_stop;
+
+  /// No description provided for @dictation_listening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening… say it however it comes out.'**
+  String get dictation_listening;
+
+  /// No description provided for @dictation_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input isn’t available. Allow the microphone and speech recognition for Eala in Settings.'**
+  String get dictation_unavailable;
+
+  /// Characters typed out of the maximum, shown under a text field near its limit.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max}'**
+  String text_counter(int count, int max);
+
   /// No description provided for @reason_alarm_on_note.
   ///
   /// In en, this message translates to:

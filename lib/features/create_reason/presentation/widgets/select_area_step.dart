@@ -52,15 +52,15 @@ class SelectAreaStep extends StatelessWidget {
                 )
               else
                 switch (state.areasStatus) {
-                  AreasStatus.loading => const SelectListSkeleton(),
-                  AreasStatus.failed => _Message(
+                  LoadStatus.loading => const SelectListSkeleton(),
+                  LoadStatus.failed => _Message(
                     text: strings.create_reason_areas_error,
                     actionLabel: strings.common_try_again,
                     onAction: () => context.read<CreateReasonBloc>().add(
                       const RefreshAreasEvent(),
                     ),
                   ),
-                  AreasStatus.loaded => _Message(
+                  LoadStatus.loaded => _Message(
                     text: strings.create_reason_areas_empty,
                   ),
                 },

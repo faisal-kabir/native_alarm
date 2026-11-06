@@ -29,7 +29,15 @@ import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart';
 
 import 'dart:async';
 
+import 'package:eala/core/speech/dictation_controller.dart';
+
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
+import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
+import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
+import 'package:eala/features/voice/domain/entities/voice.dart';
+import 'package:eala/features/voice/domain/repositories/voice_repository.dart';
+import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
+import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart';
 import 'package:eala/features/area_of_life/domain/repositories/area_of_life_repository.dart';
 import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
@@ -135,7 +143,16 @@ class FakeAreaOfLifeRepository implements AreaOfLifeRepository {
     this.server = const [],
     this.offline = false,
     this.serverAnswer,
+    this.areaSuggestions = const {},
+    this.suggestionsAnswer,
+    this.suggestionsOffline = false,
   });
+
+  /// Suggestions by area id; [suggestionsAnswer] delays them, [suggestionsOffline] makes them fail.
+  Map<int, List<PurposeSuggestion>> areaSuggestions;
+  Future<void>? suggestionsAnswer;
+  bool suggestionsOffline;
+  final List<int> suggestionRequests = [];
 
   List<AreaOfLife> saved;
   List<AreaOfLife> server;
@@ -160,7 +177,75 @@ class FakeAreaOfLifeRepository implements AreaOfLifeRepository {
     _changes.add(saved);
     return const Right(unit);
   }
+
+  @override
+  Future<Either<Failure, List<PurposeSuggestion>>> getPurposeSuggestions(
+    int areaId,
+  ) async {
+    suggestionRequests.add(areaId);
+    await suggestionsAnswer;
+    if (suggestionsOffline) return const Left(ServerFailure('offline'));
+    return Right(areaSuggestions[areaId] ?? const []);
+  }
 }
+
+/// In-memory [VoiceRepository], same idea as [FakeAreaOfLifeRepository].
+class FakeVoiceRepository implements VoiceRepository {
+  FakeVoiceRepository({
+    this.saved = const [],
+    this.server = const [],
+    this.offline = false,
+  });
+
+  List<Voice> saved;
+  List<Voice> server;
+  bool offline;
+
+  final _changes = StreamController<List<Voice>>.broadcast();
+
+  @override
+  Stream<Either<Failure, List<Voice>>> watchVoices() async* {
+    yield Right(saved);
+    yield* _changes.stream.map(Right.new);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> refreshVoices() async {
+    // Like a real request, answer on a later turn (the watcher subscribes first).
+    await Future<void>.delayed(Duration.zero);
+    if (offline) return const Left(ServerFailure('offline'));
+    saved = server;
+    _changes.add(saved);
+    return const Right(unit);
+  }
+}
+
+/// A microphone for tests: [start] begins listening at once (or fails when
+/// [available] is false); [speak] plays words in, [commit] / [cancel] end the take.
+class FakeDictation extends DictationController {
+  bool available = true;
+
+  @override
+  Future<bool> start() async {
+    if (!available) return false;
+    begin();
+    return true;
+  }
+
+  void speak(List<String> said, [String saying = '']) {
+    setWords(said, saying);
+    setLevel(0.7);
+  }
+
+  @override
+  void commit() => finish(keep: true);
+
+  @override
+  void cancel() => finish(keep: false);
+}
+
+/// The [FakeDictation] the last screen asked for.
+FakeDictation? lastFakeDictation;
 
 /// In-memory [SettingsRepository]; [saved] records what was stored last.
 class FakeSettingsRepository implements SettingsRepository {
@@ -197,6 +282,7 @@ Future<void> registerFakeAlarmDependencies(
   ReasonRepository? reasonRepository,
   SettingsRepository? settingsRepository,
   AreaOfLifeRepository? areaOfLifeRepository,
+  VoiceRepository? voiceRepository,
 }) async {
   await instance.reset();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
@@ -224,11 +310,18 @@ Future<void> registerFakeAlarmDependencies(
   );
   instance.registerFactory<CreateReasonBloc>(() {
     final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
+    final voices = voiceRepository ?? FakeVoiceRepository();
     return CreateReasonBloc(
       WatchAreasOfLifeUseCase(areas),
       RefreshAreasOfLifeUseCase(areas),
+      WatchVoicesUseCase(voices),
+      RefreshVoicesUseCase(voices),
+      GetPurposeSuggestionsUseCase(areas),
     );
   });
+  instance.registerFactory<DictationController>(
+    () => lastFakeDictation = FakeDictation(),
+  );
   instance.registerFactory<SettingsBloc>(
     () => buildSettingsBloc(settingsRepository ?? FakeSettingsRepository()),
   );

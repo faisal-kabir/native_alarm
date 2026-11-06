@@ -47,18 +47,21 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) => ShaderMask(
-        blendMode: BlendMode.srcIn,
-        shaderCallback: (bounds) => LinearGradient(
-          colors: [widget.baseColor, widget.highlightColor, widget.baseColor],
-          stops: const [0.3, 0.5, 0.7],
-          // Starts fully left of the child and ends fully right of it.
-          transform: _SlideGradient(_controller.value * 2 - 1),
-        ).createShader(bounds),
-        child: child,
+    // Its own layer: the sweep repaints only the placeholder, not the page around it.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        child: widget.child,
+        builder: (context, child) => ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [widget.baseColor, widget.highlightColor, widget.baseColor],
+            stops: const [0.3, 0.5, 0.7],
+            // Starts fully left of the child and ends fully right of it.
+            transform: _SlideGradient(_controller.value * 2 - 1),
+          ).createShader(bounds),
+          child: child,
+        ),
       ),
     );
   }

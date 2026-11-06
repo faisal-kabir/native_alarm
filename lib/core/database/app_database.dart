@@ -4,19 +4,26 @@ import '../../features/alarm/data/models/alarms_table.dart';
 import '../../features/area_of_life/data/models/areas_of_life_table.dart';
 import '../../features/reasons/data/models/reasons_table.dart';
 import '../../features/settings/data/models/settings_table.dart';
+import '../../features/voice/data/models/voices_table.dart';
 
 part 'app_database.g.dart';
 
 /// The app's single local SQLite database (drift). Add every feature's table to
 /// `tables` and bump [schemaVersion] with a migration step whenever a table changes.
 @DriftDatabase(
-  tables: [AlarmsTable, ReasonsTable, SettingsTable, AreasOfLifeTable],
+  tables: [
+    AlarmsTable,
+    ReasonsTable,
+    SettingsTable,
+    AreasOfLifeTable,
+    VoicesTable,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -35,6 +42,8 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) await m.createTable(settingsTable);
       // v5: the areas_of_life table (the device's copy of the server's list) was added.
       if (from < 5) await m.createTable(areasOfLifeTable);
+      // v6: the voices table (the device's copy of the server's voice list) was added.
+      if (from < 6) await m.createTable(voicesTable);
     },
   );
 }

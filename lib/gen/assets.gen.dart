@@ -49,6 +49,9 @@ class $AssetsIconsGen {
   /// Directory path: assets/icons/tab
   $AssetsIconsTabGen get tab => const $AssetsIconsTabGen();
 
+  /// Directory path: assets/icons/voice
+  $AssetsIconsVoiceGen get voice => const $AssetsIconsVoiceGen();
+
   /// List of all assets
   List<SvgGenImage> get values => [alarm, check, info, quote];
 }
@@ -158,6 +161,22 @@ class $AssetsIconsTabGen {
     settings,
     settingsOn,
   ];
+}
+
+class $AssetsIconsVoiceGen {
+  const $AssetsIconsVoiceGen();
+
+  /// File path: assets/icons/voice/close.svg
+  SvgGenImage get close => const SvgGenImage('assets/icons/voice/close.svg');
+
+  /// File path: assets/icons/voice/mic.svg
+  SvgGenImage get mic => const SvgGenImage('assets/icons/voice/mic.svg');
+
+  /// File path: assets/icons/voice/stop.svg
+  SvgGenImage get stop => const SvgGenImage('assets/icons/voice/stop.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [close, mic, stop];
 }
 
 class Assets {
