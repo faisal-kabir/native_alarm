@@ -46,6 +46,8 @@ import 'package:eala/features/area_of_life/data/repositories/area_of_life_reposi
     as _i925;
 import 'package:eala/features/area_of_life/domain/repositories/area_of_life_repository.dart'
     as _i650;
+import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart'
+    as _i478;
 import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart'
     as _i879;
 import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart'
@@ -308,6 +310,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i49.GetAppInfoUseCase>(),
       ),
     );
+    gh.lazySingleton<_i478.GetMatterSuggestionsUseCase>(
+      () => _i478.GetMatterSuggestionsUseCase(gh<_i650.AreaOfLifeRepository>()),
+    );
     gh.lazySingleton<_i879.GetPurposeSuggestionsUseCase>(
       () =>
           _i879.GetPurposeSuggestionsUseCase(gh<_i650.AreaOfLifeRepository>()),
@@ -332,6 +337,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i904.WatchVoicesUseCase>(),
         gh<_i414.RefreshVoicesUseCase>(),
         gh<_i879.GetPurposeSuggestionsUseCase>(),
+        gh<_i478.GetMatterSuggestionsUseCase>(),
       ),
     );
     return this;

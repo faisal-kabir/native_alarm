@@ -327,11 +327,53 @@ abstract class AppLocalizations {
   /// **'Show more ideas'**
   String get suggestions_more_ideas_semantics;
 
-  /// No description provided for @create_reason_ideas_error.
+  /// No description provided for @suggestions_load_failed.
   ///
   /// In en, this message translates to:
   /// **'Couldn’t load ideas.'**
-  String get create_reason_ideas_error;
+  String get suggestions_load_failed;
+
+  /// Heading of the optional fourth Create Reason step. Words between stars are drawn in the brand colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Why does it\n*matter to you*?'**
+  String get create_reason_matter_title;
+
+  /// No description provided for @create_reason_matter_for.
+  ///
+  /// In en, this message translates to:
+  /// **'For'**
+  String get create_reason_matter_for;
+
+  /// No description provided for @create_reason_matter_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'This matters to me because…'**
+  String get create_reason_matter_hint;
+
+  /// No description provided for @create_reason_matter_too_short.
+  ///
+  /// In en, this message translates to:
+  /// **'A few more words, or clear it to skip.'**
+  String get create_reason_matter_too_short;
+
+  /// No description provided for @common_optional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get common_optional;
+
+  /// No description provided for @common_skip_for_now.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get common_skip_for_now;
+
+  /// No description provided for @quoted_text.
+  ///
+  /// In en, this message translates to:
+  /// **'“{text}”'**
+  String quoted_text(String text);
 
   /// Heading of the third Create Reason step. Words between stars are drawn in the brand colour.
   ///

@@ -7,6 +7,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/area_of_life.dart';
+import '../../domain/entities/matter_suggestion.dart';
 import '../../domain/entities/purpose_suggestion.dart';
 import '../../domain/repositories/area_of_life_repository.dart';
 import '../datasources/area_of_life_local_data_source.dart';
@@ -55,6 +56,23 @@ class AreaOfLifeRepositoryImpl implements AreaOfLifeRepository {
   ) async {
     try {
       return Right(await remoteDataSource.fetchPurposeSuggestions(areaId));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<MatterSuggestion>>> getMatterSuggestions(
+    int areaId,
+    int? purposeSuggestionId,
+  ) async {
+    try {
+      return Right(
+        await remoteDataSource.fetchMatterSuggestions(
+          areaId,
+          purposeSuggestionId,
+        ),
+      );
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }

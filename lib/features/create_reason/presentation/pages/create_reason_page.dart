@@ -10,6 +10,7 @@ import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
+import '../widgets/matter_step.dart';
 import '../widgets/purpose_step.dart';
 import '../widgets/select_area_step.dart';
 import '../widgets/select_voice_step.dart';
@@ -47,6 +48,7 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
     SelectAreaStep(),
     PurposeStep(),
     SelectVoiceStep(),
+    MatterStep(),
   ];
 
   final PageController _pages = PageController();
@@ -69,7 +71,9 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
         curve: Curves.easeOutCubic,
       ),
       buildWhen: (a, b) =>
-          a.stepIndex != b.stepIndex || a.canContinue != b.canContinue,
+          a.stepIndex != b.stepIndex ||
+          a.canContinue != b.canContinue ||
+          a.continueSkips != b.continueSkips,
       builder: (context, state) {
         final first = state.stepIndex == 0;
         return PopScope(
@@ -98,7 +102,10 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
                   Padding(
                     padding: REdgeInsets.fromLTRB(24, 10, 24, 8),
                     child: PillButton(
-                      label: strings.common_continue,
+                      label: state.continueSkips
+                          ? strings.common_skip_for_now
+                          : strings.common_continue,
+                      quiet: state.continueSkips,
                       enabled: state.canContinue,
                       onPressed: () => bloc.add(const NextStepEvent()),
                     ),

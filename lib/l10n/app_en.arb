@@ -87,7 +87,24 @@
   "create_reason_suggestions_label": "Or start from one of these",
   "suggestions_more_ideas": "More ideas",
   "suggestions_more_ideas_semantics": "Show more ideas",
-  "create_reason_ideas_error": "Couldn’t load ideas.",
+  "suggestions_load_failed": "Couldn’t load ideas.",
+  "create_reason_matter_title": "Why does it\n*matter to you*?",
+  "@create_reason_matter_title": {
+    "description": "Heading of the optional fourth Create Reason step. Words between stars are drawn in the brand colour."
+  },
+  "create_reason_matter_for": "For",
+  "create_reason_matter_hint": "This matters to me because…",
+  "create_reason_matter_too_short": "A few more words, or clear it to skip.",
+  "common_optional": "Optional",
+  "common_skip_for_now": "Skip for now",
+  "quoted_text": "“{text}”",
+  "@quoted_text": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
   "create_reason_voice_title": "Who should *say it*?",
   "@create_reason_voice_title": {
     "description": "Heading of the third Create Reason step. Words between stars are drawn in the brand colour."

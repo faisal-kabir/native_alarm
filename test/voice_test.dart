@@ -5,6 +5,7 @@ import 'package:eala/core/error/failures.dart';
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_local_data_source.dart';
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_remote_data_source.dart';
 import 'package:eala/features/area_of_life/data/models/area_of_life_model.dart';
+import 'package:eala/features/area_of_life/data/models/matter_suggestion_model.dart';
 import 'package:eala/features/area_of_life/data/models/purpose_suggestion_model.dart';
 import 'package:eala/features/area_of_life/data/repositories/area_of_life_repository_impl.dart';
 import 'package:eala/features/voice/data/datasources/voice_local_data_source.dart';
@@ -59,6 +60,25 @@ class FakeAreaRemote implements AreaOfLifeRemoteDataSource {
         'id': 1,
         'area_id': areaId,
         'suggestion': 'Go.',
+      }),
+    ];
+  }
+
+  final matterRequested = <(int, int?)>[];
+
+  @override
+  Future<List<MatterSuggestionModel>> fetchMatterSuggestions(
+    int areaId,
+    int? purposeSuggestionId,
+  ) async {
+    matterRequested.add((areaId, purposeSuggestionId));
+    if (fail) throw const ServerException('offline');
+    return [
+      MatterSuggestionModel.fromJson({
+        'id': 9,
+        'area_id': areaId,
+        'purpose_suggestion_id': purposeSuggestionId,
+        'suggestion': 'Because.',
       }),
     ];
   }
@@ -216,6 +236,35 @@ void main() {
         }).text,
         isEmpty,
       );
+    });
+
+    test(
+      'matter suggestions ask the server for the area and purpose id',
+      () async {
+        final forPick = await repository.getMatterSuggestions(3, 11);
+        final general = await repository.getMatterSuggestions(3, null);
+        expect(remote.matterRequested, [(3, 11), (3, null)]);
+        expect(forPick.getOrElse(() => []).single.purposeSuggestionId, 11);
+        expect(general.getOrElse(() => []).single.purposeSuggestionId, isNull);
+
+        remote.fail = true;
+        expect(
+          (await repository.getMatterSuggestions(3, null)).isLeft(),
+          isTrue,
+        );
+      },
+    );
+
+    test('a matter row reads its columns', () {
+      final model = MatterSuggestionModel.fromJson({
+        'id': 4,
+        'area_id': 11,
+        'purpose_suggestion_id': null,
+        'suggestion': ' I want to say yes to life again ',
+      });
+      expect(model.areaId, 11);
+      expect(model.purposeSuggestionId, isNull);
+      expect(model.text, 'I want to say yes to life again');
     });
   });
 }

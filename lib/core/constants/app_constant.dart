@@ -16,6 +16,10 @@ abstract final class AppConstant {
   static const int purposeMinLength = 12;
   static const int purposeMinWords = 2;
 
+  /// The optional "Why does it matter to you?" text: empty (skip) or at least this
+  /// many characters; at most [purposeMaxLength].
+  static const int matterMinLength = 8;
+
   /// Suggestions are shown this many at a time ("More ideas" adds as many again).
   static const int suggestionsPerPage = 3;
 

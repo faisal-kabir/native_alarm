@@ -15,7 +15,8 @@ import 'rise_in.dart';
 ///
 /// Typing: large text, a mic button in the bottom-right corner, a thin rule under it
 /// whose orange fill grows with the text (full at 40 characters), and a "123/180"
-/// counter past 75 % of [maxLength].
+/// counter past 75 % of [maxLength] (unless [showCounter] is false). A [note] (e.g. "a
+/// few more words") fades in under the rule.
 ///
 /// Speaking: the mic starts [dictation]; the field cross-fades into the
 /// [DictationBar] (transcript + live meter). When the take ends, what was said is
@@ -28,6 +29,8 @@ class DictationTextField extends StatefulWidget {
     required this.dictation,
     required this.hintText,
     required this.maxLength,
+    this.showCounter = true,
+    this.note,
     this.onDictationUnavailable,
   });
 
@@ -35,6 +38,8 @@ class DictationTextField extends StatefulWidget {
   final DictationController dictation;
   final String hintText;
   final int maxLength;
+  final bool showCounter;
+  final String? note;
   final VoidCallback? onDictationUnavailable;
 
   @override
@@ -109,6 +114,8 @@ class _DictationTextFieldState extends State<DictationTextField> {
                   controller: widget.controller,
                   hintText: widget.hintText,
                   maxLength: widget.maxLength,
+                  showCounter: widget.showCounter,
+                  note: widget.note,
                   onMic: _startDictation,
                 ),
         );
@@ -124,12 +131,16 @@ class _TypingField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.maxLength,
+    required this.showCounter,
+    required this.note,
     required this.onMic,
   });
 
   final TextEditingController controller;
   final String hintText;
   final int maxLength;
+  final bool showCounter;
+  final String? note;
   final VoidCallback onMic;
 
   @override
@@ -157,6 +168,10 @@ class _TypingField extends StatelessWidget {
                 textCapitalization: TextCapitalization.sentences,
                 inputFormatters: [LengthLimitingTextInputFormatter(maxLength)],
                 cursorColor: AppColor.primary,
+                // A tap anywhere else closes the keyboard (a page-wide tap catcher
+                // would win the tap from the field itself and stop it focusing).
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 style: fieldStyle,
                 decoration: InputDecoration.collapsed(
                   hintText: hintText,
@@ -227,7 +242,7 @@ class _TypingField extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (len > maxLength * 0.75)
+                if (showCounter && len > maxLength * 0.75)
                   Padding(
                     padding: REdgeInsets.only(top: 6),
                     child: Text(
@@ -242,6 +257,22 @@ class _TypingField extends StatelessWidget {
               ],
             );
           },
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: note == null
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  key: ValueKey(note),
+                  padding: REdgeInsets.only(top: 8),
+                  child: Text(
+                    note!,
+                    style: appTheme(context).textTheme.bodySmall!.copyWith(
+                      fontSize: 13.5.spMin,
+                      color: AppColor.textTertiary,
+                    ),
+                  ),
+                ),
         ),
       ],
     );

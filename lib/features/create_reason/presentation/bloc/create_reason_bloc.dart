@@ -2,12 +2,10 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../core/constants/app_constant.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
-import '../../../../core/utils/text_utils.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
-import '../../../area_of_life/domain/entities/purpose_suggestion.dart';
+import '../../../area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
 import '../../../area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
 import '../../../area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
 import '../../../area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
@@ -23,13 +21,14 @@ import 'create_reason_state.dart';
 class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
   /// How many step pages exist so far. Raise it by one whenever a step page is added
   /// to `CreateReasonPage` (and give `CreateReasonState.canContinue` its case).
-  static const int builtStepCount = 3;
+  static const int builtStepCount = 4;
 
   final WatchAreasOfLifeUseCase watchAreasUseCase;
   final RefreshAreasOfLifeUseCase refreshAreasUseCase;
   final WatchVoicesUseCase watchVoicesUseCase;
   final RefreshVoicesUseCase refreshVoicesUseCase;
   final GetPurposeSuggestionsUseCase getPurposeSuggestionsUseCase;
+  final GetMatterSuggestionsUseCase getMatterSuggestionsUseCase;
 
   CreateReasonBloc(
     this.watchAreasUseCase,
@@ -37,6 +36,7 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     this.watchVoicesUseCase,
     this.refreshVoicesUseCase,
     this.getPurposeSuggestionsUseCase,
+    this.getMatterSuggestionsUseCase,
   ) : super(const CreateReasonState()) {
     on<LoadVoicesEvent>(_onLoadVoices);
     on<RefreshVoicesEvent>(_onRefreshVoices);
@@ -46,6 +46,10 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     on<AreaSelectedEvent>(_onAreaSelected);
     on<PurposeChangedEvent>(_onPurposeChanged);
     on<SuggestionPickedEvent>(_onSuggestionPicked);
+    on<MatterChangedEvent>((event, emit) {
+      if (event.text != state.matter) emit(state.copyWith(matter: event.text));
+    });
+    on<LoadMatterSuggestionsEvent>(_onLoadMatterSuggestions);
     on<VoiceSelectedEvent>((event, emit) {
       if (!state.voices.any((v) => v.id == event.voiceId)) return;
       emit(state.copyWith(selectedVoiceId: () => event.voiceId));
@@ -183,48 +187,62 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
       state.copyWith(
         selectedAreaId: () => event.areaId,
         purpose: fromSuggestion ? '' : null,
-        purposeSuggestion: fromSuggestion ? () => null : null,
       ),
     );
   }
 
-  /// Any change that makes the text differ from the picked suggestion turns it into
-  /// the user's own text (the flag the next steps use).
+  /// Whether the text is a suggestion is worked out from the text itself
+  /// (`CreateReasonState.purposeSuggestion`), so typing it back counts too.
   void _onPurposeChanged(
     PurposeChangedEvent event,
     Emitter<CreateReasonState> emit,
   ) {
-    if (event.text == state.purpose) return;
-    final quote = state.purposeSuggestion;
-    final unchanged = quote != null && event.text.trim() == _pickText(quote);
-    emit(
-      state.copyWith(
-        purpose: event.text,
-        purposeSuggestion: unchanged ? null : () => null,
-      ),
-    );
+    if (event.text != state.purpose) emit(state.copyWith(purpose: event.text));
   }
 
   void _onSuggestionPicked(
     SuggestionPickedEvent event,
     Emitter<CreateReasonState> emit,
   ) {
-    for (final quote in state.suggestions) {
-      if (quote.id == event.quoteId) {
+    for (final suggestion in state.suggestions) {
+      if (suggestion.id == event.quoteId) {
         emit(
-          state.copyWith(
-            purpose: _pickText(quote),
-            purposeSuggestion: () => quote,
-          ),
+          state.copyWith(purpose: CreateReasonState.suggestionText(suggestion)),
         );
         return;
       }
     }
   }
 
-  /// The text a picked suggestion puts in the field (within the length limit).
-  static String _pickText(PurposeSuggestion quote) =>
-      clipToWord(quote.text.trim(), AppConstant.purposeMaxLength);
+  /// Like the purpose suggestions: never saved, every call asks the server, the old
+  /// ones are cleared first, and a late answer for another key is dropped.
+  Future<void> _onLoadMatterSuggestions(
+    LoadMatterSuggestionsEvent event,
+    Emitter<CreateReasonState> emit,
+  ) async {
+    final key = (event.areaId, event.purposeSuggestionId);
+    emit(
+      state.copyWith(
+        matterSuggestions: const [],
+        matterSuggestionsFor: () => key,
+        matterSuggestionsStatus: LoadStatus.loading,
+      ),
+    );
+    final result = await getMatterSuggestionsUseCase(
+      MatterSuggestionsParams(event.areaId, event.purposeSuggestionId),
+    );
+    if (state.matterSuggestionsFor != key) return;
+    result.fold(
+      (failure) =>
+          emit(state.copyWith(matterSuggestionsStatus: LoadStatus.failed)),
+      (suggestions) => emit(
+        state.copyWith(
+          matterSuggestions: suggestions,
+          matterSuggestionsStatus: LoadStatus.loaded,
+        ),
+      ),
+    );
+  }
 
   void _onNextStep(NextStepEvent event, Emitter<CreateReasonState> emit) {
     if (!state.canContinue) return;
@@ -236,6 +254,15 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
         !(state.suggestionsAreaId == areaId &&
             state.suggestionsStatus == LoadStatus.loading)) {
       add(LoadSuggestionsEvent(areaId));
+    }
+    // Leaving the purpose step: get the "why it matters" suggestions ready for the
+    // area and the purpose (its picked suggestion, or none when it is the user's own).
+    final matterKey = state.matterSuggestionsKey;
+    if (state.stepIndex == 1 &&
+        matterKey != null &&
+        !(state.matterSuggestionsFor == matterKey &&
+            state.matterSuggestionsStatus == LoadStatus.loading)) {
+      add(LoadMatterSuggestionsEvent(matterKey.$1, matterKey.$2));
     }
     final next = state.stepIndex + 1;
     if (next >= builtStepCount) return;

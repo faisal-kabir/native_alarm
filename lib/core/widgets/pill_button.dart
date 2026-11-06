@@ -6,17 +6,21 @@ import '../constants/app_constant.dart';
 import '../theme/app_color.dart';
 
 /// The main button at the bottom of a screen: a 58-tall pill, orange with black text
-/// when [enabled], dark grey with faded text when not. It shrinks to 98 % while pressed.
+/// when [enabled], dark grey with faded text when not. [quiet] is the low-key enabled
+/// look (dark grey with white text, e.g. "Skip for now"). It shrinks to 98 % while
+/// pressed.
 class PillButton extends StatefulWidget {
   const PillButton({
     super.key,
     required this.label,
     required this.enabled,
+    this.quiet = false,
     this.onPressed,
   });
 
   final String label;
   final bool enabled;
+  final bool quiet;
   final VoidCallback? onPressed;
 
   @override
@@ -52,13 +56,19 @@ class _PillButtonState extends State<PillButton> {
             height: 58.h,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: on ? AppColor.primary : AppColor.cardColor,
+              color: on && !widget.quiet
+                  ? AppColor.primary
+                  : AppColor.cardColor,
               borderRadius: BorderRadius.circular(AppConstant.pillRadius),
             ),
             child: AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 250),
               style: appTheme(context).textTheme.titleMedium!.copyWith(
-                color: on ? AppColor.onPrimary : AppColor.textMuted,
+                color: !on
+                    ? AppColor.textMuted
+                    : widget.quiet
+                    ? AppColor.textColor
+                    : AppColor.onPrimary,
               ),
               child: Text(widget.label),
             ),

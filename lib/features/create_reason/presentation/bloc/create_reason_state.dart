@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/constants/app_constant.dart';
 import '../../../../core/utils/text_utils.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
+import '../../../area_of_life/domain/entities/matter_suggestion.dart';
 import '../../../area_of_life/domain/entities/purpose_suggestion.dart';
 import '../../../voice/domain/entities/voice.dart';
 
@@ -46,15 +47,21 @@ class CreateReasonState extends Equatable {
   /// Step 2 data: "What are you working toward?" as the user wrote, spoke or picked it.
   final String purpose;
 
-  /// The suggestion whose text is in [purpose] **unchanged**. Null as soon as
-  /// the user types, speaks or edits: see [purposeFromSuggestion].
-  final PurposeSuggestion? purposeSuggestion;
-
   /// The microphone is listening on the purpose step (Continue waits for it).
   final bool dictating;
 
   /// Step 3 data: the chosen voice (from [voices]).
   final int? selectedVoiceId;
+
+  /// Step 4 data (optional): "Why does it matter to you?" as written, spoken or picked.
+  final String matter;
+
+  /// The "why it matters" suggestions loaded for [matterSuggestionsFor] (area id, picked
+  /// purpose suggestion id or null), when the user continued from the purpose step.
+  /// Never saved on the device. Use [matterSuggestionsShown].
+  final List<MatterSuggestion> matterSuggestions;
+  final (int, int?)? matterSuggestionsFor;
+  final LoadStatus matterSuggestionsStatus;
 
   const CreateReasonState({
     this.stepIndex = 0,
@@ -67,10 +74,35 @@ class CreateReasonState extends Equatable {
     this.suggestionsAreaId,
     this.suggestionsStatus = LoadStatus.loading,
     this.purpose = '',
-    this.purposeSuggestion,
     this.dictating = false,
     this.selectedVoiceId,
+    this.matter = '',
+    this.matterSuggestions = const [],
+    this.matterSuggestionsFor,
+    this.matterSuggestionsStatus = LoadStatus.loading,
   });
+
+  /// What the "why it matters" suggestions must be loaded for now: the selected area
+  /// and the picked purpose suggestion (null when the purpose is the user's own).
+  (int, int?)? get matterSuggestionsKey {
+    final areaId = selectedAreaId;
+    return areaId == null ? null : (areaId, purposeSuggestion?.id);
+  }
+
+  /// The "why it matters" suggestions for the current area and purpose only.
+  List<MatterSuggestion> get matterSuggestionsShown =>
+      matterSuggestionsFor == matterSuggestionsKey
+      ? matterSuggestions
+      : const [];
+
+  /// The optional "why it matters" text is started but still too short to keep.
+  bool get matterTooShort {
+    final text = matter.trim();
+    return text.isNotEmpty && text.length < AppConstant.matterMinLength;
+  }
+
+  /// On the optional step with nothing written, "Continue" reads "Skip for now".
+  bool get continueSkips => stepIndex == 3 && matter.trim().isEmpty;
 
   Voice? get selectedVoice {
     for (final voice in voices) {
@@ -79,10 +111,28 @@ class CreateReasonState extends Equatable {
     return null;
   }
 
-  /// True when the purpose is exactly a picked suggestion; false when the user wrote it
-  /// (typed or spoken) or changed a picked suggestion. The next steps suggest
-  /// differently for the two cases.
+  /// The suggestion whose text the purpose is right now, however it got there: picked,
+  /// or typed / spoken / edited until it reads the same (spaces and letter case aside).
+  /// Null when the text matches none of the selected area's suggestions.
+  PurposeSuggestion? get purposeSuggestion {
+    final text = _comparable(purpose);
+    if (text.isEmpty) return null;
+    for (final suggestion in suggestions) {
+      if (_comparable(suggestionText(suggestion)) == text) return suggestion;
+    }
+    return null;
+  }
+
+  /// True when the purpose is one of the suggestions (see [purposeSuggestion]); false
+  /// when it is the user's own text. The next steps suggest differently for the two.
   bool get purposeFromSuggestion => purposeSuggestion != null;
+
+  /// The text a suggestion puts in the field (within the length limit).
+  static String suggestionText(PurposeSuggestion suggestion) =>
+      clipToWord(suggestion.text.trim(), AppConstant.purposeMaxLength);
+
+  static String _comparable(String text) =>
+      text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
   /// The suggestions to show on the purpose step: only those of the selected area.
   List<PurposeSuggestion> get suggestions =>
@@ -106,6 +156,7 @@ class CreateReasonState extends Equatable {
     0 => selectedArea != null,
     1 => _purposeReady && !dictating,
     2 => selectedVoice != null,
+    3 => !matterTooShort && !dictating,
     _ => false,
   };
 
@@ -123,9 +174,12 @@ class CreateReasonState extends Equatable {
     int? Function()? suggestionsAreaId,
     LoadStatus? suggestionsStatus,
     String? purpose,
-    PurposeSuggestion? Function()? purposeSuggestion,
     bool? dictating,
     int? Function()? selectedVoiceId,
+    String? matter,
+    List<MatterSuggestion>? matterSuggestions,
+    (int, int?)? Function()? matterSuggestionsFor,
+    LoadStatus? matterSuggestionsStatus,
   }) => CreateReasonState(
     stepIndex: stepIndex ?? this.stepIndex,
     areas: areas ?? this.areas,
@@ -141,13 +195,17 @@ class CreateReasonState extends Equatable {
         : suggestionsAreaId(),
     suggestionsStatus: suggestionsStatus ?? this.suggestionsStatus,
     purpose: purpose ?? this.purpose,
-    purposeSuggestion: purposeSuggestion == null
-        ? this.purposeSuggestion
-        : purposeSuggestion(),
     dictating: dictating ?? this.dictating,
     selectedVoiceId: selectedVoiceId == null
         ? this.selectedVoiceId
         : selectedVoiceId(),
+    matter: matter ?? this.matter,
+    matterSuggestions: matterSuggestions ?? this.matterSuggestions,
+    matterSuggestionsFor: matterSuggestionsFor == null
+        ? this.matterSuggestionsFor
+        : matterSuggestionsFor(),
+    matterSuggestionsStatus:
+        matterSuggestionsStatus ?? this.matterSuggestionsStatus,
   );
 
   @override
@@ -162,8 +220,11 @@ class CreateReasonState extends Equatable {
     suggestionsAreaId,
     suggestionsStatus,
     purpose,
-    purposeSuggestion,
     dictating,
     selectedVoiceId,
+    matter,
+    matterSuggestions,
+    matterSuggestionsFor,
+    matterSuggestionsStatus,
   ];
 }

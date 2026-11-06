@@ -23,18 +23,20 @@ class SuggestionItem {
 
 /// Suggested wording under a text field: a small upper-case [label], then
 /// [AppConstant.suggestionsPerPage] suggestions at a time; "More ideas" adds as many
-/// again. Each suggestion arrives on its own (10 up, out of a light blur, 420 ms).
+/// again (only when [expandable]). Each suggestion arrives on its own (10 up, out of a light blur, 420 ms).
 class SuggestionList extends StatefulWidget {
   const SuggestionList({
     super.key,
     required this.label,
     required this.items,
     required this.onPick,
+    this.expandable = true,
   });
 
   final String label;
   final List<SuggestionItem> items;
   final ValueChanged<SuggestionItem> onPick;
+  final bool expandable;
 
   @override
   State<SuggestionList> createState() => _SuggestionListState();
@@ -68,7 +70,7 @@ class _SuggestionListState extends State<SuggestionList> {
             ),
           ),
         ],
-        if (_count < widget.items.length)
+        if (widget.expandable && _count < widget.items.length)
           Padding(
             padding: REdgeInsets.only(top: 10),
             child: Semantics(
@@ -170,6 +172,41 @@ class SuggestionListSkeleton extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// In place of [SuggestionList] when the suggestions could not be loaded: a short
+/// note and "Try again".
+class SuggestionError extends StatelessWidget {
+  const SuggestionError({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    final textTheme = appTheme(context).textTheme;
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            strings.suggestions_load_failed,
+            style: textTheme.bodySmall!.copyWith(color: AppColor.textTertiary),
+          ),
+        ),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onRetry,
+          child: Padding(
+            padding: REdgeInsets.all(8),
+            child: Text(
+              strings.common_try_again,
+              style: textTheme.labelLarge!.copyWith(color: AppColor.primary),
             ),
           ),
         ),

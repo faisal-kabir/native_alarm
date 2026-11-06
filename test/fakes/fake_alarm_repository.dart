@@ -33,6 +33,8 @@ import 'package:eala/core/audio/sample_player.dart';
 import 'package:eala/core/speech/dictation_controller.dart';
 
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
+import 'package:eala/features/area_of_life/domain/entities/matter_suggestion.dart';
+import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
 import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
 import 'package:eala/features/voice/domain/entities/voice.dart';
@@ -147,7 +149,15 @@ class FakeAreaOfLifeRepository implements AreaOfLifeRepository {
     this.areaSuggestions = const {},
     this.suggestionsAnswer,
     this.suggestionsOffline = false,
+    this.matterSuggestions = const [],
+    this.matterOffline = false,
   });
+
+  /// All `matter_suggestion` rows; [getMatterSuggestions] filters them like the
+  /// server (area, and purpose suggestion id or none). [matterOffline] fails it.
+  List<MatterSuggestion> matterSuggestions;
+  bool matterOffline;
+  final List<(int, int?)> matterRequests = [];
 
   /// Suggestions by area id; [suggestionsAnswer] delays them, [suggestionsOffline] makes them fail.
   Map<int, List<PurposeSuggestion>> areaSuggestions;
@@ -187,6 +197,21 @@ class FakeAreaOfLifeRepository implements AreaOfLifeRepository {
     await suggestionsAnswer;
     if (suggestionsOffline) return const Left(ServerFailure('offline'));
     return Right(areaSuggestions[areaId] ?? const []);
+  }
+
+  @override
+  Future<Either<Failure, List<MatterSuggestion>>> getMatterSuggestions(
+    int areaId,
+    int? purposeSuggestionId,
+  ) async {
+    matterRequests.add((areaId, purposeSuggestionId));
+    await Future<void>.delayed(Duration.zero);
+    if (matterOffline) return const Left(ServerFailure('offline'));
+    return Right([
+      for (final s in matterSuggestions)
+        if (s.areaId == areaId && s.purposeSuggestionId == purposeSuggestionId)
+          s,
+    ]);
   }
 }
 
@@ -348,6 +373,7 @@ Future<void> registerFakeAlarmDependencies(
       WatchVoicesUseCase(voices),
       RefreshVoicesUseCase(voices),
       GetPurposeSuggestionsUseCase(areas),
+      GetMatterSuggestionsUseCase(areas),
     );
   });
   instance.registerFactory<SamplePlayer>(

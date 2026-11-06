@@ -98,3 +98,26 @@ class VoiceSelectedEvent extends CreateReasonEvent {
   @override
   List<Object?> get props => [voiceId];
 }
+
+/// The "why it matters" text changed in the field (typed, spoken, or a pick).
+class MatterChangedEvent extends CreateReasonEvent {
+  final String text;
+
+  const MatterChangedEvent(this.text);
+
+  @override
+  List<Object?> get props => [text];
+}
+
+/// Load the "why it matters" suggestions of [areaId] for purpose suggestion
+/// [purposeSuggestionId] (null: the user wrote their own purpose). Sent on "Continue"
+/// from the purpose step.
+class LoadMatterSuggestionsEvent extends CreateReasonEvent {
+  final int areaId;
+  final int? purposeSuggestionId;
+
+  const LoadMatterSuggestionsEvent(this.areaId, this.purposeSuggestionId);
+
+  @override
+  List<Object?> get props => [areaId, purposeSuggestionId];
+}

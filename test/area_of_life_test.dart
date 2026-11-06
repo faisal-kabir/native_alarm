@@ -7,6 +7,7 @@ import 'package:eala/core/utils/server_value.dart';
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_local_data_source.dart';
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_remote_data_source.dart';
 import 'package:eala/features/area_of_life/data/models/area_of_life_model.dart';
+import 'package:eala/features/area_of_life/data/models/matter_suggestion_model.dart';
 import 'package:eala/features/area_of_life/data/models/purpose_suggestion_model.dart';
 import 'package:eala/features/area_of_life/data/repositories/area_of_life_repository_impl.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
@@ -25,6 +26,12 @@ class FakeRemote implements AreaOfLifeRemoteDataSource {
   @override
   Future<List<PurposeSuggestionModel>> fetchPurposeSuggestions(
     int areaId,
+  ) async => [];
+
+  @override
+  Future<List<MatterSuggestionModel>> fetchMatterSuggestions(
+    int areaId,
+    int? purposeSuggestionId,
   ) async => [];
 }
 

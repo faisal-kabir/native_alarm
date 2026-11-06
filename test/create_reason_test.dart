@@ -13,6 +13,8 @@ import 'package:eala/features/voice/domain/entities/voice_group.dart';
 import 'package:eala/core/widgets/select_list_skeleton.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
+import 'package:eala/features/area_of_life/domain/entities/matter_suggestion.dart';
+import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
 import 'package:eala/features/voice/domain/entities/voice.dart';
@@ -53,6 +55,7 @@ CreateReasonBloc buildBloc(
     WatchVoicesUseCase(voiceRepo),
     RefreshVoicesUseCase(voiceRepo),
     GetPurposeSuggestionsUseCase(repo),
+    GetMatterSuggestionsUseCase(repo),
   );
 }
 
@@ -427,6 +430,39 @@ void main() {
         },
       );
 
+      test(
+        'typing until it reads like a suggestion makes it that suggestion',
+        () async {
+          final bloc = await atPurposeStep();
+          bloc.add(const PurposeChangedEvent('Sleep well'));
+          await settle();
+          expect(bloc.state.purposeFromSuggestion, isFalse);
+
+          // Same words as q2, other spaces and letter case: still that suggestion.
+          bloc.add(const PurposeChangedEvent('  sleep WELL,   feel strong '));
+          await settle();
+          expect(bloc.state.purposeSuggestion, q2);
+          await bloc.close();
+        },
+      );
+
+      test(
+        'edited away from a pick and back again: the suggestion again',
+        () async {
+          final bloc = await atPurposeStep();
+          bloc.add(const SuggestionPickedEvent(11));
+          await settle();
+          bloc.add(PurposeChangedEvent('${q1.text}!'));
+          await settle();
+          expect(bloc.state.purposeFromSuggestion, isFalse);
+
+          bloc.add(PurposeChangedEvent(q1.text));
+          await settle();
+          expect(bloc.state.purposeSuggestion, q1);
+          await bloc.close();
+        },
+      );
+
       test('editing a picked suggestion makes it the user\'s own', () async {
         final bloc = await atPurposeStep();
         bloc.add(const SuggestionPickedEvent(11));
@@ -542,6 +578,132 @@ void main() {
       expect(bloc.state.voices, [calm]);
       expect(bloc.state.selectedVoiceId, isNull);
       await bloc.close();
+    });
+
+    group('why it matters (step 4)', () {
+      const p1 = PurposeSuggestion(id: 11, areaId: 1, text: 'Sleep well again');
+      const forP1 = MatterSuggestion(
+        id: 1,
+        areaId: 1,
+        purposeSuggestionId: 11,
+        text: 'I am tired of running on empty',
+      );
+      const general = MatterSuggestion(
+        id: 2,
+        areaId: 1,
+        text: 'It is about feeling like me',
+      );
+
+      Future<(CreateReasonBloc, FakeAreaOfLifeRepository)> atPurpose() async {
+        final repo = FakeAreaOfLifeRepository(
+          saved: [health],
+          server: [health],
+          areaSuggestions: {
+            1: [p1],
+          },
+          matterSuggestions: [forP1, general],
+        );
+        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+        await settle();
+        await settle();
+        bloc
+          ..add(const AreaSelectedEvent(1))
+          ..add(const NextStepEvent());
+        await settle();
+        await settle();
+        return (bloc, repo);
+      }
+
+      test(
+        'an unchanged picked purpose loads the suggestions made for it',
+        () async {
+          final (bloc, repo) = await atPurpose();
+          bloc.add(const SuggestionPickedEvent(11));
+          await settle();
+          bloc.add(const NextStepEvent());
+          await settle();
+          await settle();
+          expect(repo.matterRequests, [(1, 11)]);
+          expect(bloc.state.matterSuggestionsShown, [forP1]);
+          expect(bloc.state.matterSuggestionsStatus, LoadStatus.loaded);
+          await bloc.close();
+        },
+      );
+
+      test('a typed purpose that matches a suggestion passes its id', () async {
+        final (bloc, repo) = await atPurpose();
+        bloc.add(const PurposeChangedEvent('sleep well again'));
+        await settle();
+        bloc.add(const NextStepEvent());
+        await settle();
+        await settle();
+        expect(repo.matterRequests, [(1, 11)]);
+        expect(bloc.state.matterSuggestionsShown, [forP1]);
+        await bloc.close();
+      });
+
+      test(
+        'an own (or edited) purpose loads the area\'s general ones',
+        () async {
+          final (bloc, repo) = await atPurpose();
+          bloc
+            ..add(const SuggestionPickedEvent(11))
+            ..add(const PurposeChangedEvent('Sleep well again, truly'));
+          await settle();
+          bloc.add(const NextStepEvent());
+          await settle();
+          await settle();
+          expect(repo.matterRequests, [(1, null)]);
+          expect(bloc.state.matterSuggestionsShown, [general]);
+          await bloc.close();
+        },
+      );
+
+      test(
+        'nothing is asked for before Continue on the purpose step',
+        () async {
+          final (bloc, repo) = await atPurpose();
+          expect(repo.matterRequests, isEmpty);
+          await bloc.close();
+        },
+      );
+
+      test('empty skips, 1-7 characters wait, 8+ continue', () async {
+        final (bloc, _) = await atPurpose();
+        var state = bloc.state.copyWith(stepIndex: 3);
+        expect(state.continueSkips, isTrue);
+        expect(state.canContinue, isTrue);
+
+        state = state.copyWith(matter: 'Because');
+        expect(state.matterTooShort, isTrue);
+        expect(state.canContinue, isFalse);
+        expect(state.continueSkips, isFalse);
+
+        state = state.copyWith(matter: 'Because I care');
+        expect(state.matterTooShort, isFalse);
+        expect(state.canContinue, isTrue);
+
+        state = state.copyWith(dictating: true);
+        expect(state.canContinue, isFalse);
+        await bloc.close();
+      });
+
+      test('suggestions loaded for another purpose are not shown', () async {
+        final (bloc, _) = await atPurpose();
+        bloc.add(const SuggestionPickedEvent(11));
+        await settle();
+        bloc.add(const NextStepEvent());
+        await settle();
+        await settle();
+        expect(bloc.state.matterSuggestionsShown, [forP1]);
+        // Back on the purpose step the user edits: the loaded ones no longer apply.
+        bloc
+          ..add(const PreviousStepEvent())
+          ..add(const PurposeChangedEvent('Something else entirely'));
+        await settle();
+        expect(bloc.state.matterSuggestionsShown, isEmpty);
+        await bloc.close();
+      });
     });
 
     test('Previous on the first step does nothing', () async {
@@ -708,6 +870,16 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Idea number 5 for health'), findsOneWidget);
         expect(find.text('More ideas'), findsNothing);
+      });
+
+      testWidgets('tapping the field focuses it (nothing steals the tap)', (
+        tester,
+      ) async {
+        await toPurposeStep(tester);
+        await tester.tap(find.byType(TextField));
+        await tester.pump();
+        final editable = tester.widget<EditableText>(find.byType(EditableText));
+        expect(editable.focusNode.hasFocus, isTrue);
       });
 
       testWidgets('a picked idea fills the field, then the ideas go', (
@@ -934,6 +1106,110 @@ void main() {
         await tester.tap(find.bySemanticsLabel('Back'));
         await tester.pumpAndSettle();
         expect(player.disposed, isTrue);
+      });
+    });
+
+    group('matter step', () {
+      const p1 = PurposeSuggestion(id: 11, areaId: 1, text: 'Sleep well again');
+      final matter = [
+        for (var i = 1; i <= 4; i++)
+          MatterSuggestion(
+            id: i,
+            areaId: 1,
+            purposeSuggestionId: 11,
+            text: 'Reason number $i',
+          ),
+      ];
+      const astra = Voice(id: 1, name: 'Astra', voiceId: 'a');
+
+      Future<void> toMatterStep(WidgetTester tester) async {
+        await registerFakeAlarmDependencies(
+          FakeAlarmRepository(),
+          areaOfLifeRepository: FakeAreaOfLifeRepository(
+            saved: [health],
+            server: [health],
+            areaSuggestions: {
+              1: [p1],
+            },
+            matterSuggestions: matter,
+          ),
+          voiceRepository: FakeVoiceRepository(saved: [astra], server: [astra]),
+        );
+        await tester.pumpWidget(const MyApp());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Reasons').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Add your first Reason'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Health'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Sleep well again'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Astra'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('shows OPTIONAL, the purpose as a quote and 3 suggestions', (
+        tester,
+      ) async {
+        await toMatterStep(tester);
+        expect(find.text('OPTIONAL'), findsOneWidget);
+        expect(find.textContaining('matter to you'), findsOneWidget);
+        expect(find.text('FOR'), findsOneWidget);
+        expect(find.text('“Sleep well again”'), findsOneWidget);
+        expect(find.text('Reason number 1'), findsOneWidget);
+        expect(find.text('Reason number 3'), findsOneWidget);
+        expect(find.text('Reason number 4'), findsNothing);
+        expect(find.text('More ideas'), findsNothing);
+        // Nothing written: the button skips, in the quiet look.
+        final pill = tester.widget<PillButton>(find.byType(PillButton));
+        expect(pill.label, 'Skip for now');
+        expect(pill.quiet, isTrue);
+        expect(pill.enabled, isTrue);
+      });
+
+      testWidgets(
+        'too short shows the note and waits; a pick fills the field',
+        (tester) async {
+          await toMatterStep(tester);
+          await tester.enterText(find.byType(TextField), 'Because');
+          await tester.pumpAndSettle();
+          expect(find.textContaining('A few more words'), findsOneWidget);
+          var pill = tester.widget<PillButton>(find.byType(PillButton));
+          expect(pill.enabled, isFalse);
+          expect(pill.label, 'Continue');
+
+          await tester.enterText(find.byType(TextField), '');
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Reason number 2'));
+          await tester.pumpAndSettle();
+          final field = tester.widget<TextField>(find.byType(TextField));
+          expect(field.controller!.text, 'Reason number 2');
+          expect(find.textContaining('A few more words'), findsNothing);
+          pill = tester.widget<PillButton>(find.byType(PillButton));
+          expect(pill.enabled, isTrue);
+          expect(pill.quiet, isFalse);
+        },
+      );
+
+      testWidgets('the mic works here too', (tester) async {
+        await toMatterStep(tester);
+        await tester.tap(find.bySemanticsLabel('Say it out loud'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(find.byType(DictationBar), findsOneWidget);
+        lastFakeDictation!.speak(['it', 'keeps', 'me'], 'going');
+        lastFakeDictation!.commit();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.controller!.text, 'it keeps me going');
       });
     });
   });

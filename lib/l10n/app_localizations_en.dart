@@ -143,7 +143,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suggestions_more_ideas_semantics => 'Show more ideas';
 
   @override
-  String get create_reason_ideas_error => 'Couldn’t load ideas.';
+  String get suggestions_load_failed => 'Couldn’t load ideas.';
+
+  @override
+  String get create_reason_matter_title => 'Why does it\n*matter to you*?';
+
+  @override
+  String get create_reason_matter_for => 'For';
+
+  @override
+  String get create_reason_matter_hint => 'This matters to me because…';
+
+  @override
+  String get create_reason_matter_too_short =>
+      'A few more words, or clear it to skip.';
+
+  @override
+  String get common_optional => 'Optional';
+
+  @override
+  String get common_skip_for_now => 'Skip for now';
+
+  @override
+  String quoted_text(String text) {
+    return '“$text”';
+  }
 
   @override
   String get create_reason_voice_title => 'Who should *say it*?';
