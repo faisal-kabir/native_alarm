@@ -36,10 +36,31 @@ class _ReasonsView extends StatefulWidget {
 }
 
 class _ReasonsViewState extends State<_ReasonsView>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   // Keeps the page (and its BLoC) alive while another Dashboard tab is shown.
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back in the front (maybe online again, maybe changed elsewhere): update the
+    // saved copy in the background.
+    if (state == AppLifecycleState.resumed) {
+      context.read<ReasonsBloc>().add(const RefreshReasonsEvent());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   /// Ids in the list as first loaded, plus every one shown since.
   Set<String>? _known;

@@ -24,10 +24,6 @@ import 'create_reason_state.dart';
 /// [CreateReasonState]; the steps are pages of one PageView.
 @injectable
 class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
-  /// How many step pages exist so far. Raise it by one whenever a step page is added
-  /// to `CreateReasonPage` (and give `CreateReasonState.canContinue` its case).
-  static const int builtStepCount = 5;
-
   final WatchAreasOfLifeUseCase watchAreasUseCase;
   final RefreshAreasOfLifeUseCase refreshAreasUseCase;
   final WatchVoicesUseCase watchVoicesUseCase;
@@ -229,7 +225,7 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     Emitter<CreateReasonState> emit,
   ) {
     for (final suggestion in state.suggestions) {
-      if (suggestion.id == event.quoteId) {
+      if (suggestion.id == event.suggestionId) {
         emit(
           state.copyWith(purpose: CreateReasonState.suggestionText(suggestion)),
         );
@@ -273,7 +269,7 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     // Leaving the area step: get the suggestions of the chosen area ready for the next step
     // (unless this very area's suggestions are already on their way).
     final areaId = state.selectedAreaId;
-    if (state.stepIndex == 0 &&
+    if (state.stepIndex == CreateReasonState.areaStep &&
         areaId != null &&
         !(state.suggestionsAreaId == areaId &&
             state.suggestionsStatus == LoadStatus.loading)) {
@@ -282,16 +278,16 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
     // Leaving the purpose step: get the "why it matters" suggestions ready for the
     // area and the purpose (its picked suggestion, or none when it is the user's own).
     final matterKey = state.matterSuggestionsKey;
-    if (state.stepIndex == 1 &&
+    if (state.stepIndex == CreateReasonState.purposeStep &&
         matterKey != null &&
         !(state.matterSuggestionsFor == matterKey &&
             state.matterSuggestionsStatus == LoadStatus.loading)) {
       add(LoadMatterSuggestionsEvent(matterKey.$1, matterKey.$2));
     }
     final next = state.stepIndex + 1;
-    if (next >= builtStepCount) return;
+    if (next >= AppConstant.createReasonStepCount) return;
     emit(state.copyWith(stepIndex: next));
-    if (next == 4) _ensureSoundQuote();
+    if (next == CreateReasonState.soundStep) _ensureSoundQuote();
   }
 
   /// Saves everything the steps collected as a new reason (unique name, server and
@@ -358,7 +354,7 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
         );
       },
     );
-    if (state.stepIndex == 4) _ensureSoundQuote();
+    if (state.stepIndex == CreateReasonState.soundStep) _ensureSoundQuote();
   }
 
   /// Asks for the example line of the current area and sound unless it is already

@@ -3,13 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/app_constant.dart';
-import '../../../../core/theme/app_color.dart';
 import '../../../../core/widgets/rise_in.dart';
 import '../../../../core/widgets/suggestion_list.dart';
 import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
+import 'area_label.dart';
 import 'composer_text_step.dart';
 
 /// Step 2 of Create Reason: "What are you working toward?".
@@ -53,13 +53,9 @@ class _AreaEyebrow extends StatelessWidget {
       },
       builder: (context, area) {
         if (area == null) return const SizedBox.shrink();
-        final tint = Color(area.$2 ?? AppColor.primary.toARGB32());
         return RiseIn(
           dy: 14,
-          child: SuggestionLabel(
-            area.$1,
-            color: Color.lerp(AppColor.white, tint, 0.7),
-          ),
+          child: AreaLabel(title: area.$1, color: area.$2),
         );
       },
     );

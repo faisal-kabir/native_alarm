@@ -42,7 +42,7 @@ class SelectAreaStep extends StatelessWidget {
                         id: area.id,
                         title: area.title,
                         subtitle: area.description,
-                        tint: Color(area.color ?? AppColor.primary.toARGB32()),
+                        tint: AppColor.tintOf(area.color),
                         iconPath: area.icon,
                       ),
                   ],
@@ -55,14 +55,14 @@ class SelectAreaStep extends StatelessWidget {
                 switch (state.areasStatus) {
                   LoadStatus.loading => const SelectListSkeleton(),
                   LoadStatus.failed => StepMessage(
-                    text: strings.create_reason_areas_error,
+                    text: strings.common_list_error,
                     actionLabel: strings.common_try_again,
                     onAction: () => context.read<CreateReasonBloc>().add(
                       const RefreshAreasEvent(),
                     ),
                   ),
                   LoadStatus.loaded => StepMessage(
-                    text: strings.create_reason_areas_empty,
+                    text: strings.common_list_empty,
                   ),
                 },
             ],

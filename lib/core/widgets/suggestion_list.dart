@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -58,9 +55,13 @@ class _SuggestionListState extends State<SuggestionList> {
         SizedBox(height: 10.h),
         for (var i = 0; i < shown.length; i++) ...[
           if (i > 0) SizedBox(height: 8.h),
-          _SuggestionIn(
+          // Each one arrives 10 up, out of a soft blur, 420 ms.
+          RiseIn(
             key: ValueKey(shown[i].id),
             delay: Duration(milliseconds: 40 + (i % _per) * 60),
+            duration: const Duration(milliseconds: 420),
+            dy: 10,
+            blur: 2,
             child: _SuggestionPill(
               text: shown[i].text,
               onTap: () {
@@ -246,74 +247,6 @@ class _SuggestionPill extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// One suggestion arriving: 10 up, out of a 4 dp blur, 420 ms. The blur only exists
-/// while it animates (and never with reduced motion), so a settled list costs nothing.
-class _SuggestionIn extends StatefulWidget {
-  const _SuggestionIn({super.key, required this.delay, required this.child});
-
-  final Duration delay;
-  final Widget child;
-
-  @override
-  State<_SuggestionIn> createState() => _SuggestionInState();
-}
-
-class _SuggestionInState extends State<_SuggestionIn>
-    with SingleTickerProviderStateMixin {
-  AnimationController? _c;
-  Animation<double>? _t;
-  Timer? _timer;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_c != null || MediaQuery.disableAnimationsOf(context)) return;
-    final c = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    );
-    _c = c;
-    _t = CurvedAnimation(parent: c, curve: RiseIn.curve);
-    _timer = Timer(widget.delay, () {
-      if (mounted) c.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _c?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = _t;
-    if (t == null) return widget.child;
-    final dy = 10.h;
-    return FadeTransition(
-      opacity: t,
-      child: AnimatedBuilder(
-        animation: t,
-        child: widget.child,
-        builder: (_, child) {
-          final v = t.value;
-          final blur = 2 * (1 - v);
-          final moved = Transform.translate(
-            offset: Offset(0, dy * (1 - v)),
-            child: child,
-          );
-          if (blur < 0.05) return moved;
-          return ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-            child: moved,
-          );
-        },
       ),
     );
   }

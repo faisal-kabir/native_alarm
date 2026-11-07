@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -7,6 +6,7 @@ import '../../../../core/constants/app_constant.dart';
 import '../../../../core/theme/app_color.dart';
 import '../../../../core/theme/dimension.dart';
 import '../../../../core/widgets/app_svg_icon.dart';
+import '../../../../core/widgets/spring_in.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
 
@@ -146,7 +146,7 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
                 ),
                 SizedBox(width: 6.w),
                 _naming
-                    ? _SpringIn(
+                    ? SpringIn(
                         key: const ValueKey('save'),
                         spring: const SpringDescription(
                           mass: 1,
@@ -158,7 +158,7 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
                           onTap: _focus.unfocus,
                         ),
                       )
-                    : const _SpringIn(
+                    : const SpringIn(
                         key: ValueKey('edit'),
                         spring: SpringDescription(
                           mass: 1,
@@ -241,55 +241,6 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Scale 0.6 → 1 and fade in on a spring, once, when it appears.
-class _SpringIn extends StatefulWidget {
-  const _SpringIn({super.key, required this.spring, required this.child});
-
-  final SpringDescription spring;
-  final Widget child;
-
-  @override
-  State<_SpringIn> createState() => _SpringInState();
-}
-
-class _SpringInState extends State<_SpringIn>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController.unbounded(
-    vsync: this,
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _c.value = 1;
-    } else {
-      _c.animateWith(SpringSimulation(widget.spring, 0, 1, 0));
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      child: widget.child,
-      builder: (_, child) => Opacity(
-        opacity: _c.value.clamp(0.0, 1.0),
-        child: Transform.scale(scale: 0.6 + 0.4 * _c.value, child: child),
       ),
     );
   }

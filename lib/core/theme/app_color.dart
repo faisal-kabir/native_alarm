@@ -23,14 +23,9 @@ abstract final class AppColor {
 
   // Floating tab bar (glass)
   static const Color tabIdle = Color(0xEBFFFFFF); // rgba(255,255,255,.92)
-  static const Color tabBarFill = Color(0x611E1E20); // rgba(30,30,32,.38)
   // Tint of the liquid glass tab bar: near-black and mostly clear.
   static const Color glassTint = Color(0x1A101012);
-  static const Color tabBarBorder = Color(0x1FFFFFFF);
-  static const Color tabBarGlossTop = Color(0x12FFFFFF);
-  static const Color tabBarGlossBottom = Color(0x05FFFFFF);
-  static const Color tabLensTop = Color(0x29FFFFFF);
-  static const Color tabLensBottom = Color(0x14FFFFFF);
+  static const Color tabLensTop = Color(0x29FFFFFF); // the selected tab's lens
 
   // Choice lists and step screens
   static const Color selectRing = Color(0xCC545458); // rgba(84,84,88,.8)
@@ -62,4 +57,8 @@ abstract final class AppColor {
 
   static const Color white = Color(0xFFFFFFFF);
   static const Color transparent = Colors.transparent;
+
+  /// A tint the server sent as an ARGB int (an area's, a voice's); the brand colour
+  /// when it sent none.
+  static Color tintOf(int? argb) => argb == null ? primary : Color(argb);
 }

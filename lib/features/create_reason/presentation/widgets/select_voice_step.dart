@@ -107,13 +107,11 @@ class _SelectVoiceStepState extends State<SelectVoiceStep> {
           content = switch (state.voicesStatus) {
             LoadStatus.loading => const SelectListSkeleton(count: 4),
             LoadStatus.failed => StepMessage(
-              text: strings.create_reason_areas_error,
+              text: strings.common_list_error,
               actionLabel: strings.common_try_again,
               onAction: () => _bloc.add(const RefreshVoicesEvent()),
             ),
-            LoadStatus.loaded => StepMessage(
-              text: strings.create_reason_areas_empty,
-            ),
+            LoadStatus.loaded => StepMessage(text: strings.common_list_empty),
           };
         }
         return SingleChildScrollView(

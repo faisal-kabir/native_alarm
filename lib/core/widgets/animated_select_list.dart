@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../utils/text_utils.dart';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../main.dart';
@@ -144,9 +147,8 @@ class _SelectRowState extends State<SelectRow>
 
   Widget _leading(BuildContext context) {
     final item = widget.item;
-    final trimmed = item.title.trim();
     final letter = Text(
-      trimmed.isEmpty ? '' : trimmed.characters.first.toUpperCase(),
+      initialOf(item.title),
       style: appTheme(context).textTheme.titleMedium!
           .copyWith(fontSize: 18.spMin, color: item.tint),
     );

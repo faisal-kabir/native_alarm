@@ -10,16 +10,16 @@ import '../../../sound/domain/entities/sound_quote.dart';
 import '../../../sound/domain/entities/sound_type.dart';
 import '../../../voice/domain/entities/voice.dart';
 
-/// Where a list loaded from the server stands (only matters while there is nothing to
-/// show yet).
 /// Where saving the reason stands ("Create Reason" on the last step).
 enum SaveStatus { idle, saving, saved, failed }
 
+/// Where a list loaded from the server stands (only matters while there is nothing to
+/// show yet).
 enum LoadStatus {
   /// Waiting for the first answer from the server.
   loading,
 
-  /// The server answered and the areas are up to date.
+  /// The server answered and the list is up to date.
   loaded,
 
   /// The server could not be reached and nothing is available to show.
@@ -29,6 +29,13 @@ enum LoadStatus {
 /// Everything the Create Reason flow collects, step by step, in one place: the mother
 /// page's BLoC keeps it all so the last step can save the reason in one go.
 class CreateReasonState extends Equatable {
+  /// The steps, by their index in the page (the order of `CreateReasonPage._steps`).
+  static const int areaStep = 0;
+  static const int purposeStep = 1;
+  static const int voiceStep = 2;
+  static const int matterStep = 3;
+  static const int soundStep = 4;
+
   /// 0-based index of the step showing now.
   final int stepIndex;
 
@@ -132,7 +139,7 @@ class CreateReasonState extends Equatable {
   }
 
   /// On the optional step with nothing written, "Continue" reads "Skip for now".
-  bool get continueSkips => stepIndex == 3 && matter.trim().isEmpty;
+  bool get continueSkips => stepIndex == matterStep && matter.trim().isEmpty;
 
   /// The chosen sound type: the picked one, else the first.
   SoundType? get selectedSound {
@@ -205,11 +212,11 @@ class CreateReasonState extends Equatable {
 
   /// Whether the current step is complete, so "Continue" is enabled.
   bool get canContinue => switch (stepIndex) {
-    0 => selectedArea != null,
-    1 => _purposeReady && !dictating,
-    2 => selectedVoice != null,
-    3 => !matterTooShort && !dictating,
-    4 => selectedSound != null && saveStatus != SaveStatus.saving,
+    areaStep => selectedArea != null,
+    purposeStep => _purposeReady && !dictating,
+    voiceStep => selectedVoice != null,
+    matterStep => !matterTooShort && !dictating,
+    soundStep => selectedSound != null && saveStatus != SaveStatus.saving,
     _ => false,
   };
 

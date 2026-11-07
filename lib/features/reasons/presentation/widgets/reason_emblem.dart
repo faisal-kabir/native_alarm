@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_color.dart';
+import '../../../../core/utils/text_utils.dart';
 import '../../../../core/widgets/app_svg_icon.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
@@ -27,11 +28,7 @@ class ReasonEmblem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tint = areaColor == null ? AppColor.primary : Color(areaColor!);
-    final trimmed = areaName.trim();
-    final initial = trimmed.isEmpty
-        ? ''
-        : trimmed.characters.first.toUpperCase();
+    final tint = AppColor.tintOf(areaColor);
     return SizedBox(
       width: 46.r,
       height: 46.r,
@@ -47,7 +44,7 @@ class ReasonEmblem extends StatelessWidget {
               borderRadius: BorderRadius.circular(15.r),
             ),
             child: Text(
-              initial,
+              initialOf(areaName),
               style: appTheme(context).textTheme.headlineMedium!
                   .copyWith(fontSize: 21.spMin, color: tint),
             ),

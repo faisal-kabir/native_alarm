@@ -120,11 +120,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_reason_area_title => 'What do you want\nto *wake up for*?';
 
   @override
-  String get create_reason_areas_error =>
+  String get common_list_error =>
       'Couldn’t load the list. Check your connection and try again.';
 
   @override
-  String get create_reason_areas_empty => 'Nothing to choose from yet.';
+  String get common_list_empty => 'Nothing to choose from yet.';
 
   @override
   String get create_reason_purpose_title => 'What are you\n*working toward*?';

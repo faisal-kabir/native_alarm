@@ -21,6 +21,17 @@ class ReasonRepositoryImpl implements ReasonRepository {
 
   ReasonRepositoryImpl(this.remoteDataSource, this.localDataSource);
 
+  /// Refresh, create and rename run one after another: a refresh that downloaded
+  /// the list just before a new reason was saved (or renamed) would otherwise put
+  /// the old list back over it.
+  Future<void> _last = Future<void>.value();
+
+  Future<T> _oneAtATime<T>(Future<T> Function() task) {
+    final run = _last.then((_) => task());
+    _last = run.then<void>((_) {}, onError: (Object _) {});
+    return run;
+  }
+
   @override
   Stream<Either<Failure, List<Reason>>> watchReasons() =>
       localDataSource.watchReasons().transform(
@@ -36,7 +47,25 @@ class ReasonRepositoryImpl implements ReasonRepository {
       );
 
   @override
-  Future<Either<Failure, Reason>> createReason(NewReason reason) async {
+  Future<Either<Failure, Unit>> refreshReasons() =>
+      _oneAtATime(_refreshReasons);
+
+  Future<Either<Failure, Unit>> _refreshReasons() async {
+    try {
+      await localDataSource.replaceAll(await remoteDataSource.fetchReasons());
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Reason>> createReason(NewReason reason) =>
+      _oneAtATime(() => _createReason(reason));
+
+  Future<Either<Failure, Reason>> _createReason(NewReason reason) async {
     try {
       final userId = await remoteDataSource.fetchOwnUserId();
       final taken = await remoteDataSource.fetchNamesStartingWith(
@@ -62,7 +91,10 @@ class ReasonRepositoryImpl implements ReasonRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> renameReason(String id, String name) async {
+  Future<Either<Failure, Unit>> renameReason(String id, String name) =>
+      _oneAtATime(() => _renameReason(id, name));
+
+  Future<Either<Failure, Unit>> _renameReason(String id, String name) async {
     final serverId = int.tryParse(id);
     if (serverId == null) return const Left(CacheFailure('Unknown reason'));
     try {

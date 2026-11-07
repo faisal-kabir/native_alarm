@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../../core/utils/text_utils.dart';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_color.dart';
@@ -27,9 +30,7 @@ class ProfileCard extends StatelessWidget {
     final textTheme = appTheme(context).textTheme;
     final trimmed = name.trim();
     final title = trimmed.isEmpty ? strings.settings_set_your_name : trimmed;
-    final initial = trimmed.isEmpty
-        ? '?'
-        : trimmed.characters.first.toUpperCase();
+    final initial = trimmed.isEmpty ? '?' : initialOf(trimmed);
     return Semantics(
       button: true,
       label: strings.settings_profile_semantics(title, subtitle),

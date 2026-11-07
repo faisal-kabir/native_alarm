@@ -55,6 +55,7 @@ import 'package:eala/features/reasons/domain/repositories/reason_repository.dart
 import 'package:eala/features/reasons/domain/entities/new_reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason_name.dart';
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
+import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart';
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.dart';
@@ -156,6 +157,24 @@ class FakeReasonRepository implements ReasonRepository {
     await Future<void>.delayed(Duration.zero);
     yield Right(List.of(reasons));
     yield* _changes.stream.map((list) => Right(list));
+  }
+
+  /// What the server holds; a refresh copies it over [reasons] (null: no change).
+  List<Reason>? server;
+  int refreshes = 0;
+
+  @override
+  Future<Either<Failure, Unit>> refreshReasons() async {
+    refreshes++;
+    if (offline) return const Left(ServerFailure('offline'));
+    final list = server;
+    if (list != null) {
+      reasons
+        ..clear()
+        ..addAll(list);
+      _changes.add(List.of(reasons));
+    }
+    return const Right(unit);
   }
 
   @override
@@ -460,7 +479,10 @@ Future<void> registerFakeAlarmDependencies(
   );
   final reasons = reasonRepository ?? FakeReasonRepository();
   instance.registerFactory<ReasonsBloc>(
-    () => ReasonsBloc(WatchReasonsUseCase(reasons)),
+    () => ReasonsBloc(
+      WatchReasonsUseCase(reasons),
+      RefreshReasonsUseCase(reasons),
+    ),
   );
   instance.registerFactory<ReasonReadyBloc>(
     () => ReasonReadyBloc(RenameReasonUseCase(reasons)),

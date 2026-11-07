@@ -34,25 +34,40 @@ class CachedSvgIcon extends StatefulWidget {
 }
 
 class _CachedSvgIconState extends State<CachedSvgIcon> {
-  late Future<File> _file = DefaultCacheManager().getSingleFile(
-    mediaUrl(widget.path),
-  );
+  /// Files already found on the device during this run, by URL. An icon shown again (a
+  /// step coming back, a list rebuilding) paints at once: no cache lookup, no blank
+  /// frame. Only paths are kept (a few dozen icons at most).
+  static final Map<String, File> _known = {};
+
+  late String _url = mediaUrl(widget.path);
+  late Future<File> _file = _find(_url);
+
+  static Future<File> _find(String url) {
+    final known = _known[url];
+    if (known != null) return Future.value(known);
+    return DefaultCacheManager()
+        .getSingleFile(url)
+        .then((f) => _known[url] = f);
+  }
 
   @override
   void didUpdateWidget(CachedSvgIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.path != widget.path) {
-      _file = DefaultCacheManager().getSingleFile(mediaUrl(widget.path));
+      _url = mediaUrl(widget.path);
+      _file = _find(_url);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final url = _url;
     return SizedBox(
       width: widget.size,
       height: widget.size,
       child: FutureBuilder<File>(
         future: _file,
+        initialData: _known[url],
         builder: (context, snapshot) {
           final file = snapshot.data;
           if (file == null) {
@@ -64,7 +79,11 @@ class _CachedSvgIconState extends State<CachedSvgIcon> {
             height: widget.size,
             excludeFromSemantics: true,
             colorFilter: ColorFilter.mode(widget.color, BlendMode.srcIn),
-            errorBuilder: (_, _, _) => widget.fallback,
+            errorBuilder: (_, _, _) {
+              // The file went away (cache cleanup): look it up again next time.
+              _known.remove(url);
+              return widget.fallback;
+            },
           );
         },
       ),

@@ -88,8 +88,9 @@ class SettingsRow extends StatelessWidget {
       ),
     );
     // A row with a switch is not a button: the switch is the control.
-    if (onTap == null && trailing != null)
+    if (onTap == null && trailing != null) {
       return MergeSemantics(child: content);
+    }
     return InkWell(onTap: onTap, child: content);
   }
 }

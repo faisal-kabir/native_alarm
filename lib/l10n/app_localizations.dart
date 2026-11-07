@@ -285,17 +285,17 @@ abstract class AppLocalizations {
   /// **'What do you want\nto *wake up for*?'**
   String get create_reason_area_title;
 
-  /// No description provided for @create_reason_areas_error.
+  /// No description provided for @common_list_error.
   ///
   /// In en, this message translates to:
   /// **'Couldn’t load the list. Check your connection and try again.'**
-  String get create_reason_areas_error;
+  String get common_list_error;
 
-  /// No description provided for @create_reason_areas_empty.
+  /// No description provided for @common_list_empty.
   ///
   /// In en, this message translates to:
   /// **'Nothing to choose from yet.'**
-  String get create_reason_areas_empty;
+  String get common_list_empty;
 
   /// Heading of the second Create Reason step. Words between stars are drawn in the brand colour.
   ///

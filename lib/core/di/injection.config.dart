@@ -94,6 +94,8 @@ import 'package:eala/features/reasons/domain/repositories/reason_repository.dart
     as _i23;
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart'
     as _i1004;
+import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart'
+    as _i4;
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart'
     as _i836;
 import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart'
@@ -307,11 +309,20 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1004.CreateReasonUseCase>(
       () => _i1004.CreateReasonUseCase(gh<_i23.ReasonRepository>()),
     );
+    gh.lazySingleton<_i4.RefreshReasonsUseCase>(
+      () => _i4.RefreshReasonsUseCase(gh<_i23.ReasonRepository>()),
+    );
     gh.lazySingleton<_i836.RenameReasonUseCase>(
       () => _i836.RenameReasonUseCase(gh<_i23.ReasonRepository>()),
     );
     gh.lazySingleton<_i305.WatchReasonsUseCase>(
       () => _i305.WatchReasonsUseCase(gh<_i23.ReasonRepository>()),
+    );
+    gh.factory<_i743.ReasonsBloc>(
+      () => _i743.ReasonsBloc(
+        gh<_i305.WatchReasonsUseCase>(),
+        gh<_i4.RefreshReasonsUseCase>(),
+      ),
     );
     gh.lazySingleton<_i962.DeleteAlarmUseCase>(
       () => _i962.DeleteAlarmUseCase(gh<_i1032.AlarmRepository>()),
@@ -339,9 +350,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i904.WatchVoicesUseCase>(
       () => _i904.WatchVoicesUseCase(gh<_i334.VoiceRepository>()),
-    );
-    gh.factory<_i743.ReasonsBloc>(
-      () => _i743.ReasonsBloc(gh<_i305.WatchReasonsUseCase>()),
     );
     gh.factory<_i64.ReasonReadyBloc>(
       () => _i64.ReasonReadyBloc(gh<_i836.RenameReasonUseCase>()),

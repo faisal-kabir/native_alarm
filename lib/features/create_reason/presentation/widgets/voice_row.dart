@@ -7,6 +7,7 @@ import '../../../../core/theme/app_color.dart';
 import '../../../../core/theme/dimension.dart';
 import '../../../../core/widgets/play_button.dart';
 import '../../../../core/widgets/playing_ring.dart';
+import '../../../../core/utils/text_utils.dart';
 import '../../../../core/widgets/sliding_border.dart';
 import '../../../../main.dart';
 import '../../../voice/domain/entities/voice.dart';
@@ -140,16 +141,16 @@ class VoiceAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = this.size.r;
-    final tint = Color(voice.color ?? AppColor.primary.toARGB32());
-    final name = voice.name.trim();
+    final tint = AppColor.tintOf(voice.color);
     final letter = Center(
       child: Text(
-        name.isEmpty ? '' : name.characters.first.toUpperCase(),
+        initialOf(voice.name),
         style: appTheme(context).textTheme.titleMedium!
             .copyWith(fontSize: size * 0.43, color: tint),
       ),
     );
     final url = voice.avatarUrl;
+    final decode = (size * MediaQuery.devicePixelRatioOf(context)).round();
     return ExcludeSemantics(
       child: PlayingRing(
         active: playing,
@@ -165,6 +166,9 @@ class VoiceAvatar extends StatelessWidget {
                       width: size,
                       height: size,
                       fit: BoxFit.cover,
+                      // Decoded at the size it is shown, not the file's full size.
+                      memCacheWidth: decode,
+                      memCacheHeight: decode,
                       fadeInDuration: const Duration(milliseconds: 250),
                       errorWidget: (_, _, _) => letter,
                     ),

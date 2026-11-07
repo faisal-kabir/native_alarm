@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Cuts [text] to at most [max] characters at the last whole word that fits, so text
 /// that runs over a limit loses a trailing word rather than half of one.
 String clipToWord(String text, int max) {
@@ -14,4 +16,11 @@ String clipToWord(String text, int max) {
 int wordCount(String text) {
   final t = text.trim();
   return t.isEmpty ? 0 : t.split(RegExp(r'\s+')).length;
+}
+
+/// The first letter of [name] in capitals ("health" → "H"), for the letter shown when
+/// there is no picture or icon; empty for an empty name.
+String initialOf(String name) {
+  final trimmed = name.trim();
+  return trimmed.isEmpty ? '' : trimmed.characters.first.toUpperCase();
 }

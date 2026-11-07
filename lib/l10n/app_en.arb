@@ -77,8 +77,8 @@
   "@create_reason_area_title": {
     "description": "Heading of the first Create Reason step. Words between stars are drawn in the brand colour."
   },
-  "create_reason_areas_error": "Couldn’t load the list. Check your connection and try again.",
-  "create_reason_areas_empty": "Nothing to choose from yet.",
+  "common_list_error": "Couldn’t load the list. Check your connection and try again.",
+  "common_list_empty": "Nothing to choose from yet.",
   "create_reason_purpose_title": "What are you\n*working toward*?",
   "@create_reason_purpose_title": {
     "description": "Heading of the second Create Reason step. Words between stars are drawn in the brand colour."

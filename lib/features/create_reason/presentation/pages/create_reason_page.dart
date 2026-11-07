@@ -23,7 +23,8 @@ import '../widgets/select_voice_step.dart';
 /// data lives in [CreateReasonBloc], which saves the reason after the last step.
 ///
 /// To add a step: build its page widget, append it to [_steps], raise
-/// `CreateReasonBloc.builtStepCount` and give `CreateReasonState.canContinue` a case.
+/// `AppConstant.createReasonStepCount`, name its index in `CreateReasonState` and give
+/// `CreateReasonState.canContinue` a case.
 class CreateReasonPage extends StatelessWidget {
   const CreateReasonPage({super.key});
 
@@ -71,8 +72,9 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
     final area = state.selectedArea;
     final voice = state.selectedVoice;
     final sound = state.selectedSound;
-    if (reason == null || area == null || voice == null || sound == null)
+    if (reason == null || area == null || voice == null || sound == null) {
       return;
+    }
     context.pushReplacement(
       RouteNames.reasonReadyPath,
       extra: ReasonReadyArgs(
@@ -116,7 +118,7 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
           a.isLastStep != b.isLastStep ||
           a.saveStatus != b.saveStatus,
       builder: (context, state) {
-        final first = state.stepIndex == 0;
+        final first = state.stepIndex == CreateReasonState.areaStep;
         return PopScope(
           // The system back gesture goes one step back; only the first step closes.
           canPop: first,

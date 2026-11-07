@@ -51,13 +51,11 @@ class SelectSoundStep extends StatelessWidget {
             switch (state.soundTypesStatus) {
               LoadStatus.loading => const _StepSkeleton(),
               LoadStatus.failed => StepMessage(
-                text: strings.create_reason_areas_error,
+                text: strings.common_list_error,
                 actionLabel: strings.common_try_again,
                 onAction: () => bloc.add(const LoadSoundTypesEvent()),
               ),
-              LoadStatus.loaded => StepMessage(
-                text: strings.create_reason_areas_empty,
-              ),
+              LoadStatus.loaded => StepMessage(text: strings.common_list_empty),
             },
           ];
         } else {

@@ -7,7 +7,12 @@ import '../../../../main.dart';
 /// A centred note under a step's heading (nothing loaded, offline), with an optional
 /// text button ("Try again"). Shared by the Create Reason steps.
 class StepMessage extends StatelessWidget {
-  const StepMessage({required this.text, this.actionLabel, this.onAction});
+  const StepMessage({
+    super.key,
+    required this.text,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String text;
   final String? actionLabel;

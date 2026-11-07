@@ -71,12 +71,12 @@ class PurposeChangedEvent extends CreateReasonEvent {
 
 /// The user tapped a suggestion: its text becomes the purpose.
 class SuggestionPickedEvent extends CreateReasonEvent {
-  final int quoteId;
+  final int suggestionId;
 
-  const SuggestionPickedEvent(this.quoteId);
+  const SuggestionPickedEvent(this.suggestionId);
 
   @override
-  List<Object?> get props => [quoteId];
+  List<Object?> get props => [suggestionId];
 }
 
 /// The microphone started or stopped listening on the purpose step.

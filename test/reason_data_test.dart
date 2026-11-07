@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:eala/core/database/app_database.dart';
@@ -7,10 +9,12 @@ import 'package:eala/features/create_reason/presentation/bloc/reason_ready_event
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_state.dart';
 import 'package:eala/features/reasons/data/datasources/reason_local_data_source.dart';
 import 'package:eala/features/reasons/data/datasources/reason_remote_data_source.dart';
+import 'package:eala/features/reasons/data/models/reason_model.dart';
 import 'package:eala/features/reasons/data/repositories/reason_repository_impl.dart';
 import 'package:eala/features/reasons/domain/entities/new_reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason_name.dart';
+import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
@@ -67,7 +71,33 @@ class FakeReasonRemote implements ReasonRemoteDataSource {
     _check();
     updates.add((id, name));
   }
+
+  /// The server's `reason` rows (joined), as [fetchReasons] returns them.
+  List<Map<String, dynamic>> rows = [];
+
+  /// Holds [fetchReasons]'s answer until completed (to test overlapping writes).
+  Completer<void>? fetchGate;
+
+  @override
+  Future<List<ReasonModel>> fetchReasons() async {
+    _check();
+    final answer = [for (final row in rows) ReasonModel.fromJson(row)];
+    await fetchGate?.future;
+    return answer;
+  }
 }
+
+Map<String, dynamic> serverRow(int id, String name, String createdAt) => {
+  'id': id,
+  'name': name,
+  'created_at': createdAt,
+  'area_of_life': {
+    'title': 'Health & body',
+    'name': 'Health',
+    'color': '#30D158',
+  },
+  'sound_type': {'title': 'Calm'},
+};
 
 const newReason = NewReason(
   areaId: 3,
@@ -200,9 +230,84 @@ void main() {
       expect(list.getOrElse(() => []).single.name, 'Health');
     });
 
+    test('a server row reads its area and sound from the join', () {
+      final model = ReasonModel.fromJson(
+        serverRow(9, ' Mornings ', '2026-11-05T04:01:00+00:00'),
+      );
+      expect(
+        (model.id, model.name, model.areaName, model.areaColor, model.toneName),
+        ('9', 'Mornings', 'Health & body', 0xFF30D158, 'Calm'),
+      );
+      expect(model.createdAt, DateTime.utc(2026, 11, 5, 4, 1).toLocal());
+      // A missing join (no area or sound) still gives a row, with empty names.
+      final bare = ReasonModel.fromJson({'id': 3, 'name': 'X'});
+      expect((bare.areaName, bare.toneName, bare.createdAt), ('', '', null));
+    });
+
+    test(
+      'refresh makes the device copy match the server: add, update, remove',
+      () async {
+        await insert('1', 'Old name', 1);
+        await insert('2', 'Deleted elsewhere', 2);
+        remote.rows = [
+          serverRow(1, 'New name', '2026-11-05T04:01:00Z'),
+          serverRow(3, 'Made on another phone', '2026-11-05T03:00:00Z'),
+        ];
+
+        expect((await repository.refreshReasons()).isRight(), isTrue);
+
+        final list = (await repository.watchReasons().first).getOrElse(
+          () => throw 'failed',
+        );
+        // Ordered by the server's created_at.
+        expect(list.map((r) => (r.id, r.name)), [
+          ('3', 'Made on another phone'),
+          ('1', 'New name'),
+        ]);
+        expect(list.last.areaName, 'Health & body');
+        expect(list.last.toneName, 'Calm');
+      },
+    );
+
+    test('refresh offline keeps the saved reasons', () async {
+      await insert('1', 'Saved', 1);
+      remote.offline = true;
+      expect((await repository.refreshReasons()).isLeft(), isTrue);
+      final list = await repository.watchReasons().first;
+      expect(list.getOrElse(() => []).single.name, 'Saved');
+    });
+
+    test('a reason saved while a refresh is downloading is kept', () async {
+      remote.fetchGate = Completer<void>();
+      // The refresh downloads the list (still without the new reason) and waits...
+      final refresh = repository.refreshReasons();
+      // ...while a new reason is being saved.
+      final create = repository.createReason(newReason);
+      remote.rows = [serverRow(41, 'Health 3', '2026-11-05T05:00:00Z')];
+      remote.fetchGate!.complete();
+      await refresh;
+      await create;
+
+      final list = await repository.watchReasons().first;
+      expect(list.getOrElse(() => []).map((r) => r.id), ['41']);
+    });
+
+    test('ReasonsBloc refreshes from the server when it starts', () async {
+      remote.rows = [serverRow(5, 'From server', '2026-11-05T04:00:00Z')];
+      final bloc = ReasonsBloc(
+        WatchReasonsUseCase(repository),
+        RefreshReasonsUseCase(repository),
+      )..add(const LoadReasonsEvent());
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect((bloc.state as ReasonsLoaded).reasons.single.name, 'From server');
+      await bloc.close();
+    });
+
     test('ReasonsBloc follows the list: a new reason shows up', () async {
-      final bloc = ReasonsBloc(WatchReasonsUseCase(repository))
-        ..add(const LoadReasonsEvent());
+      final bloc = ReasonsBloc(
+        WatchReasonsUseCase(repository),
+        RefreshReasonsUseCase(repository),
+      )..add(const LoadReasonsEvent());
       final states = <ReasonsState>[];
       final sub = bloc.stream.listen(states.add);
       await Future<void>.delayed(const Duration(milliseconds: 50));
