@@ -37,6 +37,7 @@ import 'package:eala/features/create_reason/presentation/pages/create_reason_pag
 import 'package:eala/features/create_reason/presentation/pages/reason_ready_page.dart';
 import 'package:eala/features/create_reason/presentation/widgets/reason_name_field.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
+import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
 import 'package:eala/features/reasons/presentation/widgets/reason_row.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -1456,7 +1457,12 @@ void main() {
           WidgetTester tester, {
           List<Reason> existing = const [],
         }) async {
-          final reasons = FakeReasonRepository(existing);
+          final reasons = FakeReasonRepository(
+            existing,
+            const [health],
+            const [encouraging, calmSound],
+            const [astra],
+          );
           await toSoundStep(tester, reasons: reasons);
           await tester.pumpAndSettle();
           await tester.tap(find.text('Create Reason'));
@@ -1469,13 +1475,17 @@ void main() {
         ) async {
           final reasons = await toReady(tester);
           final saved = reasons.created.single;
-          expect(saved.areaId, 1);
           expect(saved.baseName, 'health');
-          expect(saved.purpose, 'Sleep well every night');
-          expect(saved.why, isNull);
-          expect(saved.soundTypeId, 1);
-          expect(saved.voiceId, 1);
-          expect(saved.lengthSeconds, 30);
+          expect(
+            saved.draft,
+            const ReasonDraft(
+              areaId: 1,
+              purpose: 'Sleep well every night',
+              soundTypeId: 1,
+              voiceId: 1,
+              lengthSeconds: 30,
+            ),
+          );
 
           expect(find.byType(ReasonReadyPage), findsOneWidget);
           expect(find.byType(CreateReasonPage), findsNothing);
@@ -1492,19 +1502,9 @@ void main() {
         testWidgets('a name already used gets the next number', (tester) async {
           await toReady(
             tester,
-            existing: const [
-              Reason(
-                id: '1',
-                name: 'health',
-                areaName: 'Health',
-                toneName: 'x',
-              ),
-              Reason(
-                id: '2',
-                name: 'health 3',
-                areaName: 'Health',
-                toneName: 'x',
-              ),
+            existing: [
+              testReason(id: 1, name: 'health'),
+              testReason(id: 2, name: 'health 3'),
             ],
           );
           expect(
@@ -1530,7 +1530,7 @@ void main() {
           await tester.enterText(field, '  Morning health ');
           await tester.testTextInput.receiveAction(TextInputAction.done);
           await tester.pumpAndSettle();
-          expect(reasons.renames, [('100', 'Morning health')]);
+          expect(reasons.renames, [(100, 'Morning health')]);
           expect(find.text('Morning health'), findsWidgets);
         });
 

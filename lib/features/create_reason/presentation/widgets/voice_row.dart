@@ -23,12 +23,16 @@ class VoiceRow extends StatelessWidget {
     required this.playing,
     required this.onSelect,
     required this.onPlay,
+    this.color = AppColor.cardColor,
   });
 
   final Voice voice;
   final bool selected;
   final bool playing;
   final VoidCallback onSelect;
+
+  /// The card's fill (`AppColor.surfaceSecondary` inside a sheet).
+  final Color color;
 
   /// The play / stop button was tapped.
   final VoidCallback onPlay;
@@ -63,7 +67,7 @@ class VoiceRow extends StatelessWidget {
           constraints: BoxConstraints(minHeight: 62.h),
           padding: REdgeInsets.fromLTRB(12, 10, 14, 10),
           decoration: BoxDecoration(
-            color: AppColor.cardColor,
+            color: color,
             borderRadius: BorderRadius.circular(SelectionMotion.radius.r),
           ),
           child: Row(

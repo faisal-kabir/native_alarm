@@ -5,6 +5,8 @@ import '../../features/alarm/presentation/pages/alarm_list_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/create_reason/presentation/pages/create_reason_page.dart';
 import '../../features/create_reason/presentation/pages/reason_ready_page.dart';
+import '../../features/reason_detail/presentation/pages/reason_detail_page.dart';
+import '../../features/reasons/domain/entities/reason.dart';
 import 'route_names.dart';
 
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,11 @@ import 'package:go_router/go_router.dart';
 /// fell back to a page with no transition at all.
 Page<void> appPage(GoRouterState state, Widget child) =>
     MaterialPage<void>(key: state.pageKey, child: child);
+
+/// The reason screens open with their [Reason] (a full, cached object); without one
+/// (a lost link) they go home.
+String? _needsReason(BuildContext context, GoRouterState state) =>
+    state.extra is Reason ? null : RouteNames.dashboardPath;
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: navigatorKey,
@@ -38,13 +45,16 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.reasonReadyPath,
       name: RouteNames.reasonReady,
-      // Only reachable from a just-saved reason; anything else goes home.
-      redirect: (context, state) =>
-          state.extra is ReasonReadyArgs ? null : RouteNames.dashboardPath,
-      pageBuilder: (context, state) => appPage(
-        state,
-        ReasonReadyPage(args: state.extra! as ReasonReadyArgs),
-      ),
+      redirect: _needsReason,
+      pageBuilder: (context, state) =>
+          appPage(state, ReasonReadyPage(reason: state.extra! as Reason)),
+    ),
+    GoRoute(
+      path: RouteNames.reasonDetailPath,
+      name: RouteNames.reasonDetail,
+      redirect: _needsReason,
+      pageBuilder: (context, state) =>
+          appPage(state, ReasonDetailPage(reason: state.extra! as Reason)),
     ),
   ],
   errorBuilder: (context, state) =>

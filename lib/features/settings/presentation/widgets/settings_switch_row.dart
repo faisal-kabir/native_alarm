@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 
 import '../../../../core/theme/app_color.dart';
 import '../../../../gen/assets.gen.dart';
-import 'settings_row.dart';
+import '../../../../core/widgets/list_group.dart';
 
-/// A [SettingsRow] ending in an iOS-style switch (51 x 31, green when on).
+/// A [ListGroupRow] ending in an iOS-style switch (51 x 31, green when on).
 class SettingsSwitchRow extends StatelessWidget {
   const SettingsSwitchRow({
     super.key,
@@ -21,7 +21,7 @@ class SettingsSwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SettingsRow(
+    return ListGroupRow(
       icon: icon,
       label: label,
       trailing: CupertinoSwitch(

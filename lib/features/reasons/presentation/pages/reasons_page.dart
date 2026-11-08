@@ -63,12 +63,12 @@ class _ReasonsViewState extends State<_ReasonsView>
   }
 
   /// Ids in the list as first loaded, plus every one shown since.
-  Set<String>? _known;
+  Set<int>? _known;
 
   /// Reasons added after the first load (a just-created one) that have not risen in
   /// yet. They wait, invisible but holding their place, until this screen is on top
   /// again (the ready screen is popped), then rise in once.
-  final Set<String> _fresh = {};
+  final Set<int> _fresh = {};
 
   void _track(List<Reason> reasons) {
     final known = _known;
@@ -82,7 +82,10 @@ class _ReasonsViewState extends State<_ReasonsView>
   }
 
   Widget _row(Reason reason, bool onTop) {
-    final row = ReasonRow(reason: reason);
+    final row = ReasonRow(
+      reason: reason,
+      onTap: () => context.push(RouteNames.reasonDetailPath, extra: reason),
+    );
     if (!_fresh.contains(reason.id)) {
       return RiseIn(key: ValueKey(reason.id), enabled: false, child: row);
     }

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/constants/app_constant.dart';
+import '../../../../core/utils/load_status.dart';
 import '../../../../core/utils/text_utils.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
 import '../../../area_of_life/domain/entities/matter_suggestion.dart';
@@ -10,21 +11,11 @@ import '../../../sound/domain/entities/sound_quote.dart';
 import '../../../sound/domain/entities/sound_type.dart';
 import '../../../voice/domain/entities/voice.dart';
 
+// The steps' list statuses live in core; re-exported for the steps.
+export '../../../../core/utils/load_status.dart';
+
 /// Where saving the reason stands ("Create Reason" on the last step).
 enum SaveStatus { idle, saving, saved, failed }
-
-/// Where a list loaded from the server stands (only matters while there is nothing to
-/// show yet).
-enum LoadStatus {
-  /// Waiting for the first answer from the server.
-  loading,
-
-  /// The server answered and the list is up to date.
-  loaded,
-
-  /// The server could not be reached and nothing is available to show.
-  failed,
-}
 
 /// Everything the Create Reason flow collects, step by step, in one place: the mother
 /// page's BLoC keeps it all so the last step can save the reason in one go.
@@ -174,10 +165,9 @@ class CreateReasonState extends Equatable {
   /// or typed / spoken / edited until it reads the same (spaces and letter case aside).
   /// Null when the text matches none of the selected area's suggestions.
   PurposeSuggestion? get purposeSuggestion {
-    final text = _comparable(purpose);
-    if (text.isEmpty) return null;
+    if (purpose.trim().isEmpty) return null;
     for (final suggestion in suggestions) {
-      if (_comparable(suggestionText(suggestion)) == text) return suggestion;
+      if (sameWords(suggestionText(suggestion), purpose)) return suggestion;
     }
     return null;
   }
@@ -189,9 +179,6 @@ class CreateReasonState extends Equatable {
   /// The text a suggestion puts in the field (within the length limit).
   static String suggestionText(PurposeSuggestion suggestion) =>
       clipToWord(suggestion.text.trim(), AppConstant.purposeMaxLength);
-
-  static String _comparable(String text) =>
-      text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
   /// The suggestions to show on the purpose step: only those of the selected area.
   List<PurposeSuggestion> get suggestions =>

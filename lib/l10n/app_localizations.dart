@@ -740,6 +740,298 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} {version} ({build})'**
   String settings_version(String name, String version, String build);
+
+  /// No description provided for @common_close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get common_close;
+
+  /// No description provided for @common_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get common_add;
+
+  /// No description provided for @sheet_no_changes.
+  ///
+  /// In en, this message translates to:
+  /// **'No Changes'**
+  String get sheet_no_changes;
+
+  /// No description provided for @sheet_use_this.
+  ///
+  /// In en, this message translates to:
+  /// **'Use This'**
+  String get sheet_use_this;
+
+  /// No description provided for @sheet_remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get sheet_remove;
+
+  /// Button of a choice sheet once another row is chosen, e.g. "Use Career".
+  ///
+  /// In en, this message translates to:
+  /// **'Use {name}'**
+  String sheet_use_choice(String name);
+
+  /// No description provided for @reason_detail_about.
+  ///
+  /// In en, this message translates to:
+  /// **'What it’s about'**
+  String get reason_detail_about;
+
+  /// No description provided for @reason_detail_speaks.
+  ///
+  /// In en, this message translates to:
+  /// **'How it speaks'**
+  String get reason_detail_speaks;
+
+  /// No description provided for @reason_detail_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm'**
+  String get reason_detail_alarm;
+
+  /// No description provided for @reason_detail_no_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in an alarm yet.'**
+  String get reason_detail_no_alarm;
+
+  /// No description provided for @reason_detail_area.
+  ///
+  /// In en, this message translates to:
+  /// **'Area of life'**
+  String get reason_detail_area;
+
+  /// No description provided for @reason_detail_purpose.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose'**
+  String get reason_detail_purpose;
+
+  /// No description provided for @reason_detail_why.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it matters'**
+  String get reason_detail_why;
+
+  /// No description provided for @reason_detail_tone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tone'**
+  String get reason_detail_tone;
+
+  /// No description provided for @reason_detail_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get reason_detail_voice;
+
+  /// No description provided for @reason_detail_length.
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get reason_detail_length;
+
+  /// No description provided for @reason_detail_length_value.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {seconds} sec'**
+  String reason_detail_length_value(String name, int seconds);
+
+  /// A row of the reason screen for screen readers.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {value}.{changed} Change'**
+  String reason_detail_row_semantics(
+    String label,
+    String value,
+    String changed,
+  );
+
+  /// No description provided for @reason_detail_changed_note.
+  ///
+  /// In en, this message translates to:
+  /// **' Changed, not saved.'**
+  String get reason_detail_changed_note;
+
+  /// No description provided for @reason_detail_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get reason_detail_save;
+
+  /// No description provided for @reason_detail_discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get reason_detail_discard;
+
+  /// No description provided for @reason_detail_caption.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes will apply from your next new message.'**
+  String get reason_detail_caption;
+
+  /// No description provided for @reason_detail_discard_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get reason_detail_discard_title;
+
+  /// No description provided for @reason_detail_discard_message.
+  ///
+  /// In en, this message translates to:
+  /// **'This reason stays as it is now.'**
+  String get reason_detail_discard_message;
+
+  /// No description provided for @reason_detail_keep_editing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Editing'**
+  String get reason_detail_keep_editing;
+
+  /// No description provided for @reason_detail_save_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save your changes. Check your connection and try again.'**
+  String get reason_detail_save_failed;
+
+  /// No description provided for @reason_detail_more_below.
+  ///
+  /// In en, this message translates to:
+  /// **'More below'**
+  String get reason_detail_more_below;
+
+  /// No description provided for @reason_detail_area_sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'What part of life is this for?'**
+  String get reason_detail_area_sheet;
+
+  /// No description provided for @reason_detail_keep_area.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep This Area'**
+  String get reason_detail_keep_area;
+
+  /// No description provided for @reason_detail_purpose_sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you working toward?'**
+  String get reason_detail_purpose_sheet;
+
+  /// No description provided for @reason_detail_why_sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Why does it matter to you?'**
+  String get reason_detail_why_sheet;
+
+  /// No description provided for @reason_detail_purpose_short.
+  ///
+  /// In en, this message translates to:
+  /// **'A few more words, so we can write for you.'**
+  String get reason_detail_purpose_short;
+
+  /// No description provided for @reason_detail_why_short.
+  ///
+  /// In en, this message translates to:
+  /// **'A little more, if you can.'**
+  String get reason_detail_why_short;
+
+  /// No description provided for @reason_detail_tone_sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'How should it talk to you?'**
+  String get reason_detail_tone_sheet;
+
+  /// No description provided for @reason_detail_keep_tone.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep This Tone'**
+  String get reason_detail_keep_tone;
+
+  /// No description provided for @reason_detail_voice_sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a voice'**
+  String get reason_detail_voice_sheet;
+
+  /// No description provided for @reason_detail_keep_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep This Voice'**
+  String get reason_detail_keep_voice;
+
+  /// No description provided for @reason_detail_length_sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'How long should it speak?'**
+  String get reason_detail_length_sheet;
+
+  /// No description provided for @reason_detail_keep_length.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep This Length'**
+  String get reason_detail_keep_length;
+
+  /// No description provided for @reason_detail_more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get reason_detail_more;
+
+  /// No description provided for @reason_detail_connect_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect an alarm'**
+  String get reason_detail_connect_alarm;
+
+  /// No description provided for @common_cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get common_cancel;
+
+  /// No description provided for @common_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get common_delete;
+
+  /// No description provided for @reason_actions_use_with_alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Use with an alarm'**
+  String get reason_actions_use_with_alarm;
+
+  /// No description provided for @reason_actions_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Reason'**
+  String get reason_actions_delete;
+
+  /// Asks before a reason is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”?'**
+  String reason_delete_title(String name);
+
+  /// No description provided for @reason_delete_message.
+  ///
+  /// In en, this message translates to:
+  /// **'This can’t be undone.'**
+  String get reason_delete_message;
+
+  /// No description provided for @reason_delete_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t delete this reason. Check your connection and try again.'**
+  String get reason_delete_failed;
 }
 
 class _AppLocalizationsDelegate

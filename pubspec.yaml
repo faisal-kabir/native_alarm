@@ -98,6 +98,7 @@ flutter:
     - assets/icons/page/
     - assets/icons/voice/
     - assets/icons/settings/
+    - assets/icons/detail/
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

@@ -28,12 +28,16 @@ class SuggestionList extends StatefulWidget {
     required this.items,
     required this.onPick,
     this.expandable = true,
+    this.pillColor = AppColor.cardColor,
   });
 
   final String label;
   final List<SuggestionItem> items;
   final ValueChanged<SuggestionItem> onPick;
   final bool expandable;
+
+  /// The suggestions' fill (`AppColor.surfaceSecondary` inside a sheet).
+  final Color pillColor;
 
   @override
   State<SuggestionList> createState() => _SuggestionListState();
@@ -64,6 +68,7 @@ class _SuggestionListState extends State<SuggestionList> {
             blur: 2,
             child: _SuggestionPill(
               text: shown[i].text,
+              color: widget.pillColor,
               onTap: () {
                 HapticFeedback.selectionClick();
                 widget.onPick(shown[i]);
@@ -219,15 +224,20 @@ class SuggestionError extends StatelessWidget {
 }
 
 class _SuggestionPill extends StatelessWidget {
-  const _SuggestionPill({required this.text, required this.onTap});
+  const _SuggestionPill({
+    required this.text,
+    required this.color,
+    required this.onTap,
+  });
 
   final String text;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColor.cardColor,
+      color: color,
       borderRadius: BorderRadius.circular(16.r),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

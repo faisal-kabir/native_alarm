@@ -15,12 +15,17 @@ class PillButton extends StatefulWidget {
     required this.label,
     required this.enabled,
     this.quiet = false,
+    this.disabledColor = AppColor.cardColor,
     this.onPressed,
   });
 
   final String label;
   final bool enabled;
   final bool quiet;
+
+  /// The fill while not [enabled] (and of [quiet]); `AppColor.slotFree` inside a
+  /// sheet, whose own fill is the card colour.
+  final Color disabledColor;
   final VoidCallback? onPressed;
 
   @override
@@ -58,7 +63,7 @@ class _PillButtonState extends State<PillButton> {
             decoration: BoxDecoration(
               color: on && !widget.quiet
                   ? AppColor.primary
-                  : AppColor.cardColor,
+                  : widget.disabledColor,
               borderRadius: BorderRadius.circular(AppConstant.pillRadius),
             ),
             child: AnimatedDefaultTextStyle(

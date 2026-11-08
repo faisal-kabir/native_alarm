@@ -53,10 +53,15 @@ import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/repositories/reason_repository.dart';
 import 'package:eala/features/reasons/domain/entities/new_reason.dart';
+import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
 import 'package:eala/features/reasons/domain/entities/reason_name.dart';
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
+import 'package:eala/features/reasons/domain/usecases/delete_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
+import 'package:eala/features/reasons/domain/usecases/update_reason_usecase.dart';
+import 'package:eala/features/reasons/domain/usecases/watch_reason_usecase.dart';
+import 'package:eala/features/reason_detail/presentation/bloc/reason_detail_bloc.dart';
 import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart';
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
@@ -138,19 +143,91 @@ class FakeAnalyticsService implements AnalyticsService {
   Future<void> logScreen(String name) async => screens.add(name);
 }
 
-/// In-memory [ReasonRepository]: [reasons] is the device list (watched), a created
-/// reason gets the next id and its area name (numbered like the server does), and
-/// [offline] makes create and rename fail. [created] and [renames] record the calls.
+/// A reason for tests, with its area, tone and voice joined in.
+Reason testReason({
+  int id = 1,
+  String name = 'Reason',
+  String area = 'Area',
+  int? areaColor,
+  String tone = 'Tone',
+  String purpose = 'Sleep well every night',
+  String why = '',
+  int voiceId = 1,
+  String voice = 'Astra',
+  int lengthSeconds = 30,
+}) => Reason(
+  id: id,
+  name: name,
+  purpose: purpose,
+  why: why,
+  lengthSeconds: lengthSeconds,
+  areaId: 1,
+  area: AreaOfLife(
+    id: 1,
+    name: area.toLowerCase(),
+    title: area,
+    color: areaColor,
+  ),
+  soundTypeId: 1,
+  sound: SoundType(id: 1, title: tone),
+  voiceId: voiceId,
+  voice: Voice(id: voiceId, name: voice, voiceId: 'v$voiceId'),
+);
+
+/// In-memory [ReasonRepository]: [reasons] is the device list (watched). A created or
+/// updated reason is joined with [areas], [sounds] and [voices] by id (as the server
+/// does); a created one gets the next id and its numbered name. [offline] makes the
+/// writes fail. [created], [renames] and [updates] record the calls.
 class FakeReasonRepository implements ReasonRepository {
-  FakeReasonRepository([List<Reason> reasons = const []])
-    : reasons = [...reasons];
+  FakeReasonRepository([
+    List<Reason> reasons = const [],
+    this.areas = const [],
+    this.sounds = const [],
+    this.voices = const [],
+  ]) : reasons = [...reasons];
 
   final List<Reason> reasons;
+  final List<AreaOfLife> areas;
+  final List<SoundType> sounds;
+  final List<Voice> voices;
   final List<NewReason> created = [];
-  final List<(String, String)> renames = [];
+  final List<(int, String)> renames = [];
+  final List<(int, ReasonDraft)> updates = [];
+  final List<int> deletes = [];
   bool offline = false;
   int _nextId = 100;
   final StreamController<List<Reason>> _changes = StreamController.broadcast();
+
+  /// What the server holds; a refresh copies it over [reasons] (null: no change).
+  List<Reason>? server;
+  int refreshes = 0;
+
+  static T? _find<T>(List<T> list, bool Function(T) test) {
+    for (final item in list) {
+      if (test(item)) return item;
+    }
+    return null;
+  }
+
+  Reason _join(int id, String name, ReasonDraft d) => Reason(
+    id: id,
+    name: name,
+    purpose: d.purpose,
+    why: d.why,
+    lengthSeconds: d.lengthSeconds,
+    areaId: d.areaId,
+    area: _find(areas, (a) => a.id == d.areaId),
+    soundTypeId: d.soundTypeId,
+    sound: _find(sounds, (s) => s.id == d.soundTypeId),
+    voiceId: d.voiceId,
+    voice: _find(voices, (v) => v.id == d.voiceId),
+  );
+
+  void _put(Reason reason) {
+    final i = reasons.indexWhere((r) => r.id == reason.id);
+    i < 0 ? reasons.add(reason) : reasons[i] = reason;
+    _changes.add(List.of(reasons));
+  }
 
   @override
   Stream<Either<Failure, List<Reason>>> watchReasons() async* {
@@ -159,9 +236,12 @@ class FakeReasonRepository implements ReasonRepository {
     yield* _changes.stream.map((list) => Right(list));
   }
 
-  /// What the server holds; a refresh copies it over [reasons] (null: no change).
-  List<Reason>? server;
-  int refreshes = 0;
+  @override
+  Stream<Either<Failure, Reason?>> watchReason(int id) async* {
+    await Future<void>.delayed(Duration.zero);
+    yield Right(_find(reasons, (r) => r.id == id));
+    yield* _changes.stream.map((list) => Right(_find(list, (r) => r.id == id)));
+  }
 
   @override
   Future<Either<Failure, Unit>> refreshReasons() async {
@@ -181,38 +261,44 @@ class FakeReasonRepository implements ReasonRepository {
   Future<Either<Failure, Reason>> createReason(NewReason reason) async {
     if (offline) return const Left(ServerFailure('offline'));
     created.add(reason);
-    final reasonName = nextReasonName(reason.baseName, [
+    final name = nextReasonName(reason.baseName, [
       for (final r in reasons) r.name,
     ]);
-    final saved = Reason(
-      id: '${_nextId++}',
-      name: reasonName,
-      areaName: reason.areaTitle,
-      areaColor: reason.areaColor,
-      toneName: reason.soundTitle,
-    );
-    reasons.add(saved);
-    _changes.add(List.of(reasons));
+    final saved = _join(_nextId++, name, reason.draft);
+    _put(saved);
     return Right(saved);
   }
 
   @override
-  Future<Either<Failure, Unit>> renameReason(String id, String name) async {
+  Future<Either<Failure, Reason>> renameReason(int id, String name) async {
     if (offline) return const Left(ServerFailure('offline'));
     renames.add((id, name));
-    final i = reasons.indexWhere((r) => r.id == id);
-    if (i >= 0) {
-      final r = reasons[i];
-      reasons[i] = Reason(
-        id: r.id,
-        name: name,
-        areaName: r.areaName,
-        areaColor: r.areaColor,
-        toneName: r.toneName,
-      );
-      _changes.add(List.of(reasons));
-    }
+    final r = _find(reasons, (r) => r.id == id)!;
+    final saved = _join(id, name, r.draft);
+    _put(saved);
+    return Right(saved);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteReason(int id) async {
+    if (offline) return const Left(ServerFailure('offline'));
+    deletes.add(id);
+    reasons.removeWhere((r) => r.id == id);
+    _changes.add(List.of(reasons));
     return const Right(unit);
+  }
+
+  @override
+  Future<Either<Failure, Reason>> updateReason(
+    int id,
+    ReasonDraft draft,
+  ) async {
+    if (offline) return const Left(ServerFailure('offline'));
+    updates.add((id, draft));
+    final r = _find(reasons, (r) => r.id == id)!;
+    final saved = _join(id, r.name, draft);
+    _put(saved);
+    return Right(saved);
   }
 }
 
@@ -487,6 +573,28 @@ Future<void> registerFakeAlarmDependencies(
   instance.registerFactory<ReasonReadyBloc>(
     () => ReasonReadyBloc(RenameReasonUseCase(reasons)),
   );
+  instance.registerFactoryParam<ReasonDetailBloc, Reason?, dynamic>((
+    reason,
+    _,
+  ) {
+    final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
+    final voices = voiceRepository ?? FakeVoiceRepository();
+    final sound = soundRepository ?? FakeSoundRepository();
+    return ReasonDetailBloc(
+      WatchReasonUseCase(reasons),
+      UpdateReasonUseCase(reasons),
+      RenameReasonUseCase(reasons),
+      DeleteReasonUseCase(reasons),
+      WatchAreasOfLifeUseCase(areas),
+      RefreshAreasOfLifeUseCase(areas),
+      WatchVoicesUseCase(voices),
+      RefreshVoicesUseCase(voices),
+      GetSoundTypesUseCase(sound),
+      GetPurposeSuggestionsUseCase(areas),
+      GetMatterSuggestionsUseCase(areas),
+      reason,
+    );
+  });
   instance.registerFactory<CreateReasonBloc>(() {
     final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
     final voices = voiceRepository ?? FakeVoiceRepository();

@@ -14,36 +14,12 @@ import '../../../../core/widgets/pill_button.dart';
 import '../../../../core/widgets/rise_in.dart';
 import '../../../../core/widgets/spring_in.dart';
 import '../../../../main.dart';
-import '../../../area_of_life/domain/entities/area_of_life.dart';
 import '../../../reasons/domain/entities/reason.dart';
-import '../../../sound/domain/entities/sound_type.dart';
-import '../../../voice/domain/entities/voice.dart';
 import '../bloc/reason_ready_bloc.dart';
 import '../bloc/reason_ready_event.dart';
 import '../bloc/reason_ready_state.dart';
 import '../widgets/reason_name_field.dart';
 import '../widgets/reason_summary_card.dart';
-
-/// What the ready screen shows: the saved reason and what it was made of.
-class ReasonReadyArgs {
-  const ReasonReadyArgs({
-    required this.reason,
-    required this.purpose,
-    required this.why,
-    required this.area,
-    required this.voice,
-    required this.sound,
-  });
-
-  final Reason reason;
-  final String purpose;
-
-  /// Empty when "why it matters" was skipped.
-  final String why;
-  final AreaOfLife area;
-  final Voice voice;
-  final SoundType sound;
-}
 
 /// "Your reason is ready." - shown after the reason is saved (it replaces the Create
 /// Reason page). The name can be changed in place (the `reason` row is updated by
@@ -55,25 +31,26 @@ class ReasonReadyArgs {
 /// and the buttons (1.6 s) rise in; one light haptic at 0.65 s. With reduced motion
 /// everything is simply there.
 class ReasonReadyPage extends StatelessWidget {
-  const ReasonReadyPage({super.key, required this.args});
+  const ReasonReadyPage({super.key, required this.reason});
 
-  final ReasonReadyArgs args;
+  /// The reason just saved (its area, sound and voice joined in).
+  final Reason reason;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (BuildContext context) =>
           instance<ReasonReadyBloc>()
-            ..add(ReasonReadyStartedEvent(args.reason.id, args.reason.name)),
-      child: _ReadyView(args: args),
+            ..add(ReasonReadyStartedEvent(reason.id, reason.name)),
+      child: _ReadyView(reason: reason),
     );
   }
 }
 
 class _ReadyView extends StatefulWidget {
-  const _ReadyView({required this.args});
+  const _ReadyView({required this.reason});
 
-  final ReasonReadyArgs args;
+  final Reason reason;
 
   @override
   State<_ReadyView> createState() => _ReadyViewState();
@@ -146,7 +123,6 @@ class _ReadyViewState extends State<_ReadyView>
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
-    final args = widget.args;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -202,7 +178,7 @@ class _ReadyViewState extends State<_ReadyView>
                                 animation: _card,
                                 dy: 16,
                                 child: ReasonSummaryCard(
-                                  area: args.area,
+                                  reason: widget.reason,
                                   name:
                                       BlocBuilder<
                                         ReasonReadyBloc,
@@ -219,10 +195,6 @@ class _ReadyViewState extends State<_ReadyView>
                                                   ),
                                             ),
                                       ),
-                                  purpose: args.purpose,
-                                  why: args.why,
-                                  voice: args.voice,
-                                  sound: args.sound,
                                 ),
                               ),
                             ],

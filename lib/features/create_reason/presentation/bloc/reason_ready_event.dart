@@ -9,7 +9,7 @@ abstract class ReasonReadyEvent extends Equatable {
 
 /// The ready screen opened for the saved reason [id], named [name].
 class ReasonReadyStartedEvent extends ReasonReadyEvent {
-  final String id;
+  final int id;
   final String name;
 
   const ReasonReadyStartedEvent(this.id, this.name);

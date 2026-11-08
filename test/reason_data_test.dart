@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:eala/core/database/app_database.dart';
 import 'package:eala/core/error/exceptions.dart';
@@ -13,6 +12,7 @@ import 'package:eala/features/reasons/data/models/reason_model.dart';
 import 'package:eala/features/reasons/data/repositories/reason_repository_impl.dart';
 import 'package:eala/features/reasons/domain/entities/new_reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
+import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
 import 'package:eala/features/reasons/domain/entities/reason_name.dart';
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
@@ -22,16 +22,57 @@ import 'package:eala/features/reasons/presentation/bloc/reasons_event.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The `reason` and `user` tables, in memory.
+/// A `reason` row as the server answers [reasonSelect]: area, sound and voice joined.
+Map<String, dynamic> serverRow(
+  int id,
+  String name, {
+  String createdAt = '2026-11-05T04:00:00Z',
+  int areaId = 3,
+  String purpose = 'Sleep well',
+  String? why = 'I feel better',
+  int soundTypeId = 2,
+  int voiceId = 5,
+  int length = 45,
+}) => {
+  'id': id,
+  'name': name,
+  'created_at': createdAt,
+  'area_id': areaId,
+  'purpose': purpose,
+  'why': why,
+  'sound_type_id': soundTypeId,
+  'voice_id': voiceId,
+  'length': length,
+  'area_of_life': {
+    'id': areaId,
+    'name': 'Health',
+    'title': 'Health & body',
+    'color': '#30D158',
+    'icon': 'icons/health.svg',
+  },
+  'sound_type': {'id': soundTypeId, 'title': 'Calm'},
+  'voice': {
+    'id': voiceId,
+    'name': 'Astra',
+    'voice_id': 'v_astra',
+    'voice_group': {'id': 1, 'title': 'Warm', 'description': 'Kind'},
+  },
+};
+
+/// The `reason` and `user` tables, in memory: answers like the server (joined rows).
 class FakeReasonRemote implements ReasonRemoteDataSource {
   FakeReasonRemote({this.userId = 7, this.names = const []});
 
   final int userId;
   final List<String> names;
   bool offline = false;
+  final Map<int, Map<String, dynamic>> rows = {};
   final List<Map<String, Object?>> inserted = [];
-  final List<(int, String)> updates = [];
+  final List<(int, Map<String, Object?>)> updates = [];
   String? lastPrefix;
+
+  /// Holds [fetchReasons]'s answer until completed (to test overlapping writes).
+  Completer<void>? fetchGate;
 
   void _check() {
     if (offline) throw const ServerException('offline');
@@ -51,65 +92,71 @@ class FakeReasonRemote implements ReasonRemoteDataSource {
   }
 
   @override
-  Future<int> insertReason(int userId, String name, NewReason reason) async {
+  Future<Map<String, dynamic>> insertReason(
+    int userId,
+    String name,
+    ReasonDraft draft,
+  ) async {
     _check();
-    inserted.add({
+    final columns = {
       'user_id': userId,
-      'area_id': reason.areaId,
       'name': name,
-      'purpose': reason.purpose,
-      'why': reason.why,
-      'sound_type_id': reason.soundTypeId,
-      'voice_id': reason.voiceId,
-      'length': reason.lengthSeconds,
-    });
-    return 40 + inserted.length;
+      ...reasonDraftColumns(draft),
+    };
+    inserted.add(columns);
+    final id = 40 + inserted.length;
+    return rows[id] = serverRow(
+      id,
+      name,
+      areaId: draft.areaId,
+      purpose: draft.purpose,
+      why: columns['why'] as String?,
+      soundTypeId: draft.soundTypeId,
+      voiceId: draft.voiceId,
+      length: draft.lengthSeconds,
+    );
   }
 
   @override
-  Future<void> updateName(int id, String name) async {
+  Future<Map<String, dynamic>> updateReason(
+    int id,
+    Map<String, Object?> changes,
+  ) async {
     _check();
-    updates.add((id, name));
+    updates.add((id, changes));
+    return rows[id] = {...rows[id]!, ...changes};
   }
 
-  /// The server's `reason` rows (joined), as [fetchReasons] returns them.
-  List<Map<String, dynamic>> rows = [];
-
-  /// Holds [fetchReasons]'s answer until completed (to test overlapping writes).
-  Completer<void>? fetchGate;
+  /// Rows the server lets this user delete (row-level security); others stay.
+  bool mayDelete = true;
 
   @override
-  Future<List<ReasonModel>> fetchReasons() async {
+  Future<void> deleteReason(int id) async {
     _check();
-    final answer = [for (final row in rows) ReasonModel.fromJson(row)];
+    if (!mayDelete || rows.remove(id) == null) {
+      throw const ServerException('Reason not deleted');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchReasons() async {
+    _check();
+    final answer = rows.values.toList();
     await fetchGate?.future;
     return answer;
   }
 }
 
-Map<String, dynamic> serverRow(int id, String name, String createdAt) => {
-  'id': id,
-  'name': name,
-  'created_at': createdAt,
-  'area_of_life': {
-    'title': 'Health & body',
-    'name': 'Health',
-    'color': '#30D158',
-  },
-  'sound_type': {'title': 'Calm'},
-};
-
 const newReason = NewReason(
-  areaId: 3,
   baseName: 'Health',
-  purpose: 'Sleep well',
-  why: 'I feel better',
-  soundTypeId: 2,
-  voiceId: 5,
-  lengthSeconds: 45,
-  areaTitle: 'Health & body',
-  areaColor: 0xFF30D158,
-  soundTitle: 'Calm',
+  draft: ReasonDraft(
+    areaId: 3,
+    purpose: 'Sleep well',
+    why: 'I feel better',
+    soundTypeId: 2,
+    voiceId: 5,
+    lengthSeconds: 45,
+  ),
 );
 
 void main() {
@@ -141,6 +188,35 @@ void main() {
     });
   });
 
+  group('reasonFromJson', () {
+    test('one row is the whole reason: area, sound and voice joined', () {
+      final reason = reasonFromJson(serverRow(9, ' Mornings '));
+      expect(reason.id, 9);
+      expect(reason.name, 'Mornings');
+      expect(reason.draft, newReason.draft);
+      expect(reason.areaTitle, 'Health & body');
+      expect(reason.area!.color, 0xFF30D158);
+      expect(reason.area!.icon, 'icons/health.svg');
+      expect(reason.toneTitle, 'Calm');
+      expect(reason.voice!.name, 'Astra');
+      expect(reason.voice!.group!.title, 'Warm');
+      expect(reason.createdAt, DateTime.utc(2026, 11, 5, 4).toLocal());
+    });
+
+    test('a row without its joins still reads (ids kept, no "why")', () {
+      final reason = reasonFromJson({
+        'id': 3,
+        'name': 'X',
+        'area_id': 4,
+        'sound_type_id': 5,
+        'voice_id': 6,
+      });
+      expect((reason.area, reason.sound, reason.voice), (null, null, null));
+      expect((reason.areaId, reason.soundTypeId, reason.voiceId), (4, 5, 6));
+      expect((reason.why, reason.lengthSeconds), ('', 30));
+    });
+  });
+
   group('ReasonRepositoryImpl', () {
     late AppDatabase db;
     late FakeReasonRemote remote;
@@ -154,127 +230,140 @@ void main() {
 
     tearDown(() => db.close());
 
-    Future<void> insert(String id, String name, int minute) {
-      return db
-          .into(db.reasonsTable)
-          .insert(
-            ReasonsTableCompanion.insert(
-              reasonId: id,
-              name: name,
-              areaName: 'Area',
-              toneName: 'Tone',
-              createdAt: Value(DateTime(2026, 11, 5, 4, minute)),
-            ),
-          );
-    }
+    Future<List<Reason>> saved() async =>
+        (await repository.watchReasons().first).getOrElse(() => throw 'failed');
 
-    test('the list is the saved reasons, oldest first', () async {
-      await insert('b', 'Second', 5);
-      await insert('a', 'First', 1);
-      final first = await repository.watchReasons().first;
-      expect(first.getOrElse(() => []).map((r) => r.id), ['a', 'b']);
+    Future<Reason> create() async =>
+        (await repository.createReason(newReason))
+            .getOrElse(() => throw 'failed');
+
+    test('create: next free name, saved on the server, then the whole row '
+        'on the device', () async {
+      final created = await create();
+      expect(remote.lastPrefix, 'Health');
+      expect(remote.inserted.single, {
+        'user_id': 7,
+        'name': 'Health 3',
+        'area_id': 3,
+        'purpose': 'Sleep well',
+        'why': 'I feel better',
+        'sound_type_id': 2,
+        'voice_id': 5,
+        'length': 45,
+      });
+      expect(created.name, 'Health 3');
+      expect(created.voice!.name, 'Astra');
+      expect(await saved(), [created]);
     });
-
-    test(
-      'create: saved for the user with the next free name, then on the device',
-      () async {
-        final result = await repository.createReason(newReason);
-
-        expect(remote.lastPrefix, 'Health');
-        expect(remote.inserted.single, {
-          'user_id': 7,
-          'area_id': 3,
-          'name': 'Health 3',
-          'purpose': 'Sleep well',
-          'why': 'I feel better',
-          'sound_type_id': 2,
-          'voice_id': 5,
-          'length': 45,
-        });
-        const expected = Reason(
-          id: '41',
-          name: 'Health 3',
-          areaName: 'Health & body',
-          areaColor: 0xFF30D158,
-          toneName: 'Calm',
-        );
-        expect(result.getOrElse(() => throw 'failed'), expected);
-        final list = await repository.watchReasons().first;
-        expect(list.getOrElse(() => []), [expected]);
-      },
-    );
 
     test('create offline fails and saves nothing on the device', () async {
       remote.offline = true;
-      final result = await repository.createReason(newReason);
-      expect(result.isLeft(), isTrue);
-      final list = await repository.watchReasons().first;
-      expect(list.getOrElse(() => throw 'failed'), isEmpty);
+      expect((await repository.createReason(newReason)).isLeft(), isTrue);
+      expect(await saved(), isEmpty);
     });
 
-    test('rename updates the server row by id and the device copy', () async {
-      await insert('41', 'Health', 1);
-      final result = await repository.renameReason('41', 'Mornings');
-      expect(result.isRight(), isTrue);
-      expect(remote.updates, [(41, 'Mornings')]);
-      final list = await repository.watchReasons().first;
-      expect(list.getOrElse(() => []).single.name, 'Mornings');
-    });
-
-    test('rename offline keeps the old name on the device', () async {
-      await insert('41', 'Health', 1);
-      remote.offline = true;
-      final result = await repository.renameReason('41', 'Mornings');
-      expect(result.isLeft(), isTrue);
-      final list = await repository.watchReasons().first;
-      expect(list.getOrElse(() => []).single.name, 'Health');
-    });
-
-    test('a server row reads its area and sound from the join', () {
-      final model = ReasonModel.fromJson(
-        serverRow(9, ' Mornings ', '2026-11-05T04:01:00+00:00'),
-      );
+    test('an empty "why" is saved as null', () {
       expect(
-        (model.id, model.name, model.areaName, model.areaColor, model.toneName),
-        ('9', 'Mornings', 'Health & body', 0xFF30D158, 'Calm'),
+        reasonDraftColumns(newReason.draft.copyWith(why: '  '))['why'],
+        isNull,
       );
-      expect(model.createdAt, DateTime.utc(2026, 11, 5, 4, 1).toLocal());
-      // A missing join (no area or sound) still gives a row, with empty names.
-      final bare = ReasonModel.fromJson({'id': 3, 'name': 'X'});
-      expect((bare.areaName, bare.toneName, bare.createdAt), ('', '', null));
+    });
+
+    test('rename updates the row by id; the device follows', () async {
+      final id = (await create()).id;
+      final result = await repository.renameReason(id, ' Mornings ');
+      expect(result.getOrElse(() => throw 'failed').name, 'Mornings');
+      expect(remote.updates.single.$1, id);
+      expect(remote.updates.single.$2, {'name': 'Mornings'});
+      expect((await saved()).single.name, 'Mornings');
     });
 
     test(
-      'refresh makes the device copy match the server: add, update, remove',
+      'update saves every chosen value at once; the device follows',
       () async {
-        await insert('1', 'Old name', 1);
-        await insert('2', 'Deleted elsewhere', 2);
-        remote.rows = [
-          serverRow(1, 'New name', '2026-11-05T04:01:00Z'),
-          serverRow(3, 'Made on another phone', '2026-11-05T03:00:00Z'),
-        ];
-
-        expect((await repository.refreshReasons()).isRight(), isTrue);
-
-        final list = (await repository.watchReasons().first).getOrElse(
-          () => throw 'failed',
+        final id = (await create()).id;
+        final draft = newReason.draft.copyWith(
+          purpose: 'Run a marathon',
+          why: '',
+          lengthSeconds: 30,
         );
-        // Ordered by the server's created_at.
-        expect(list.map((r) => (r.id, r.name)), [
-          ('3', 'Made on another phone'),
-          ('1', 'New name'),
-        ]);
-        expect(list.last.areaName, 'Health & body');
-        expect(list.last.toneName, 'Calm');
+        final result = await repository.updateReason(id, draft);
+        expect(remote.updates.single.$2, reasonDraftColumns(draft));
+        expect(result.getOrElse(() => throw 'failed').draft, draft);
+        expect((await saved()).single.draft, draft);
+      },
+    );
+
+    test('a failed update leaves the device copy as it was', () async {
+      final created = await create();
+      remote.offline = true;
+      final result = await repository.updateReason(
+        created.id,
+        created.draft.copyWith(purpose: 'Something else'),
+      );
+      expect(result.isLeft(), isTrue);
+      expect(await saved(), [created]);
+    });
+
+    test('delete removes the reason on the server, then here', () async {
+      final created = await create();
+      expect((await repository.deleteReason(created.id)).isRight(), isTrue);
+      expect(remote.rows, isEmpty);
+      expect(await saved(), isEmpty);
+    });
+
+    test('a delete the server refuses (or offline) keeps it here', () async {
+      final created = await create();
+      remote.mayDelete = false;
+      expect((await repository.deleteReason(created.id)).isLeft(), isTrue);
+      remote.mayDelete = true;
+      remote.offline = true;
+      expect((await repository.deleteReason(created.id)).isLeft(), isTrue);
+      expect(await saved(), [created]);
+    });
+
+    test('watchReason follows one reason', () async {
+      final created = await create();
+      final names = <String?>[];
+      final sub = repository
+          .watchReason(created.id)
+          .listen((r) => names.add(r.getOrElse(() => null)?.name));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await repository.renameReason(created.id, 'Mornings');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(names, ['Health 3', 'Mornings']);
+      await sub.cancel();
+    });
+
+    test(
+      'refresh makes the device copy match the server, oldest first',
+      () async {
+        remote.rows[1] = serverRow(
+          1,
+          'Late',
+          createdAt: '2026-11-05T09:00:00Z',
+        );
+        remote.rows[2] = serverRow(
+          2,
+          'Early',
+          createdAt: '2026-11-05T03:00:00Z',
+        );
+        expect((await repository.refreshReasons()).isRight(), isTrue);
+        expect([for (final r in await saved()) r.name], ['Early', 'Late']);
+
+        // Deleted on the server (another phone): gone here too.
+        remote.rows.remove(1);
+        await repository.refreshReasons();
+        expect([for (final r in await saved()) r.name], ['Early']);
       },
     );
 
     test('refresh offline keeps the saved reasons', () async {
-      await insert('1', 'Saved', 1);
+      remote.rows[1] = serverRow(1, 'Saved');
+      await repository.refreshReasons();
       remote.offline = true;
       expect((await repository.refreshReasons()).isLeft(), isTrue);
-      final list = await repository.watchReasons().first;
-      expect(list.getOrElse(() => []).single.name, 'Saved');
+      expect((await saved()).single.name, 'Saved');
     });
 
     test('a reason saved while a refresh is downloading is kept', () async {
@@ -282,18 +371,15 @@ void main() {
       // The refresh downloads the list (still without the new reason) and waits...
       final refresh = repository.refreshReasons();
       // ...while a new reason is being saved.
-      final create = repository.createReason(newReason);
-      remote.rows = [serverRow(41, 'Health 3', '2026-11-05T05:00:00Z')];
+      final created = repository.createReason(newReason);
       remote.fetchGate!.complete();
       await refresh;
-      await create;
-
-      final list = await repository.watchReasons().first;
-      expect(list.getOrElse(() => []).map((r) => r.id), ['41']);
+      await created;
+      expect([for (final r in await saved()) r.name], ['Health 3']);
     });
 
     test('ReasonsBloc refreshes from the server when it starts', () async {
-      remote.rows = [serverRow(5, 'From server', '2026-11-05T04:00:00Z')];
+      remote.rows[5] = serverRow(5, 'From server');
       final bloc = ReasonsBloc(
         WatchReasonsUseCase(repository),
         RefreshReasonsUseCase(repository),
@@ -303,42 +389,23 @@ void main() {
       await bloc.close();
     });
 
-    test('ReasonsBloc follows the list: a new reason shows up', () async {
-      final bloc = ReasonsBloc(
-        WatchReasonsUseCase(repository),
-        RefreshReasonsUseCase(repository),
-      )..add(const LoadReasonsEvent());
-      final states = <ReasonsState>[];
-      final sub = bloc.stream.listen(states.add);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      await repository.createReason(newReason);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      expect(states.first, isA<ReasonsLoading>());
-      expect((states[1] as ReasonsLoaded).reasons, isEmpty);
-      expect((states.last as ReasonsLoaded).reasons.single.name, 'Health 3');
-      await sub.cancel();
-      await bloc.close();
-    });
-
     test('ReasonReadyBloc: a failed rename puts the old name back', () async {
-      await insert('41', 'Health', 1);
+      final created = await create();
       final bloc = ReasonReadyBloc(RenameReasonUseCase(repository))
-        ..add(const ReasonReadyStartedEvent('41', 'Health'));
+        ..add(ReasonReadyStartedEvent(created.id, created.name));
       await Future<void>.delayed(Duration.zero);
       remote.offline = true;
       bloc.add(const ReasonRenamedEvent('Mornings'));
       await Future<void>.delayed(const Duration(milliseconds: 20));
       expect(
         bloc.state,
-        const ReasonReadyState(id: '41', name: 'Health', renameFailures: 1),
+        ReasonReadyState(id: created.id, name: 'Health 3', renameFailures: 1),
       );
 
       remote.offline = false;
       bloc.add(const ReasonRenamedEvent(' Mornings '));
       await Future<void>.delayed(const Duration(milliseconds: 20));
       expect(bloc.state.name, 'Mornings');
-      expect(remote.updates, [(41, 'Mornings')]);
       await bloc.close();
     });
   });

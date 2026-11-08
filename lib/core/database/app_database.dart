@@ -23,19 +23,18 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      // v2: the reasons table was added.
-      if (from < 2) {
-        await m.createTable(reasonsTable);
-      } else if (from < 4) {
-        // v4: reasons keep the server's area and tone names instead of fixed enums.
-        // Nothing could create a reason yet, so the old table held no real data.
-        await m.deleteTable('reasons');
+      // v8: reasons keep the server's whole row (area, sound, voice joined in) as
+      // JSON. The table is only a copy of the server's reasons (every write goes to
+      // the server first), so the old shape is dropped and refilled by the next
+      // refresh; no user data is lost. (v2 added the table, v4 changed it.)
+      if (from < 8) {
+        if (from >= 2) await m.deleteTable('reasons');
         await m.createTable(reasonsTable);
       }
       // v3: the settings table was added.

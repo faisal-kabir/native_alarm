@@ -2,7 +2,7 @@ import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/error/exceptions.dart';
-import '../../domain/entities/new_reason.dart';
+import '../../domain/entities/reason_draft.dart';
 import '../models/reason_model.dart';
 
 abstract class ReasonRemoteDataSource {
@@ -12,15 +12,38 @@ abstract class ReasonRemoteDataSource {
   /// Names of [userId]'s reasons that start with [base] (to pick an unused name).
   Future<List<String>> fetchNamesStartingWith(int userId, String base);
 
-  /// Inserts the reason with [name] for [userId]; returns the new row's id.
-  Future<int> insertReason(int userId, String name, NewReason reason);
+  /// Inserts the reason for [userId] as [name]; returns the new row with its joins
+  /// ([reasonSelect]).
+  Future<Map<String, dynamic>> insertReason(
+    int userId,
+    String name,
+    ReasonDraft draft,
+  );
 
-  Future<void> updateName(int id, String name);
+  /// Writes [changes] (column → value) into reason [id]; returns the row as saved,
+  /// with its joins.
+  Future<Map<String, dynamic>> updateReason(
+    int id,
+    Map<String, Object?> changes,
+  );
 
-  /// All of the signed-in user's reasons, oldest first, with each one's area title
-  /// and colour and sound title joined in.
-  Future<List<ReasonModel>> fetchReasons();
+  /// All of the signed-in user's reasons, oldest first, each with its joins.
+  Future<List<Map<String, dynamic>>> fetchReasons();
+
+  /// Deletes reason [id]. Throws when the server deleted nothing (gone already, or
+  /// not allowed), so the device never drops a reason the server still has.
+  Future<void> deleteReason(int id);
 }
+
+/// The `reason` columns a [ReasonDraft] fills ("why" empty → null).
+Map<String, Object?> reasonDraftColumns(ReasonDraft draft) => {
+  'area_id': draft.areaId,
+  'purpose': draft.purpose.trim(),
+  'why': draft.why.trim().isEmpty ? null : draft.why.trim(),
+  'sound_type_id': draft.soundTypeId,
+  'voice_id': draft.voiceId,
+  'length': draft.lengthSeconds,
+};
 
 @LazySingleton(as: ReasonRemoteDataSource)
 class ReasonRemoteDataSourceImpl implements ReasonRemoteDataSource {
@@ -47,9 +70,16 @@ class ReasonRemoteDataSourceImpl implements ReasonRemoteDataSource {
     }
   }
 
+  /// The `user.id` found for an auth id: it never changes, so it is asked once (a
+  /// refresh or a new reason then needs one request less). A new sign-in asks again.
+  String? _userIdFor;
+  int? _userId;
+
   @override
   Future<int> fetchOwnUserId() async {
     final authUserId = await _authUserId();
+    final known = _userId;
+    if (known != null && _userIdFor == authUserId) return known;
     try {
       final row = await client
           .from('user')
@@ -57,7 +87,8 @@ class ReasonRemoteDataSourceImpl implements ReasonRemoteDataSource {
           .eq('auth_user_id', authUserId)
           .maybeSingle();
       if (row == null) throw const ServerException('No user row yet');
-      return (row['id'] as num).toInt();
+      _userIdFor = authUserId;
+      return _userId = (row['id'] as num).toInt();
     } on ServerException {
       rethrow;
     } catch (e) {
@@ -85,60 +116,71 @@ class ReasonRemoteDataSourceImpl implements ReasonRemoteDataSource {
   }
 
   @override
-  Future<int> insertReason(int userId, String name, NewReason reason) async {
+  Future<Map<String, dynamic>> insertReason(
+    int userId,
+    String name,
+    ReasonDraft draft,
+  ) async {
     try {
-      final row = await client
+      return await client
           .from('reason')
           .insert({
             'user_id': userId,
-            'area_id': reason.areaId,
             'name': name,
-            'purpose': reason.purpose,
-            'why': reason.why,
-            'sound_type_id': reason.soundTypeId,
-            'voice_id': reason.voiceId,
-            'length': reason.lengthSeconds,
+            ...reasonDraftColumns(draft),
           })
-          .select('id')
+          .select(reasonSelect)
           .single();
-      return (row['id'] as num).toInt();
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<void> updateName(int id, String name) async {
+  Future<Map<String, dynamic>> updateReason(
+    int id,
+    Map<String, Object?> changes,
+  ) async {
     try {
-      await client
+      return await client
           .from('reason')
           .update({
-            'name': name,
+            ...changes,
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
-          .eq('id', id);
+          .eq('id', id)
+          .select(reasonSelect)
+          .single();
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<List<ReasonModel>> fetchReasons() async {
+  Future<List<Map<String, dynamic>>> fetchReasons() async {
     final userId = await fetchOwnUserId();
     try {
-      // One request: the area and the sound come along over the reason's foreign
-      // keys (`area_id` → area_of_life, `sound_type_id` → sound_type).
-      final rows = await client
+      // One request: each reason with its area, sound and voice (foreign keys).
+      return await client
           .from('reason')
-          .select(
-            'id, name, created_at, area_of_life(title, name, color), '
-            'sound_type(title)',
-          )
+          .select(reasonSelect)
           .eq('user_id', userId)
           .order('id', ascending: true);
-      return [for (final row in rows) ReasonModel.fromJson(row)];
     } catch (e) {
       throw ServerException(e.toString());
     }
+  }
+
+  @override
+  Future<void> deleteReason(int id) async {
+    List<Map<String, dynamic>> deleted;
+    try {
+      // `select` returns the rows really deleted: row-level security that does not
+      // allow it deletes nothing and reports no error.
+      deleted = await client.from('reason').delete().eq('id', id).select('id');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+    if (deleted.isEmpty) throw const ServerException('Reason not deleted');
   }
 }

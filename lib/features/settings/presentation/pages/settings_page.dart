@@ -11,8 +11,8 @@ import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
 import '../widgets/horizon.dart';
 import '../widgets/profile_card.dart';
-import '../widgets/settings_group.dart';
-import '../widgets/settings_row.dart';
+import '../../../../core/widgets/list_group.dart';
+
 import '../widgets/settings_switch_row.dart';
 
 /// The "Settings" tab of the Dashboard.
@@ -99,7 +99,7 @@ class _SettingsViewState extends State<_SettingsView>
                   ),
                   if (settings != null) ...[
                     _sectionTitle(strings.settings_notifications),
-                    SettingsGroup(
+                    ListGroup(
                       children: [
                         SettingsSwitchRow(
                           icon: icons.bell,
@@ -127,9 +127,9 @@ class _SettingsViewState extends State<_SettingsView>
                     _caption(context, strings.settings_notifications_note),
                   ],
                   _sectionTitle(strings.settings_subscription),
-                  SettingsGroup(
+                  ListGroup(
                     children: [
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.crown,
                         label: strings.settings_subscription,
                         value: strings.settings_plan_free,
@@ -138,24 +138,24 @@ class _SettingsViewState extends State<_SettingsView>
                     ],
                   ),
                   _sectionTitle(strings.settings_support),
-                  SettingsGroup(
+                  ListGroup(
                     children: [
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.help,
                         label: strings.settings_help,
                         chevron: true,
                       ),
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.doc,
                         label: strings.settings_faq,
                         chevron: true,
                       ),
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.bulb,
                         label: strings.settings_request_feature,
                         chevron: true,
                       ),
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.star,
                         label: strings.settings_leave_review,
                         chevron: true,
@@ -163,14 +163,14 @@ class _SettingsViewState extends State<_SettingsView>
                     ],
                   ),
                   _sectionTitle(strings.settings_legal),
-                  SettingsGroup(
+                  ListGroup(
                     children: [
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.shield,
                         label: strings.settings_privacy,
                         chevron: true,
                       ),
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.doc,
                         label: strings.settings_terms,
                         chevron: true,
@@ -178,14 +178,14 @@ class _SettingsViewState extends State<_SettingsView>
                     ],
                   ),
                   _sectionTitle(strings.settings_account),
-                  SettingsGroup(
+                  ListGroup(
                     children: [
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.user,
                         label: strings.settings_sign_in,
                         chevron: true,
                       ),
-                      SettingsRow(
+                      ListGroupRow(
                         icon: icons.trash,
                         label: strings.settings_delete_account,
                         danger: true,

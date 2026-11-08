@@ -11,7 +11,6 @@ import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
-import 'reason_ready_page.dart';
 import '../widgets/matter_step.dart';
 import '../widgets/purpose_step.dart';
 import '../widgets/select_area_step.dart';
@@ -69,23 +68,8 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
   /// lands on the reasons list, not on a finished form.
   void _openReady(BuildContext context, CreateReasonState state) {
     final reason = state.createdReason;
-    final area = state.selectedArea;
-    final voice = state.selectedVoice;
-    final sound = state.selectedSound;
-    if (reason == null || area == null || voice == null || sound == null) {
-      return;
-    }
-    context.pushReplacement(
-      RouteNames.reasonReadyPath,
-      extra: ReasonReadyArgs(
-        reason: reason,
-        purpose: state.purpose.trim(),
-        why: state.matter.trim(),
-        area: area,
-        voice: voice,
-        sound: sound,
-      ),
-    );
+    if (reason == null) return;
+    context.pushReplacement(RouteNames.reasonReadyPath, extra: reason);
   }
 
   @override

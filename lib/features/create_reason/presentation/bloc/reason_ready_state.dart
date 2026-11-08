@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class ReasonReadyState extends Equatable {
-  final String id;
+  final int id;
 
   /// The reason's name as shown (changes at once on a rename).
   final String name;
@@ -11,12 +11,12 @@ class ReasonReadyState extends Equatable {
   final int renameFailures;
 
   const ReasonReadyState({
-    this.id = '',
+    this.id = 0,
     this.name = '',
     this.renameFailures = 0,
   });
 
-  ReasonReadyState copyWith({String? id, String? name, int? renameFailures}) =>
+  ReasonReadyState copyWith({int? id, String? name, int? renameFailures}) =>
       ReasonReadyState(
         id: id ?? this.id,
         name: name ?? this.name,

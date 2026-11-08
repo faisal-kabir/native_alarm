@@ -20,6 +20,7 @@ class SelectItem {
     this.subtitle,
     required this.tint,
     this.iconPath,
+    this.tileText,
   });
 
   final Object id;
@@ -32,6 +33,9 @@ class SelectItem {
   /// Server path of a single-colour SVG painted in [tint] (see `mediaUrl`). Without
   /// one (or when it can not be loaded) the first letter of [title] is shown instead.
   final String? iconPath;
+
+  /// Short text shown in the tile instead of an icon or letter, e.g. "45s".
+  final String? tileText;
 }
 
 /// A single-choice list of cards (area of life, tone, ...) with the app's selection
@@ -53,12 +57,17 @@ class AnimatedSelectList extends StatelessWidget {
     required this.selectedId,
     required this.onSelected,
     this.animateIn = true,
+    this.rowColor = AppColor.cardColor,
   });
 
   final List<SelectItem> items;
   final Object? selectedId;
   final ValueChanged<SelectItem> onSelected;
   final bool animateIn;
+
+  /// The cards' fill: `AppColor.surfaceSecondary` inside a sheet (whose own fill is
+  /// the card colour).
+  final Color rowColor;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +92,7 @@ class AnimatedSelectList extends StatelessWidget {
                     key: ValueKey(items[i].id),
                     item: items[i],
                     selected: items[i].id == selectedId,
+                    color: rowColor,
                     onTap: () => onSelected(items[i]),
                   ),
                 ),
@@ -103,11 +113,13 @@ class SelectRow extends StatefulWidget {
     required this.item,
     required this.selected,
     required this.onTap,
+    this.color = AppColor.cardColor,
   });
 
   final SelectItem item;
   final bool selected;
   final VoidCallback onTap;
+  final Color color;
 
   @override
   State<SelectRow> createState() => _SelectRowState();
@@ -147,6 +159,17 @@ class _SelectRowState extends State<SelectRow>
 
   Widget _leading(BuildContext context) {
     final item = widget.item;
+    final tileText = item.tileText;
+    if (tileText != null) {
+      return Text(
+        tileText,
+        style: appTheme(context).textTheme.titleMedium!.copyWith(
+          fontSize: 14.spMin,
+          fontFeatures: const [FontFeature.tabularFigures()],
+          color: item.tint,
+        ),
+      );
+    }
     final letter = Text(
       initialOf(item.title),
       style: appTheme(context).textTheme.titleMedium!
@@ -181,7 +204,7 @@ class _SelectRowState extends State<SelectRow>
           constraints: BoxConstraints(minHeight: 62.h),
           padding: REdgeInsets.fromLTRB(12, 10, 14, 10),
           decoration: BoxDecoration(
-            color: AppColor.cardColor,
+            color: widget.color,
             borderRadius: BorderRadius.circular(SelectionMotion.radius.r),
           ),
           child: Row(

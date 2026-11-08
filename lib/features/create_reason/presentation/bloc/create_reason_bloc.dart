@@ -11,6 +11,7 @@ import '../../../area_of_life/domain/usecases/get_purpose_suggestions_usecase.da
 import '../../../area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
 import '../../../area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
 import '../../../reasons/domain/entities/new_reason.dart';
+import '../../../reasons/domain/entities/reason_draft.dart';
 import '../../../reasons/domain/usecases/create_reason_usecase.dart';
 import '../../../sound/domain/usecases/get_sound_quote_usecase.dart';
 import '../../../sound/domain/usecases/get_sound_types_usecase.dart';
@@ -306,19 +307,17 @@ class CreateReasonBloc extends Bloc<CreateReasonEvent, CreateReasonState> {
       return;
     }
     emit(state.copyWith(saveStatus: SaveStatus.saving));
-    final why = state.matter.trim();
     final result = await createReasonUseCase(
       NewReason(
-        areaId: area.id,
         baseName: area.name.trim().isEmpty ? area.title : area.name,
-        purpose: state.purpose.trim(),
-        why: why.isEmpty ? null : why,
-        soundTypeId: sound.id,
-        voiceId: voiceId,
-        lengthSeconds: state.lengthSeconds,
-        areaTitle: area.title,
-        areaColor: area.color,
-        soundTitle: sound.title,
+        draft: ReasonDraft(
+          areaId: area.id,
+          purpose: state.purpose.trim(),
+          why: state.matter.trim(),
+          soundTypeId: sound.id,
+          voiceId: voiceId,
+          lengthSeconds: state.lengthSeconds,
+        ),
       ),
     );
     result.fold(

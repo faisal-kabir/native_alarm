@@ -24,3 +24,10 @@ String initialOf(String name) {
   final trimmed = name.trim();
   return trimmed.isEmpty ? '' : trimmed.characters.first.toUpperCase();
 }
+
+/// Whether [a] and [b] say the same words: spaces and letter case aside ("Sleep  well"
+/// = "sleep well").
+bool sameWords(String a, String b) => _words(a) == _words(b);
+
+String _words(String text) =>
+    text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();

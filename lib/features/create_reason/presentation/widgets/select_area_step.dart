@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../core/theme/app_color.dart';
 import '../../../../core/widgets/animated_select_list.dart';
 import '../../../../core/widgets/highlighted_title.dart';
 import '../../../../core/widgets/select_list_skeleton.dart';
@@ -10,6 +9,7 @@ import '../../../../main.dart';
 import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
+import 'reason_choice_items.dart';
 import 'step_message.dart';
 
 /// Step 1 of Create Reason: "What do you want to wake up for?" - the areas of life,
@@ -36,16 +36,7 @@ class SelectAreaStep extends StatelessWidget {
               SizedBox(height: 18.h),
               if (state.areas.isNotEmpty)
                 AnimatedSelectList(
-                  items: [
-                    for (final area in state.areas)
-                      SelectItem(
-                        id: area.id,
-                        title: area.title,
-                        subtitle: area.description,
-                        tint: AppColor.tintOf(area.color),
-                        iconPath: area.icon,
-                      ),
-                  ],
+                  items: [for (final area in state.areas) areaChoice(area)],
                   selectedId: state.selectedAreaId,
                   onSelected: (item) => context.read<CreateReasonBloc>().add(
                     AreaSelectedEvent(item.id as int),

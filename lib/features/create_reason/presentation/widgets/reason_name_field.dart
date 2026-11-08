@@ -22,14 +22,20 @@ import '../../../../main.dart';
 ///   goes to [onCommit] with one light haptic.
 /// * The field is as wide as its text (8 to 24 characters' worth), never wider than
 ///   the row; at rest a long name ends in "…".
+///
+/// [large] is the same field as a page heading (the reason's own screen): 34 / bold,
+/// filling the row, a 30 chip (14 pencil) that becomes a 32 check, the row the same
+/// height open or not.
 class ReasonNameField extends StatefulWidget {
   const ReasonNameField({
     super.key,
     required this.value,
     required this.onCommit,
+    this.large = false,
   });
 
   final String value;
+  final bool large;
 
   /// The trimmed new name, only when it is non-empty and different.
   final ValueChanged<String> onCommit;
@@ -115,14 +121,22 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
-    final fontSize = 17.spMin;
-    final style = appTheme(context).textTheme.titleMedium!.copyWith(
-      fontSize: fontSize,
-      height: 20 / 17,
-      letterSpacing: -0.2,
-      color: AppColor.textColor,
-    );
-    final chip = (_naming ? 30 : 26).r;
+    final large = widget.large;
+    final fontSize = (large ? 34 : 17).spMin;
+    final style = large
+        ? appTheme(context).textTheme.headlineLarge!.copyWith(
+            fontSize: fontSize,
+            height: 40.8 / 34,
+            letterSpacing: 0.3,
+            color: AppColor.titleColor,
+          )
+        : appTheme(context).textTheme.titleMedium!.copyWith(
+            fontSize: fontSize,
+            height: 20 / 17,
+            letterSpacing: -0.2,
+            color: AppColor.textColor,
+          );
+    final chip = (_naming ? (large ? 32 : 30) : (large ? 30 : 26)).r;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -133,17 +147,18 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
           listenable: _c,
           builder: (context, _) {
             final room = (constraints.maxWidth - 6.w - chip).clamp(0.0, 1e9);
+            final input = Semantics(
+              container: true,
+              label: strings.reason_name_label,
+              child: _input(style),
+            );
             return Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: large ? MainAxisSize.max : MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: _width(room, fontSize),
-                  child: Semantics(
-                    container: true,
-                    label: strings.reason_name_label,
-                    child: _input(style),
-                  ),
-                ),
+                if (large)
+                  Expanded(child: input)
+                else
+                  SizedBox(width: _width(room, fontSize), child: input),
                 SizedBox(width: 6.w),
                 _naming
                     ? SpringIn(
@@ -155,17 +170,23 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
                         ),
                         child: _SaveButton(
                           label: strings.reason_name_save,
+                          size: chip,
                           onTap: _focus.unfocus,
                         ),
                       )
-                    : const SpringIn(
-                        key: ValueKey('edit'),
-                        spring: SpringDescription(
+                    : SpringIn(
+                        key: const ValueKey('edit'),
+                        spring: const SpringDescription(
                           mass: 1,
                           stiffness: 520,
                           damping: 26,
                         ),
-                        child: ExcludeSemantics(child: _PencilChip()),
+                        child: ExcludeSemantics(
+                          child: _PencilChip(
+                            size: chip,
+                            icon: (large ? 14 : 12).r,
+                          ),
+                        ),
                       ),
               ],
             );
@@ -179,7 +200,7 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.ease,
-      height: 23.h,
+      height: (widget.large ? 43.8 : 23).h,
       padding: REdgeInsets.symmetric(vertical: 1),
       decoration: BoxDecoration(
         border: Border(
@@ -248,13 +269,16 @@ class _ReasonNameFieldState extends State<ReasonNameField> {
 
 /// The small round chip with the pencil: the name can be changed.
 class _PencilChip extends StatelessWidget {
-  const _PencilChip();
+  const _PencilChip({required this.size, required this.icon});
+
+  final double size;
+  final double icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 26.r,
-      height: 26.r,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: const BoxDecoration(
         color: AppColor.surfaceSecondary,
@@ -262,7 +286,7 @@ class _PencilChip extends StatelessWidget {
       ),
       child: AppSvgIcon(
         Assets.icons.pencil,
-        size: 12.r,
+        size: icon,
         color: AppColor.textSecondary,
       ),
     );
@@ -273,9 +297,14 @@ class _PencilChip extends StatelessWidget {
 /// region, so tapping it does not count as "a tap elsewhere" (that would close the
 /// field and remove the button before the tap lands).
 class _SaveButton extends StatefulWidget {
-  const _SaveButton({required this.label, required this.onTap});
+  const _SaveButton({
+    required this.label,
+    required this.size,
+    required this.onTap,
+  });
 
   final String label;
+  final double size;
   final VoidCallback onTap;
 
   @override
@@ -304,8 +333,8 @@ class _SaveButtonState extends State<_SaveButton> {
             duration: const Duration(milliseconds: 120),
             curve: Curves.easeOut,
             child: Container(
-              width: 30.r,
-              height: 30.r,
+              width: widget.size,
+              height: widget.size,
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 color: AppColor.primary,

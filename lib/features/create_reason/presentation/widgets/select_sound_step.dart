@@ -20,6 +20,7 @@ import '../bloc/create_reason_bloc.dart';
 import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
 import 'step_message.dart';
+import 'reason_choice_items.dart';
 
 /// Step 5 of Create Reason (the last): "How should it sound?".
 ///
@@ -596,16 +597,6 @@ class _LengthChoice extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     const lengths = AppConstant.reasonLengthsSeconds;
-    String name(int s) => switch (s) {
-      30 => strings.create_reason_length_30,
-      45 => strings.create_reason_length_45,
-      _ => strings.seconds_short(s),
-    };
-    String note(int s) => switch (s) {
-      30 => strings.create_reason_length_30_note,
-      45 => strings.create_reason_length_45_note,
-      _ => '',
-    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -624,7 +615,7 @@ class _LengthChoice extends StatelessWidget {
                     child: SlidingBorderTarget(
                       id: lengths[i],
                       child: _LengthBox(
-                        name: name(lengths[i]),
+                        name: reasonLengthName(strings, lengths[i]),
                         seconds: lengths[i],
                         on: lengths[i] == seconds,
                         onTap: () => onSelect(lengths[i]),
@@ -637,7 +628,7 @@ class _LengthChoice extends StatelessWidget {
           ),
         ),
         SizedBox(height: 14.h),
-        _Blurb(note(seconds)),
+        _Blurb(reasonLengthNote(strings, seconds)),
       ],
     );
   }

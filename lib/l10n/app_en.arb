@@ -241,5 +241,93 @@
         "type": "String"
       }
     }
-  }
+  },
+  "common_close": "Close",
+  "common_add": "Add",
+  "sheet_no_changes": "No Changes",
+  "sheet_use_this": "Use This",
+  "sheet_remove": "Remove",
+  "sheet_use_choice": "Use {name}",
+  "@sheet_use_choice": {
+    "description": "Button of a choice sheet once another row is chosen, e.g. \"Use Career\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reason_detail_about": "What it’s about",
+  "reason_detail_speaks": "How it speaks",
+  "reason_detail_alarm": "Alarm",
+  "reason_detail_no_alarm": "Not in an alarm yet.",
+  "reason_detail_area": "Area of life",
+  "reason_detail_purpose": "Purpose",
+  "reason_detail_why": "Why it matters",
+  "reason_detail_tone": "Tone",
+  "reason_detail_voice": "Voice",
+  "reason_detail_length": "Length",
+  "reason_detail_length_value": "{name} · {seconds} sec",
+  "@reason_detail_length_value": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "reason_detail_row_semantics": "{label}: {value}.{changed} Change",
+  "@reason_detail_row_semantics": {
+    "description": "A row of the reason screen for screen readers.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "changed": {
+        "type": "String"
+      }
+    }
+  },
+  "reason_detail_changed_note": " Changed, not saved.",
+  "reason_detail_save": "Save Changes",
+  "reason_detail_discard": "Discard",
+  "reason_detail_caption": "Changes will apply from your next new message.",
+  "reason_detail_discard_title": "Discard changes?",
+  "reason_detail_discard_message": "This reason stays as it is now.",
+  "reason_detail_keep_editing": "Keep Editing",
+  "reason_detail_save_failed": "Couldn’t save your changes. Check your connection and try again.",
+  "reason_detail_more_below": "More below",
+  "reason_detail_area_sheet": "What part of life is this for?",
+  "reason_detail_keep_area": "Keep This Area",
+  "reason_detail_purpose_sheet": "What are you working toward?",
+  "reason_detail_why_sheet": "Why does it matter to you?",
+  "reason_detail_purpose_short": "A few more words, so we can write for you.",
+  "reason_detail_why_short": "A little more, if you can.",
+  "reason_detail_tone_sheet": "How should it talk to you?",
+  "reason_detail_keep_tone": "Keep This Tone",
+  "reason_detail_voice_sheet": "Choose a voice",
+  "reason_detail_keep_voice": "Keep This Voice",
+  "reason_detail_length_sheet": "How long should it speak?",
+  "reason_detail_keep_length": "Keep This Length",
+  "reason_detail_more": "More",
+  "reason_detail_connect_alarm": "Connect an alarm",
+  "common_cancel": "Cancel",
+  "common_delete": "Delete",
+  "reason_actions_use_with_alarm": "Use with an alarm",
+  "reason_actions_delete": "Delete Reason",
+  "reason_delete_title": "Delete “{name}”?",
+  "@reason_delete_title": {
+    "description": "Asks before a reason is deleted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reason_delete_message": "This can’t be undone.",
+  "reason_delete_failed": "Couldn’t delete this reason. Check your connection and try again."
 }

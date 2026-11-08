@@ -542,58 +542,14 @@ class $ReasonsTableTable extends ReasonsTable
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ReasonsTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _reasonIdMeta = const VerificationMeta(
-    'reasonId',
-  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<String> reasonId = GeneratedColumn<String>(
-    'reason_id',
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
     aliasedName,
     false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _areaNameMeta = const VerificationMeta(
-    'areaName',
-  );
-  @override
-  late final GeneratedColumn<String> areaName = GeneratedColumn<String>(
-    'area_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _areaColorMeta = const VerificationMeta(
-    'areaColor',
-  );
-  @override
-  late final GeneratedColumn<int> areaColor = GeneratedColumn<int>(
-    'area_color',
-    aliasedName,
-    true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-  );
-  static const VerificationMeta _toneNameMeta = const VerificationMeta(
-    'toneName',
-  );
-  @override
-  late final GeneratedColumn<String> toneName = GeneratedColumn<String>(
-    'tone_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -602,20 +558,21 @@ class $ReasonsTableTable extends ReasonsTable
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
     'created_at',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [
-    reasonId,
-    name,
-    areaName,
-    areaColor,
-    toneName,
-    createdAt,
-  ];
+  List<GeneratedColumn> get $columns => [id, createdAt, data];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -628,43 +585,8 @@ class $ReasonsTableTable extends ReasonsTable
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('reason_id')) {
-      context.handle(
-        _reasonIdMeta,
-        reasonId.isAcceptableOrUnknown(data['reason_id']!, _reasonIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_reasonIdMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('area_name')) {
-      context.handle(
-        _areaNameMeta,
-        areaName.isAcceptableOrUnknown(data['area_name']!, _areaNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_areaNameMeta);
-    }
-    if (data.containsKey('area_color')) {
-      context.handle(
-        _areaColorMeta,
-        areaColor.isAcceptableOrUnknown(data['area_color']!, _areaColorMeta),
-      );
-    }
-    if (data.containsKey('tone_name')) {
-      context.handle(
-        _toneNameMeta,
-        toneName.isAcceptableOrUnknown(data['tone_name']!, _toneNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_toneNameMeta);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -672,38 +594,34 @@ class $ReasonsTableTable extends ReasonsTable
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {reasonId};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   ReasonRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ReasonRecord(
-      reasonId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}reason_id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      areaName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}area_name'],
-      )!,
-      areaColor: attachedDatabase.typeMapping.read(
+      id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}area_color'],
-      ),
-      toneName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}tone_name'],
+        data['${effectivePrefix}id'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
+      ),
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
       )!,
     );
   }
@@ -715,44 +633,28 @@ class $ReasonsTableTable extends ReasonsTable
 }
 
 class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
-  final String reasonId;
-  final String name;
-  final String areaName;
-  final int? areaColor;
-  final String toneName;
-  final DateTime createdAt;
-  const ReasonRecord({
-    required this.reasonId,
-    required this.name,
-    required this.areaName,
-    this.areaColor,
-    required this.toneName,
-    required this.createdAt,
-  });
+  final int id;
+  final DateTime? createdAt;
+  final String data;
+  const ReasonRecord({required this.id, this.createdAt, required this.data});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['reason_id'] = Variable<String>(reasonId);
-    map['name'] = Variable<String>(name);
-    map['area_name'] = Variable<String>(areaName);
-    if (!nullToAbsent || areaColor != null) {
-      map['area_color'] = Variable<int>(areaColor);
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
     }
-    map['tone_name'] = Variable<String>(toneName);
-    map['created_at'] = Variable<DateTime>(createdAt);
+    map['data'] = Variable<String>(data);
     return map;
   }
 
   ReasonsTableCompanion toCompanion(bool nullToAbsent) {
     return ReasonsTableCompanion(
-      reasonId: Value(reasonId),
-      name: Value(name),
-      areaName: Value(areaName),
-      areaColor: areaColor == null && nullToAbsent
+      id: Value(id),
+      createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
-          : Value(areaColor),
-      toneName: Value(toneName),
-      createdAt: Value(createdAt),
+          : Value(createdAt),
+      data: Value(data),
     );
   }
 
@@ -762,173 +664,108 @@ class ReasonRecord extends DataClass implements Insertable<ReasonRecord> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ReasonRecord(
-      reasonId: serializer.fromJson<String>(json['reasonId']),
-      name: serializer.fromJson<String>(json['name']),
-      areaName: serializer.fromJson<String>(json['areaName']),
-      areaColor: serializer.fromJson<int?>(json['areaColor']),
-      toneName: serializer.fromJson<String>(json['toneName']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      id: serializer.fromJson<int>(json['id']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      data: serializer.fromJson<String>(json['data']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'reasonId': serializer.toJson<String>(reasonId),
-      'name': serializer.toJson<String>(name),
-      'areaName': serializer.toJson<String>(areaName),
-      'areaColor': serializer.toJson<int?>(areaColor),
-      'toneName': serializer.toJson<String>(toneName),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'id': serializer.toJson<int>(id),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'data': serializer.toJson<String>(data),
     };
   }
 
   ReasonRecord copyWith({
-    String? reasonId,
-    String? name,
-    String? areaName,
-    Value<int?> areaColor = const Value.absent(),
-    String? toneName,
-    DateTime? createdAt,
+    int? id,
+    Value<DateTime?> createdAt = const Value.absent(),
+    String? data,
   }) => ReasonRecord(
-    reasonId: reasonId ?? this.reasonId,
-    name: name ?? this.name,
-    areaName: areaName ?? this.areaName,
-    areaColor: areaColor.present ? areaColor.value : this.areaColor,
-    toneName: toneName ?? this.toneName,
-    createdAt: createdAt ?? this.createdAt,
+    id: id ?? this.id,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    data: data ?? this.data,
   );
   ReasonRecord copyWithCompanion(ReasonsTableCompanion data) {
     return ReasonRecord(
-      reasonId: data.reasonId.present ? data.reasonId.value : this.reasonId,
-      name: data.name.present ? data.name.value : this.name,
-      areaName: data.areaName.present ? data.areaName.value : this.areaName,
-      areaColor: data.areaColor.present ? data.areaColor.value : this.areaColor,
-      toneName: data.toneName.present ? data.toneName.value : this.toneName,
+      id: data.id.present ? data.id.value : this.id,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      data: data.data.present ? data.data.value : this.data,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('ReasonRecord(')
-          ..write('reasonId: $reasonId, ')
-          ..write('name: $name, ')
-          ..write('areaName: $areaName, ')
-          ..write('areaColor: $areaColor, ')
-          ..write('toneName: $toneName, ')
-          ..write('createdAt: $createdAt')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('data: $data')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(reasonId, name, areaName, areaColor, toneName, createdAt);
+  int get hashCode => Object.hash(id, createdAt, data);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ReasonRecord &&
-          other.reasonId == this.reasonId &&
-          other.name == this.name &&
-          other.areaName == this.areaName &&
-          other.areaColor == this.areaColor &&
-          other.toneName == this.toneName &&
-          other.createdAt == this.createdAt);
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.data == this.data);
 }
 
 class ReasonsTableCompanion extends UpdateCompanion<ReasonRecord> {
-  final Value<String> reasonId;
-  final Value<String> name;
-  final Value<String> areaName;
-  final Value<int?> areaColor;
-  final Value<String> toneName;
-  final Value<DateTime> createdAt;
-  final Value<int> rowid;
+  final Value<int> id;
+  final Value<DateTime?> createdAt;
+  final Value<String> data;
   const ReasonsTableCompanion({
-    this.reasonId = const Value.absent(),
-    this.name = const Value.absent(),
-    this.areaName = const Value.absent(),
-    this.areaColor = const Value.absent(),
-    this.toneName = const Value.absent(),
+    this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.data = const Value.absent(),
   });
   ReasonsTableCompanion.insert({
-    required String reasonId,
-    required String name,
-    required String areaName,
-    this.areaColor = const Value.absent(),
-    required String toneName,
+    this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : reasonId = Value(reasonId),
-       name = Value(name),
-       areaName = Value(areaName),
-       toneName = Value(toneName);
+    required String data,
+  }) : data = Value(data);
   static Insertable<ReasonRecord> custom({
-    Expression<String>? reasonId,
-    Expression<String>? name,
-    Expression<String>? areaName,
-    Expression<int>? areaColor,
-    Expression<String>? toneName,
+    Expression<int>? id,
     Expression<DateTime>? createdAt,
-    Expression<int>? rowid,
+    Expression<String>? data,
   }) {
     return RawValuesInsertable({
-      if (reasonId != null) 'reason_id': reasonId,
-      if (name != null) 'name': name,
-      if (areaName != null) 'area_name': areaName,
-      if (areaColor != null) 'area_color': areaColor,
-      if (toneName != null) 'tone_name': toneName,
+      if (id != null) 'id': id,
       if (createdAt != null) 'created_at': createdAt,
-      if (rowid != null) 'rowid': rowid,
+      if (data != null) 'data': data,
     });
   }
 
   ReasonsTableCompanion copyWith({
-    Value<String>? reasonId,
-    Value<String>? name,
-    Value<String>? areaName,
-    Value<int?>? areaColor,
-    Value<String>? toneName,
-    Value<DateTime>? createdAt,
-    Value<int>? rowid,
+    Value<int>? id,
+    Value<DateTime?>? createdAt,
+    Value<String>? data,
   }) {
     return ReasonsTableCompanion(
-      reasonId: reasonId ?? this.reasonId,
-      name: name ?? this.name,
-      areaName: areaName ?? this.areaName,
-      areaColor: areaColor ?? this.areaColor,
-      toneName: toneName ?? this.toneName,
+      id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
-      rowid: rowid ?? this.rowid,
+      data: data ?? this.data,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (reasonId.present) {
-      map['reason_id'] = Variable<String>(reasonId.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (areaName.present) {
-      map['area_name'] = Variable<String>(areaName.value);
-    }
-    if (areaColor.present) {
-      map['area_color'] = Variable<int>(areaColor.value);
-    }
-    if (toneName.present) {
-      map['tone_name'] = Variable<String>(toneName.value);
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
     }
     return map;
   }
@@ -936,13 +773,9 @@ class ReasonsTableCompanion extends UpdateCompanion<ReasonRecord> {
   @override
   String toString() {
     return (StringBuffer('ReasonsTableCompanion(')
-          ..write('reasonId: $reasonId, ')
-          ..write('name: $name, ')
-          ..write('areaName: $areaName, ')
-          ..write('areaColor: $areaColor, ')
-          ..write('toneName: $toneName, ')
+          ..write('id: $id, ')
           ..write('createdAt: $createdAt, ')
-          ..write('rowid: $rowid')
+          ..write('data: $data')
           ..write(')'))
         .toString();
   }
@@ -2708,23 +2541,15 @@ typedef $$AlarmsTableTableProcessedTableManager =
     >;
 typedef $$ReasonsTableTableCreateCompanionBuilder =
     ReasonsTableCompanion Function({
-      required String reasonId,
-      required String name,
-      required String areaName,
-      Value<int?> areaColor,
-      required String toneName,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
+      Value<int> id,
+      Value<DateTime?> createdAt,
+      required String data,
     });
 typedef $$ReasonsTableTableUpdateCompanionBuilder =
     ReasonsTableCompanion Function({
-      Value<String> reasonId,
-      Value<String> name,
-      Value<String> areaName,
-      Value<int?> areaColor,
-      Value<String> toneName,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
+      Value<int> id,
+      Value<DateTime?> createdAt,
+      Value<String> data,
     });
 
 class $$ReasonsTableTableFilterComposer
@@ -2736,33 +2561,18 @@ class $$ReasonsTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get reasonId => $composableBuilder(
-    column: $table.reasonId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get areaName => $composableBuilder(
-    column: $table.areaName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get areaColor => $composableBuilder(
-    column: $table.areaColor,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get toneName => $composableBuilder(
-    column: $table.toneName,
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2776,33 +2586,18 @@ class $$ReasonsTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get reasonId => $composableBuilder(
-    column: $table.reasonId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get areaName => $composableBuilder(
-    column: $table.areaName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get areaColor => $composableBuilder(
-    column: $table.areaColor,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get toneName => $composableBuilder(
-    column: $table.toneName,
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -2816,23 +2611,14 @@ class $$ReasonsTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get reasonId =>
-      $composableBuilder(column: $table.reasonId, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get areaName =>
-      $composableBuilder(column: $table.areaName, builder: (column) => column);
-
-  GeneratedColumn<int> get areaColor =>
-      $composableBuilder(column: $table.areaColor, builder: (column) => column);
-
-  GeneratedColumn<String> get toneName =>
-      $composableBuilder(column: $table.toneName, builder: (column) => column);
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
 }
 
 class $$ReasonsTableTableTableManager
@@ -2864,41 +2650,20 @@ class $$ReasonsTableTableTableManager
               $$ReasonsTableTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$ReasonsTableTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> reasonId = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String> areaName = const Value.absent(),
-                Value<int?> areaColor = const Value.absent(),
-                Value<String> toneName = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ReasonsTableCompanion(
-                reasonId: reasonId,
-                name: name,
-                areaName: areaName,
-                areaColor: areaColor,
-                toneName: toneName,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<String> data = const Value.absent(),
+          }) => ReasonsTableCompanion(id: id, createdAt: createdAt, data: data),
           createCompanionCallback:
               ({
-                required String reasonId,
-                required String name,
-                required String areaName,
-                Value<int?> areaColor = const Value.absent(),
-                required String toneName,
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                required String data,
               }) => ReasonsTableCompanion.insert(
-                reasonId: reasonId,
-                name: name,
-                areaName: areaName,
-                areaColor: areaColor,
-                toneName: toneName,
+                id: id,
                 createdAt: createdAt,
-                rowid: rowid,
+                data: data,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -1,5 +1,4 @@
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
-import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -93,19 +92,19 @@ void main() {
     (WidgetTester tester) async {
       await registerFakeAlarmDependencies(
         FakeAlarmRepository(),
-        reasonRepository: FakeReasonRepository(const [
-          Reason(
-            id: '1',
+        reasonRepository: FakeReasonRepository([
+          testReason(
+            id: 1,
             name: 'First reason',
-            areaName: 'Alpha',
+            area: 'Alpha',
             areaColor: 0xFF112233,
-            toneName: 'Tone A',
+            tone: 'Tone A',
           ),
-          Reason(
-            id: '2',
+          testReason(
+            id: 2,
             name: 'Second reason',
-            areaName: 'Beta',
-            toneName: 'Tone B',
+            area: 'Beta',
+            tone: 'Tone B',
           ),
         ]),
       );

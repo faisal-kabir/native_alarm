@@ -26,8 +26,8 @@ class ReasonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     final textTheme = appTheme(context).textTheme;
-    final area = reason.areaName;
-    final tone = reason.toneName;
+    final area = reason.areaTitle;
+    final tone = reason.toneTitle;
     final note = switch (badge) {
       ReasonAlarmBadge.none => '',
       ReasonAlarmBadge.on => strings.reason_alarm_on_note,
@@ -51,8 +51,9 @@ class ReasonRow extends StatelessWidget {
               child: Row(
                 children: [
                   ReasonEmblem(
-                    areaName: reason.areaName,
-                    areaColor: reason.areaColor,
+                    areaName: area,
+                    areaColor: reason.area?.color,
+                    areaIcon: reason.area?.icon,
                     badge: badge,
                   ),
                   SizedBox(width: 13.w),

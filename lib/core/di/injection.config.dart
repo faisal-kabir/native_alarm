@@ -84,20 +84,29 @@ import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart'
     as _i874;
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart'
     as _i1005;
+import 'package:eala/features/reason_detail/presentation/bloc/reason_detail_bloc.dart'
+    as _i252;
 import 'package:eala/features/reasons/data/datasources/reason_local_data_source.dart'
     as _i429;
 import 'package:eala/features/reasons/data/datasources/reason_remote_data_source.dart'
     as _i981;
 import 'package:eala/features/reasons/data/repositories/reason_repository_impl.dart'
     as _i534;
+import 'package:eala/features/reasons/domain/entities/reason.dart' as _i219;
 import 'package:eala/features/reasons/domain/repositories/reason_repository.dart'
     as _i23;
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart'
     as _i1004;
+import 'package:eala/features/reasons/domain/usecases/delete_reason_usecase.dart'
+    as _i1063;
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart'
     as _i4;
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart'
     as _i836;
+import 'package:eala/features/reasons/domain/usecases/update_reason_usecase.dart'
+    as _i39;
+import 'package:eala/features/reasons/domain/usecases/watch_reason_usecase.dart'
+    as _i151;
 import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart'
     as _i305;
 import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart'
@@ -309,11 +318,20 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1004.CreateReasonUseCase>(
       () => _i1004.CreateReasonUseCase(gh<_i23.ReasonRepository>()),
     );
+    gh.lazySingleton<_i1063.DeleteReasonUseCase>(
+      () => _i1063.DeleteReasonUseCase(gh<_i23.ReasonRepository>()),
+    );
     gh.lazySingleton<_i4.RefreshReasonsUseCase>(
       () => _i4.RefreshReasonsUseCase(gh<_i23.ReasonRepository>()),
     );
     gh.lazySingleton<_i836.RenameReasonUseCase>(
       () => _i836.RenameReasonUseCase(gh<_i23.ReasonRepository>()),
+    );
+    gh.lazySingleton<_i39.UpdateReasonUseCase>(
+      () => _i39.UpdateReasonUseCase(gh<_i23.ReasonRepository>()),
+    );
+    gh.lazySingleton<_i151.WatchReasonUseCase>(
+      () => _i151.WatchReasonUseCase(gh<_i23.ReasonRepository>()),
     );
     gh.lazySingleton<_i305.WatchReasonsUseCase>(
       () => _i305.WatchReasonsUseCase(gh<_i23.ReasonRepository>()),
@@ -381,6 +399,22 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i586.GetAlarmsUseCase>(),
         gh<_i357.SaveAlarmUseCase>(),
         gh<_i962.DeleteAlarmUseCase>(),
+      ),
+    );
+    gh.factoryParam<_i252.ReasonDetailBloc, _i219.Reason?, dynamic>(
+      (reason, _) => _i252.ReasonDetailBloc(
+        gh<_i151.WatchReasonUseCase>(),
+        gh<_i39.UpdateReasonUseCase>(),
+        gh<_i836.RenameReasonUseCase>(),
+        gh<_i1063.DeleteReasonUseCase>(),
+        gh<_i375.WatchAreasOfLifeUseCase>(),
+        gh<_i190.RefreshAreasOfLifeUseCase>(),
+        gh<_i904.WatchVoicesUseCase>(),
+        gh<_i414.RefreshVoicesUseCase>(),
+        gh<_i902.GetSoundTypesUseCase>(),
+        gh<_i879.GetPurposeSuggestionsUseCase>(),
+        gh<_i478.GetMatterSuggestionsUseCase>(),
+        reason,
       ),
     );
     gh.factory<_i946.CreateReasonBloc>(

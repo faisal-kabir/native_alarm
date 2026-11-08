@@ -1,4 +1,5 @@
-import 'package:eala/features/reasons/domain/entities/reason.dart';
+import 'fakes/fake_alarm_repository.dart';
+
 import 'package:eala/features/reasons/presentation/widgets/reason_row.dart';
 import 'package:eala/features/reasons/presentation/widgets/reason_emblem.dart';
 import 'package:eala/l10n/app_localizations.dart';
@@ -7,12 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _reason = Reason(
-  id: '1',
+final _reason = testReason(
   name: 'Build my own thing',
-  areaName: 'Area X',
+  area: 'Area X',
   areaColor: 0xFF336699,
-  toneName: 'Tone Y',
+  tone: 'Tone Y',
 );
 
 Widget _host(ReasonAlarmBadge badge) => ScreenUtilInit(

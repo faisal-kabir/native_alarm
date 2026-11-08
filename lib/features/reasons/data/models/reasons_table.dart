@@ -1,43 +1,36 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../domain/entities/reason.dart';
+import 'reason_model.dart';
 
-/// SQL table `reasons`. Each row is one reason, keyed by its id; the area and tone
-/// are stored as the display names the server sent. Rows come back as
-/// [ReasonRecord].
+/// SQL table `reasons`: the device's copy of the user's reasons. Each row keeps the
+/// server's whole `reason` row, with its area, sound and voice joined in, as JSON
+/// ([data]), so one reason is one object everywhere and nothing has to be joined on the
+/// device. [createdAt] is only there to keep the list in order.
 @DataClassName('ReasonRecord')
 class ReasonsTable extends Table {
   @override
   String get tableName => 'reasons';
 
-  TextColumn get reasonId => text()();
-  TextColumn get name => text()();
-  TextColumn get areaName => text()();
-  IntColumn get areaColor => integer().nullable()();
-  TextColumn get toneName => text()();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get id => integer()();
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  TextColumn get data => text()();
 
   @override
-  Set<Column<Object>> get primaryKey => {reasonId};
+  Set<Column<Object>> get primaryKey => {id};
 }
 
 extension ReasonRecordMapper on ReasonRecord {
-  Reason toEntity() => Reason(
-    id: reasonId,
-    name: name,
-    areaName: areaName,
-    areaColor: areaColor,
-    toneName: toneName,
-  );
+  Reason toEntity() => reasonFromJson(jsonDecode(data) as Map<String, dynamic>);
 }
 
-extension ReasonCompanionMapper on Reason {
-  ReasonsTableCompanion toCompanion() => ReasonsTableCompanion(
-    reasonId: Value(id),
-    name: Value(name),
-    areaName: Value(areaName),
-    areaColor: Value(areaColor),
-    toneName: Value(toneName),
-  );
-}
+/// A server row (with its joins) as a row of [ReasonsTable].
+ReasonsTableCompanion reasonRowCompanion(Map<String, dynamic> row) =>
+    ReasonsTableCompanion(
+      id: Value((row['id'] as num).toInt()),
+      createdAt: Value(DateTime.tryParse('${row['created_at']}')?.toUtc()),
+      data: Value(jsonEncode(row)),
+    );

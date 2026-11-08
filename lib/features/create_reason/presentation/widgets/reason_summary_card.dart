@@ -5,40 +5,30 @@ import '../../../../core/theme/app_color.dart';
 import '../../../../core/theme/dimension.dart';
 import '../../../../core/widgets/suggestion_list.dart';
 import '../../../../main.dart';
-import '../../../area_of_life/domain/entities/area_of_life.dart';
-import '../../../sound/domain/entities/sound_type.dart';
-import '../../../voice/domain/entities/voice.dart';
+import '../../../reasons/domain/entities/reason.dart';
 import 'area_label.dart';
 import 'voice_row.dart';
 
-/// A whole reason on one card: the area, the [name] (any widget: a plain text, or a
+/// A whole [reason] on one card: the area, the [name] (any widget: a plain text, or a
 /// `ReasonNameField` to rename it in place), the purpose, "Why it matters" (left out
-/// when [why] is empty), then the voice and the tone side by side.
-///
-/// Shown when a reason is ready; meant for the reason's own screen and its editor too.
+/// when there is none), then the voice and the tone side by side.
 class ReasonSummaryCard extends StatelessWidget {
   const ReasonSummaryCard({
     super.key,
-    required this.area,
+    required this.reason,
     required this.name,
-    required this.purpose,
-    required this.why,
-    required this.voice,
-    required this.sound,
   });
 
-  final AreaOfLife area;
+  final Reason reason;
   final Widget name;
-  final String purpose;
-  final String why;
-  final Voice voice;
-  final SoundType sound;
 
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     final textTheme = appTheme(context).textTheme;
-    final why = this.why.trim();
+    final why = reason.why.trim();
+    final area = reason.area;
+    final voice = reason.voice;
     return Container(
       decoration: BoxDecoration(
         color: AppColor.cardColor,
@@ -55,15 +45,15 @@ class ReasonSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AreaLabel(
-                  title: area.title,
-                  color: area.color,
-                  icon: area.icon,
+                  title: reason.areaTitle,
+                  color: area?.color,
+                  icon: area?.icon,
                 ),
                 SizedBox(height: 8.h),
                 name,
                 SizedBox(height: 8.h),
                 Text(
-                  purpose,
+                  reason.purpose,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyLarge!.copyWith(
@@ -108,12 +98,14 @@ class ReasonSummaryCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        VoiceAvatar(voice: voice, size: 32),
-                        SizedBox(width: 10.w),
+                        if (voice != null) ...[
+                          VoiceAvatar(voice: voice, size: 32),
+                          SizedBox(width: 10.w),
+                        ],
                         Expanded(
                           child: _Fact(
                             label: strings.reason_ready_voice,
-                            value: voice.name,
+                            value: voice?.name ?? '',
                           ),
                         ),
                       ],
@@ -133,7 +125,7 @@ class ReasonSummaryCard extends StatelessWidget {
                     ),
                     child: _Fact(
                       label: strings.reason_ready_tone,
-                      value: sound.title,
+                      value: reason.toneTitle,
                     ),
                   ),
                 ),

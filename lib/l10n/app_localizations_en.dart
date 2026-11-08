@@ -370,4 +370,164 @@ class AppLocalizationsEn extends AppLocalizations {
   String settings_version(String name, String version, String build) {
     return '$name $version ($build)';
   }
+
+  @override
+  String get common_close => 'Close';
+
+  @override
+  String get common_add => 'Add';
+
+  @override
+  String get sheet_no_changes => 'No Changes';
+
+  @override
+  String get sheet_use_this => 'Use This';
+
+  @override
+  String get sheet_remove => 'Remove';
+
+  @override
+  String sheet_use_choice(String name) {
+    return 'Use $name';
+  }
+
+  @override
+  String get reason_detail_about => 'What it’s about';
+
+  @override
+  String get reason_detail_speaks => 'How it speaks';
+
+  @override
+  String get reason_detail_alarm => 'Alarm';
+
+  @override
+  String get reason_detail_no_alarm => 'Not in an alarm yet.';
+
+  @override
+  String get reason_detail_area => 'Area of life';
+
+  @override
+  String get reason_detail_purpose => 'Purpose';
+
+  @override
+  String get reason_detail_why => 'Why it matters';
+
+  @override
+  String get reason_detail_tone => 'Tone';
+
+  @override
+  String get reason_detail_voice => 'Voice';
+
+  @override
+  String get reason_detail_length => 'Length';
+
+  @override
+  String reason_detail_length_value(String name, int seconds) {
+    return '$name · $seconds sec';
+  }
+
+  @override
+  String reason_detail_row_semantics(
+    String label,
+    String value,
+    String changed,
+  ) {
+    return '$label: $value.$changed Change';
+  }
+
+  @override
+  String get reason_detail_changed_note => ' Changed, not saved.';
+
+  @override
+  String get reason_detail_save => 'Save Changes';
+
+  @override
+  String get reason_detail_discard => 'Discard';
+
+  @override
+  String get reason_detail_caption =>
+      'Changes will apply from your next new message.';
+
+  @override
+  String get reason_detail_discard_title => 'Discard changes?';
+
+  @override
+  String get reason_detail_discard_message => 'This reason stays as it is now.';
+
+  @override
+  String get reason_detail_keep_editing => 'Keep Editing';
+
+  @override
+  String get reason_detail_save_failed =>
+      'Couldn’t save your changes. Check your connection and try again.';
+
+  @override
+  String get reason_detail_more_below => 'More below';
+
+  @override
+  String get reason_detail_area_sheet => 'What part of life is this for?';
+
+  @override
+  String get reason_detail_keep_area => 'Keep This Area';
+
+  @override
+  String get reason_detail_purpose_sheet => 'What are you working toward?';
+
+  @override
+  String get reason_detail_why_sheet => 'Why does it matter to you?';
+
+  @override
+  String get reason_detail_purpose_short =>
+      'A few more words, so we can write for you.';
+
+  @override
+  String get reason_detail_why_short => 'A little more, if you can.';
+
+  @override
+  String get reason_detail_tone_sheet => 'How should it talk to you?';
+
+  @override
+  String get reason_detail_keep_tone => 'Keep This Tone';
+
+  @override
+  String get reason_detail_voice_sheet => 'Choose a voice';
+
+  @override
+  String get reason_detail_keep_voice => 'Keep This Voice';
+
+  @override
+  String get reason_detail_length_sheet => 'How long should it speak?';
+
+  @override
+  String get reason_detail_keep_length => 'Keep This Length';
+
+  @override
+  String get reason_detail_more => 'More';
+
+  @override
+  String get reason_detail_connect_alarm => 'Connect an alarm';
+
+  @override
+  String get common_cancel => 'Cancel';
+
+  @override
+  String get common_delete => 'Delete';
+
+  @override
+  String get reason_actions_use_with_alarm => 'Use with an alarm';
+
+  @override
+  String get reason_actions_delete => 'Delete Reason';
+
+  @override
+  String reason_delete_title(String name) {
+    return 'Delete “$name”?';
+  }
+
+  @override
+  String get reason_delete_message => 'This can’t be undone.';
+
+  @override
+  String get reason_delete_failed =>
+      'Couldn’t delete this reason. Check your connection and try again.';
 }

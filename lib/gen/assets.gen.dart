@@ -31,6 +31,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/check.svg
   SvgGenImage get check => const SvgGenImage('assets/icons/check.svg');
 
+  /// Directory path: assets/icons/detail
+  $AssetsIconsDetailGen get detail => const $AssetsIconsDetailGen();
+
   /// File path: assets/icons/info.svg
   SvgGenImage get info => const SvgGenImage('assets/icons/info.svg');
 
@@ -64,6 +67,25 @@ class $AssetsTranscriptsGen {
 
   /// List of all assets
   List<String> get values => [demoAlarmMessage];
+}
+
+class $AssetsIconsDetailGen {
+  const $AssetsIconsDetailGen();
+
+  /// File path: assets/icons/detail/clock.svg
+  SvgGenImage get clock => const SvgGenImage('assets/icons/detail/clock.svg');
+
+  /// File path: assets/icons/detail/heart.svg
+  SvgGenImage get heart => const SvgGenImage('assets/icons/detail/heart.svg');
+
+  /// File path: assets/icons/detail/target.svg
+  SvgGenImage get target => const SvgGenImage('assets/icons/detail/target.svg');
+
+  /// File path: assets/icons/detail/volume.svg
+  SvgGenImage get volume => const SvgGenImage('assets/icons/detail/volume.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [clock, heart, target, volume];
 }
 
 class $AssetsIconsPageGen {

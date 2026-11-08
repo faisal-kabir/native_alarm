@@ -9,4 +9,6 @@ abstract class RouteNames {
   static const createReasonPath = '/createReason';
   static const reasonReady = 'reasonReady';
   static const reasonReadyPath = '/reasonReady';
+  static const reasonDetail = 'reasonDetail';
+  static const reasonDetailPath = '/reasonDetail';
 }
