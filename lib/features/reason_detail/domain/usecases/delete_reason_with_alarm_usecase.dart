@@ -4,28 +4,28 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../../alarm/domain/repositories/alarm_repository.dart';
-import '../../../alarm/domain/repositories/alarm_scheduler.dart';
 import '../../../create_alarm/domain/repositories/remote_alarm_repository.dart';
+import '../../../create_alarm/domain/usecases/remove_alarm_usecase.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../../reasons/domain/repositories/reason_repository.dart';
 
 /// Deletes a Reason, and with it the alarm that plays it (every alarm needs a Reason):
-/// the alarm leaves the server first (`alarm`, its `sub_alarm` rows, the Reason's
-/// link), then the device (its ring is cancelled, its row removed), then the Reason
-/// goes (server, then device). Offline nothing changes and it fails, so it can simply
-/// be tried again; an alarm already gone stays gone if only the Reason then fails.
+/// the alarm goes everywhere first ([RemoveAlarmUseCase]: server, its ring, the
+/// device; or only the server's copy when the device has none), then the Reason
+/// (server, then device). Offline nothing changes and it fails, so it can simply be
+/// tried again; an alarm already gone stays gone if only the Reason then fails.
 @lazySingleton
 class DeleteReasonWithAlarmUseCase implements UseCase<Unit, Reason> {
   final ReasonRepository reasons;
   final AlarmRepository alarms;
   final RemoteAlarmRepository remoteAlarms;
-  final AlarmScheduler scheduler;
+  final RemoveAlarmUseCase removeAlarm;
 
   DeleteReasonWithAlarmUseCase(
     this.reasons,
     this.alarms,
     this.remoteAlarms,
-    this.scheduler,
+    this.removeAlarm,
   );
 
   @override
@@ -37,21 +37,15 @@ class DeleteReasonWithAlarmUseCase implements UseCase<Unit, Reason> {
         if (a.reasonId == reason.id) a,
     ];
 
-    // The server's copy: the one the Reason points at, or the one the device sent.
-    final remoteIds = {?reason.alarmId, for (final a in local) ?a.remoteId};
-    for (final id in remoteIds) {
-      final removed = await remoteAlarms.remove(id);
+    // An alarm only the server has (the Reason points at it, the device does not).
+    final serverOnly = reason.alarmId;
+    if (serverOnly != null && !local.any((a) => a.remoteId == serverOnly)) {
+      final removed = await remoteAlarms.remove(serverOnly);
       if (removed.isLeft()) return removed;
     }
-
     for (final alarm in local) {
-      try {
-        await scheduler.cancel(alarm.id);
-      } catch (e) {
-        return Left(CacheFailure('Alarm not cancelled: $e'));
-      }
-      final deleted = await alarms.deleteAlarm(alarm.id);
-      if (deleted.isLeft()) return deleted.map((_) => unit);
+      final removed = await removeAlarm(alarm);
+      if (removed.isLeft()) return removed;
     }
 
     return reasons.deleteReason(reason.id);

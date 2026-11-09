@@ -731,12 +731,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get my_alarms_status_on => 'On';
-
-  @override
-  String get my_alarms_status_off => 'Off';
-
-  @override
   String get my_alarms_next_alarm => 'Next alarm';
 
   @override
@@ -750,13 +744,63 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get my_alarms_today => 'Today';
-
-  @override
   String get my_alarms_tomorrow => 'Tomorrow';
 
   @override
-  String get my_alarms_off_note => 'Off · won’t ring';
+  String get my_alarms_off => 'Off';
+
+  @override
+  String get my_alarms_all_alarms => 'All alarms';
+
+  @override
+  String my_alarms_rings_once(String when) {
+    return 'Rings $when · once';
+  }
+
+  @override
+  String my_alarms_in_minutes(int n) {
+    return 'in $n min';
+  }
+
+  @override
+  String my_alarms_in_hours(int h) {
+    return 'in $h hr';
+  }
+
+  @override
+  String my_alarms_in_hours_minutes(int h, int m) {
+    return 'in $h hr $m min';
+  }
+
+  @override
+  String get my_alarms_blocked => 'Won’t ring · Alarm access is off';
+
+  @override
+  String get my_alarms_blocked_semantics =>
+      'This alarm won’t ring. Alarm access is off.';
+
+  @override
+  String my_alarms_switch_semantics(String time) {
+    return 'Alarm at $time';
+  }
+
+  @override
+  String get my_alarms_access_title => 'Alarm access is off';
+
+  @override
+  String get my_alarms_delete_title => 'Delete this alarm?';
+
+  @override
+  String get my_alarms_delete_message => 'Your reason stays in My Reasons.';
+
+  @override
+  String my_alarms_delete_semantics(String time) {
+    return 'Delete alarm at $time';
+  }
+
+  @override
+  String get my_alarms_delete_failed =>
+      'Couldn’t delete the alarm. Check your connection and try again.';
 
   @override
   String get my_alarms_toggle_failed => 'Couldn’t change the alarm. Try again.';

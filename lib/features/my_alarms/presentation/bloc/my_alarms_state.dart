@@ -19,7 +19,7 @@ class MyAlarmsLoading extends MyAlarmsState {
 }
 
 class MyAlarmsLoaded extends MyAlarmsState {
-  /// The saved alarms: the switched-on ones by their next ring, then the others.
+  /// The saved alarms, as saved (the page lays them out: `arrangeAlarms`).
   final List<Alarm> alarms;
 
   /// The cached reasons (each alarm shows the one it plays).
@@ -28,14 +28,22 @@ class MyAlarmsLoaded extends MyAlarmsState {
   /// How many alarms are allowed.
   final int alarmLimit;
 
-  /// Goes up by one each time a switch could not be changed (the page says so).
+  /// The system has not granted alarm access: nothing can ring (the list dims, a
+  /// banner asks for it, a switched-on card says it won't ring).
+  final bool accessDenied;
+
+  /// Go up by one each time a switch could not be changed / an alarm could not be
+  /// deleted (the page says so).
   final int toggleFailures;
+  final int deleteFailures;
 
   const MyAlarmsLoaded({
     required this.alarms,
     required this.alarmLimit,
     this.reasons = const [],
+    this.accessDenied = false,
     this.toggleFailures = 0,
+    this.deleteFailures = 0,
   });
 
   /// How many alarms exist (fills that many meter pills).
@@ -52,16 +60,27 @@ class MyAlarmsLoaded extends MyAlarmsState {
   MyAlarmsLoaded copyWith({
     List<Alarm>? alarms,
     List<Reason>? reasons,
+    bool? accessDenied,
     int? toggleFailures,
+    int? deleteFailures,
   }) => MyAlarmsLoaded(
     alarms: alarms ?? this.alarms,
     reasons: reasons ?? this.reasons,
     alarmLimit: alarmLimit,
+    accessDenied: accessDenied ?? this.accessDenied,
     toggleFailures: toggleFailures ?? this.toggleFailures,
+    deleteFailures: deleteFailures ?? this.deleteFailures,
   );
 
   @override
-  List<Object?> get props => [alarms, reasons, alarmLimit, toggleFailures];
+  List<Object?> get props => [
+    alarms,
+    reasons,
+    alarmLimit,
+    accessDenied,
+    toggleFailures,
+    deleteFailures,
+  ];
 }
 
 class MyAlarmsFailure extends MyAlarmsState {

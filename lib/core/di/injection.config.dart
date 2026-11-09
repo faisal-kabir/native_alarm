@@ -107,6 +107,8 @@ import 'package:eala/features/create_alarm/domain/repositories/remote_alarm_repo
     as _i452;
 import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart'
     as _i73;
+import 'package:eala/features/create_alarm/domain/usecases/remove_alarm_usecase.dart'
+    as _i8;
 import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart'
     as _i218;
 import 'package:eala/features/create_alarm/domain/usecases/set_alarm_enabled_usecase.dart'
@@ -452,6 +454,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i173.AlarmScheduler>(),
       ),
     );
+    gh.lazySingleton<_i8.RemoveAlarmUseCase>(
+      () => _i8.RemoveAlarmUseCase(
+        gh<_i1032.AlarmRepository>(),
+        gh<_i452.RemoteAlarmRepository>(),
+        gh<_i173.AlarmScheduler>(),
+      ),
+    );
     gh.lazySingleton<_i40.UploadPendingAlarmsUseCase>(
       () => _i40.UploadPendingAlarmsUseCase(
         gh<_i1032.AlarmRepository>(),
@@ -503,7 +512,18 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i23.ReasonRepository>(),
         gh<_i1032.AlarmRepository>(),
         gh<_i452.RemoteAlarmRepository>(),
-        gh<_i173.AlarmScheduler>(),
+        gh<_i8.RemoveAlarmUseCase>(),
+      ),
+    );
+    gh.factory<_i1005.MyAlarmsBloc>(
+      () => _i1005.MyAlarmsBloc(
+        gh<_i586.GetAlarmsUseCase>(),
+        gh<_i258.WatchAlarmsUseCase>(),
+        gh<_i305.WatchReasonsUseCase>(),
+        gh<_i97.SetAlarmEnabledUseCase>(),
+        gh<_i8.RemoveAlarmUseCase>(),
+        gh<_i278.HasAlarmAccessUseCase>(),
+        gh<_i278.RequestAlarmAccessUseCase>(),
       ),
     );
     gh.factory<_i646.AlarmListBloc>(
@@ -564,14 +584,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i619.RefreshAlarmAudioUseCase>(),
         gh<_i218.RescheduleAlarmsUseCase>(),
         gh<_i40.UploadPendingAlarmsUseCase>(),
-      ),
-    );
-    gh.factory<_i1005.MyAlarmsBloc>(
-      () => _i1005.MyAlarmsBloc(
-        gh<_i586.GetAlarmsUseCase>(),
-        gh<_i258.WatchAlarmsUseCase>(),
-        gh<_i305.WatchReasonsUseCase>(),
-        gh<_i97.SetAlarmEnabledUseCase>(),
       ),
     );
     return this;

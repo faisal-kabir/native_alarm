@@ -5,6 +5,7 @@ import 'package:eala/features/alarm/domain/usecases/alarm_access_usecases.dart';
 import 'package:eala/features/alarm_audio/domain/usecases/watch_alarm_audio_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart';
 import 'package:eala/features/create_alarm/domain/repositories/remote_alarm_repository.dart';
+import 'package:eala/features/create_alarm/domain/usecases/remove_alarm_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_bloc.dart';
@@ -600,17 +601,18 @@ Future<void> registerFakeAlarmDependencies(
     ),
   );
   final reasons = reasonRepository ?? FakeReasonRepository();
-  instance.registerFactory<MyAlarmsBloc>(
-    () => MyAlarmsBloc(
+  instance.registerFactory<MyAlarmsBloc>(() {
+    final scheduler = alarmScheduler ?? FakeAlarmScheduler();
+    return MyAlarmsBloc(
       GetAlarmsUseCase(repository),
       WatchAlarmsUseCase(repository),
       WatchReasonsUseCase(reasons),
-      SetAlarmEnabledUseCase(
-        repository,
-        alarmScheduler ?? FakeAlarmScheduler(),
-      ),
-    ),
-  );
+      SetAlarmEnabledUseCase(repository, scheduler),
+      RemoveAlarmUseCase(repository, remote, scheduler),
+      HasAlarmAccessUseCase(scheduler),
+      RequestAlarmAccessUseCase(scheduler),
+    );
+  });
   instance.registerFactory<ReasonsBloc>(
     () => ReasonsBloc(
       WatchReasonsUseCase(reasons),
@@ -635,7 +637,11 @@ Future<void> registerFakeAlarmDependencies(
         reasons,
         repository,
         remote,
-        alarmScheduler ?? FakeAlarmScheduler(),
+        RemoveAlarmUseCase(
+          repository,
+          remote,
+          alarmScheduler ?? FakeAlarmScheduler(),
+        ),
       ),
       WatchAlarmsUseCase(repository),
       WatchAreasOfLifeUseCase(areas),

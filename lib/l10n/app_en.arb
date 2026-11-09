@@ -497,8 +497,6 @@
       }
     }
   },
-  "my_alarms_status_on": "On",
-  "my_alarms_status_off": "Off",
   "my_alarms_next_alarm": "Next alarm",
   "@my_alarms_next_alarm": {
     "description": "The section title once there is an alarm."
@@ -523,9 +521,67 @@
       }
     }
   },
-  "my_alarms_today": "Today",
   "my_alarms_tomorrow": "Tomorrow",
-  "my_alarms_off_note": "Off · won’t ring",
+  "my_alarms_off": "Off",
+  "my_alarms_all_alarms": "All alarms",
+  "my_alarms_rings_once": "Rings {when} · once",
+  "@my_alarms_rings_once": {
+    "description": "A one-off alarm's line: when it rings (\"Tomorrow\", \"in 8 hr 52 min\").",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "my_alarms_in_minutes": "in {n} min",
+  "@my_alarms_in_minutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "my_alarms_in_hours": "in {h} hr",
+  "@my_alarms_in_hours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "my_alarms_in_hours_minutes": "in {h} hr {m} min",
+  "@my_alarms_in_hours_minutes": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "my_alarms_blocked": "Won’t ring · Alarm access is off",
+  "my_alarms_blocked_semantics": "This alarm won’t ring. Alarm access is off.",
+  "my_alarms_switch_semantics": "Alarm at {time}",
+  "@my_alarms_switch_semantics": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "my_alarms_access_title": "Alarm access is off",
+  "my_alarms_delete_title": "Delete this alarm?",
+  "my_alarms_delete_message": "Your reason stays in My Reasons.",
+  "my_alarms_delete_semantics": "Delete alarm at {time}",
+  "@my_alarms_delete_semantics": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "my_alarms_delete_failed": "Couldn’t delete the alarm. Check your connection and try again.",
   "my_alarms_toggle_failed": "Couldn’t change the alarm. Try again.",
   "day_letters": "S,M,T,W,T,F,S",
   "@day_letters": {

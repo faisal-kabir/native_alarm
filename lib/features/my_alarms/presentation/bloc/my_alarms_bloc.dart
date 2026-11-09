@@ -6,9 +6,10 @@ import '../../../../core/constants/app_constant.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../../alarm/domain/entities/alarm.dart';
+import '../../../alarm/domain/usecases/alarm_access_usecases.dart';
 import '../../../alarm/domain/usecases/get_alarms_usecase.dart';
 import '../../../alarm/domain/usecases/watch_alarms_usecase.dart';
-import '../../../create_alarm/domain/entities/alarm_schedule.dart';
+import '../../../create_alarm/domain/usecases/remove_alarm_usecase.dart';
 import '../../../create_alarm/domain/usecases/set_alarm_enabled_usecase.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../../reasons/domain/usecases/watch_reasons_usecase.dart';
@@ -16,43 +17,39 @@ import 'my_alarms_event.dart';
 import 'my_alarms_state.dart';
 
 /// The "My Alarms" tab's data: the saved alarms, followed ([WatchAlarmsUseCase]; the
-/// load, [GetAlarmsUseCase], switches off one-off alarms that have rung) and the
-/// cached reasons they play, and each alarm's on / off switch
-/// ([SetAlarmEnabledUseCase]). This screen has no storage of its own.
+/// load, [GetAlarmsUseCase], switches off one-off alarms that have rung), the cached
+/// reasons they play, whether the system lets alarms ring, each alarm's on / off
+/// switch ([SetAlarmEnabledUseCase]) and its delete ([RemoveAlarmUseCase]). The page
+/// lays the list out (`arrangeAlarms`); this screen has no storage of its own.
 @injectable
 class MyAlarmsBloc extends Bloc<MyAlarmsEvent, MyAlarmsState> {
   final GetAlarmsUseCase getAlarmsUseCase;
   final WatchAlarmsUseCase watchAlarmsUseCase;
   final WatchReasonsUseCase watchReasonsUseCase;
   final SetAlarmEnabledUseCase setAlarmEnabledUseCase;
+  final RemoveAlarmUseCase removeAlarmUseCase;
+  final HasAlarmAccessUseCase hasAlarmAccessUseCase;
+  final RequestAlarmAccessUseCase requestAlarmAccessUseCase;
 
-  /// The latest reasons, kept for the next load.
+  /// The latest reasons and access, kept for the next list.
   List<Reason> _reasons = const [];
+  bool _accessDenied = false;
 
   MyAlarmsBloc(
     this.getAlarmsUseCase,
     this.watchAlarmsUseCase,
     this.watchReasonsUseCase,
     this.setAlarmEnabledUseCase,
+    this.removeAlarmUseCase,
+    this.hasAlarmAccessUseCase,
+    this.requestAlarmAccessUseCase,
   ) : super(const MyAlarmsInitial()) {
     on<LoadMyAlarmsEvent>(_onLoad);
     on<WatchMyAlarmsEvent>(_onWatch);
     on<WatchMyAlarmsReasonsEvent>(_onWatchReasons);
     on<MyAlarmsAlarmToggledEvent>(_onToggled);
-  }
-
-  /// The list's order: switched-on alarms by their next ring (the first is the next
-  /// alarm), then the switched-off ones by time of day.
-  static List<Alarm> _ordered(List<Alarm> alarms) {
-    final now = DateTime.now();
-    int minutes(Alarm a) => a.time.hour * 60 + a.time.minute;
-    return [...alarms]..sort((a, b) {
-      if (a.enabled != b.enabled) return a.enabled ? -1 : 1;
-      final byTime = a.enabled
-          ? nextRingOf(a, now).compareTo(nextRingOf(b, now))
-          : minutes(a).compareTo(minutes(b));
-      return byTime != 0 ? byTime : a.id.compareTo(b.id);
-    });
+    on<MyAlarmsAccessRequestedEvent>(_onAccessRequested);
+    on<MyAlarmsAlarmDeletedEvent>(_onDeleted);
   }
 
   Future<void> _onLoad(
@@ -63,6 +60,22 @@ class MyAlarmsBloc extends Bloc<MyAlarmsEvent, MyAlarmsState> {
     result.fold((failure) {
       if (state is! MyAlarmsLoaded) emit(MyAlarmsFailure(failure.message));
     }, (_) {});
+    await _checkAccess(emit);
+  }
+
+  Future<void> _onAccessRequested(
+    MyAlarmsAccessRequestedEvent event,
+    Emitter<MyAlarmsState> emit,
+  ) async {
+    await requestAlarmAccessUseCase(NoParams());
+    await _checkAccess(emit);
+  }
+
+  Future<void> _checkAccess(Emitter<MyAlarmsState> emit) async {
+    final access = await hasAlarmAccessUseCase(NoParams());
+    _accessDenied = !access.getOrElse(() => true);
+    final now = state;
+    if (now is MyAlarmsLoaded) emit(now.copyWith(accessDenied: _accessDenied));
   }
 
   Future<void> _onWatch(
@@ -75,15 +88,15 @@ class MyAlarmsBloc extends Bloc<MyAlarmsEvent, MyAlarmsState> {
       onData: (result) => result.fold(
         (failure) =>
             state is MyAlarmsLoaded ? state : MyAlarmsFailure(failure.message),
-        (alarms) => MyAlarmsLoaded(
-          alarms: _ordered(alarms),
-          reasons: _reasons,
-          alarmLimit: AppConstant.maxAlarmCount,
-          toggleFailures: switch (state) {
-            final MyAlarmsLoaded s => s.toggleFailures,
-            _ => 0,
-          },
-        ),
+        (alarms) => switch (state) {
+          final MyAlarmsLoaded s => s.copyWith(alarms: alarms),
+          _ => MyAlarmsLoaded(
+            alarms: alarms,
+            reasons: _reasons,
+            accessDenied: _accessDenied,
+            alarmLimit: AppConstant.maxAlarmCount,
+          ),
+        },
       ),
     );
   }
@@ -119,9 +132,39 @@ class MyAlarmsBloc extends Bloc<MyAlarmsEvent, MyAlarmsState> {
           alarms: before.alarms,
           toggleFailures: now.toggleFailures + 1,
         ),
-        (saved) => now.copyWith(alarms: _ordered(replace(saved))),
+        (saved) => now.copyWith(alarms: replace(saved)),
       ),
     );
+  }
+
+  /// The card has already gone, so the list drops the alarm at once (the server takes a
+  /// moment); the saved list then follows. If it can not be deleted (offline), the
+  /// alarm comes back and the page says so.
+  Future<void> _onDeleted(
+    MyAlarmsAlarmDeletedEvent event,
+    Emitter<MyAlarmsState> emit,
+  ) async {
+    final before = state;
+    if (before is MyAlarmsLoaded) {
+      emit(
+        before.copyWith(
+          alarms: [
+            for (final a in before.alarms)
+              if (a.id != event.alarm.id) a,
+          ],
+        ),
+      );
+    }
+    final result = await removeAlarmUseCase(event.alarm);
+    final now = state;
+    if (result.isLeft() && now is MyAlarmsLoaded) {
+      emit(
+        now.copyWith(
+          alarms: [...now.alarms, event.alarm],
+          deleteFailures: now.deleteFailures + 1,
+        ),
+      );
+    }
   }
 
   Future<void> _onWatchReasons(

@@ -1380,18 +1380,6 @@ abstract class AppLocalizations {
     String status,
   );
 
-  /// No description provided for @my_alarms_status_on.
-  ///
-  /// In en, this message translates to:
-  /// **'On'**
-  String get my_alarms_status_on;
-
-  /// No description provided for @my_alarms_status_off.
-  ///
-  /// In en, this message translates to:
-  /// **'Off'**
-  String get my_alarms_status_off;
-
   /// The section title once there is an alarm.
   ///
   /// In en, this message translates to:
@@ -1410,23 +1398,95 @@ abstract class AppLocalizations {
   /// **'Next ring · {when}'**
   String my_alarms_next_ring(String when);
 
-  /// No description provided for @my_alarms_today.
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get my_alarms_today;
-
   /// No description provided for @my_alarms_tomorrow.
   ///
   /// In en, this message translates to:
   /// **'Tomorrow'**
   String get my_alarms_tomorrow;
 
-  /// No description provided for @my_alarms_off_note.
+  /// No description provided for @my_alarms_off.
   ///
   /// In en, this message translates to:
-  /// **'Off · won’t ring'**
-  String get my_alarms_off_note;
+  /// **'Off'**
+  String get my_alarms_off;
+
+  /// No description provided for @my_alarms_all_alarms.
+  ///
+  /// In en, this message translates to:
+  /// **'All alarms'**
+  String get my_alarms_all_alarms;
+
+  /// A one-off alarm's line: when it rings ("Tomorrow", "in 8 hr 52 min").
+  ///
+  /// In en, this message translates to:
+  /// **'Rings {when} · once'**
+  String my_alarms_rings_once(String when);
+
+  /// No description provided for @my_alarms_in_minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'in {n} min'**
+  String my_alarms_in_minutes(int n);
+
+  /// No description provided for @my_alarms_in_hours.
+  ///
+  /// In en, this message translates to:
+  /// **'in {h} hr'**
+  String my_alarms_in_hours(int h);
+
+  /// No description provided for @my_alarms_in_hours_minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'in {h} hr {m} min'**
+  String my_alarms_in_hours_minutes(int h, int m);
+
+  /// No description provided for @my_alarms_blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Won’t ring · Alarm access is off'**
+  String get my_alarms_blocked;
+
+  /// No description provided for @my_alarms_blocked_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'This alarm won’t ring. Alarm access is off.'**
+  String get my_alarms_blocked_semantics;
+
+  /// No description provided for @my_alarms_switch_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm at {time}'**
+  String my_alarms_switch_semantics(String time);
+
+  /// No description provided for @my_alarms_access_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm access is off'**
+  String get my_alarms_access_title;
+
+  /// No description provided for @my_alarms_delete_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this alarm?'**
+  String get my_alarms_delete_title;
+
+  /// No description provided for @my_alarms_delete_message.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reason stays in My Reasons.'**
+  String get my_alarms_delete_message;
+
+  /// No description provided for @my_alarms_delete_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete alarm at {time}'**
+  String my_alarms_delete_semantics(String time);
+
+  /// No description provided for @my_alarms_delete_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t delete the alarm. Check your connection and try again.'**
+  String get my_alarms_delete_failed;
 
   /// No description provided for @my_alarms_toggle_failed.
   ///

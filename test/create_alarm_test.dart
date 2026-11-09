@@ -7,7 +7,8 @@ import 'package:eala/features/create_alarm/domain/entities/alarm_schedule.dart';
 import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart';
 import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_state.dart';
 import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
-import 'package:eala/features/my_alarms/presentation/pages/my_alarms_page.dart';
+import 'package:eala/features/my_alarms/domain/entities/alarm_list.dart';
+import 'package:eala/l10n/app_localizations.dart';
 import 'package:eala/features/my_alarms/presentation/widgets/alarm_card.dart';
 import 'package:eala/features/my_alarms/presentation/widgets/slot_meter.dart';
 import 'package:eala/main.dart';
@@ -266,20 +267,68 @@ void main() {
     });
   });
 
+  group('My Alarms list', () {
+    // Sunday 8 Nov 2026, 7:00.
+    final now = DateTime(2026, 11, 8, 7);
+    Alarm at(
+      String id,
+      int hour, {
+      bool on = true,
+      List<int> days = const [],
+    }) => Alarm(
+      id: id,
+      enabled: on,
+      time: DateTime(2026, 11, 8, hour),
+      repeatWeekdays: days,
+      audioTrackId: 'm',
+      ringtoneId: 'default',
+    );
+
+    test('the next alarm leads; the rest go by time of day', () {
+      final (:next, :rest) = arrangeAlarms([
+        at('late', 22),
+        at('off', 5, on: false),
+        at('soon', 9),
+        at('monday', 6, days: const [1]),
+      ], now);
+      expect(next!.id, 'soon');
+      expect([for (final a in rest) a.id], ['off', 'monday', 'late']);
+      expect(arrangeAlarms([at('off', 5, on: false)], now).next, isNull);
+    });
+
+    test('when it rings, in one phrase', () {
+      final strings = lookupAppLocalizations(const Locale('en'));
+      String label(Alarm a) => alarmRingsLabel(a, now, strings);
+      expect(label(at('a', 9, days: const [7])), 'Next ring · in 2 hr');
+      expect(label(at('b', 6, days: const [1])), 'Next ring · in 23 hr');
+      expect(label(at('c', 6, days: const [3])), 'Next ring · Wednesday');
+      expect(label(at('d', 7, days: const [1])), 'Next ring · Tomorrow');
+      expect(label(at('e', 8)), 'Rings in 1 hr · once');
+      expect(label(at('f', 8, on: false)), 'Off');
+      expect(
+        alarmRingsLabel(at('g', 8), now, strings, blocked: true),
+        'Won’t ring · Alarm access is off',
+      );
+    });
+  });
+
   group('Create Alarm page', () {
     setUp(() => appRouter.go(RouteNames.dashboardPath));
 
     Future<(FakeAlarmRepository, FakeAlarmScheduler)> open(
       WidgetTester tester, {
       List<Alarm> existing = const [],
+      bool access = true,
+      FakeRemoteAlarmRepository? remote,
     }) async {
       final alarms = FakeAlarmRepository();
       for (final a in existing) {
         alarms.store[a.id] = a;
       }
-      final scheduler = FakeAlarmScheduler();
+      final scheduler = FakeAlarmScheduler(access: access);
       await registerFakeAlarmDependencies(
         alarms,
+        remoteAlarmRepository: remote,
         reasonRepository: FakeReasonRepository([
           testReason(id: 1, name: 'Mornings'),
           testReason(id: 2, name: 'Training'),
@@ -353,7 +402,8 @@ void main() {
       // The new alarm is listed, and the empty card became the quiet row.
       expect(find.byType(AlarmCard), findsOneWidget);
       expect(find.text('Training'), findsOneWidget);
-      expect(find.textContaining('Next ring · '), findsOneWidget);
+      // A one-off says so: it has no days to draw.
+      expect(find.textContaining(RegExp(r'^Rings .* · once$')), findsOneWidget);
       expect(find.text('Next alarm'), findsOneWidget);
       expect(find.text('1 of 3'), findsOneWidget);
       expect(find.text('Set your first alarm'), findsNothing);
@@ -374,12 +424,17 @@ void main() {
         ],
       );
       final cards = tester.widgetList<AlarmCard>(find.byType(AlarmCard));
-      // Switched on first (it rings next), switched off after.
-      expect([for (final c in cards) c.alarm.id], ['b', 'a']);
+      // The switched-on one is the large "Next alarm"; the other is under "All alarms".
+      expect(
+        [for (final c in cards) (c.alarm.id, c.hero)],
+        [('b', true), ('a', false)],
+      );
+      expect(find.text('Next alarm'), findsOneWidget);
+      expect(find.text('All alarms'), findsOneWidget);
       expect(find.text('Training'), findsOneWidget);
       expect(find.text('Mornings'), findsOneWidget);
       expect(find.textContaining('Next ring · '), findsOneWidget);
-      expect(find.text('Off · won’t ring'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
       expect(find.text('2 of 3'), findsOneWidget);
     });
 
@@ -393,7 +448,10 @@ void main() {
       await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
       expect(alarms.store['a']!.enabled, isFalse);
-      expect(find.text('Off · won’t ring'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
+      // None is on: no "Next alarm", the meter moves to "All alarms".
+      expect(find.text('Next alarm'), findsNothing);
+      expect(find.text('All alarms'), findsOneWidget);
 
       await tester.tap(find.byType(CupertinoSwitch));
       await tester.pumpAndSettle();
@@ -424,27 +482,87 @@ void main() {
       expect(find.text('Mornings'), findsNothing);
     });
 
-    testWidgets('three alarms: the limit, no page', (tester) async {
+    testWidgets('three alarms: no add row, the meter is full', (tester) async {
       await open(
         tester,
         existing: [savedAlarm('a'), savedAlarm('b'), savedAlarm('c')],
       );
       expect(tester.widget<SlotMeter>(find.byType(SlotMeter)).used, 3);
-      await tester.scrollUntilVisible(
-        find.text('Add alarm'),
-        300,
-        scrollable: find
-            .descendant(
-              of: find.byType(MyAlarmsPage),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.tap(find.text('Add alarm'));
+      expect(find.text('3 of 3'), findsOneWidget);
+      expect(find.text('Add alarm'), findsNothing);
+      // The meter explains the limit.
+      await tester.tap(find.byType(SlotMeter));
       await tester.pumpAndSettle();
-      expect(find.byType(CreateAlarmPage), findsNothing);
       expect(find.text('Alarm limit'), findsOneWidget);
       expect(find.text('You can have up to 3 alarms.'), findsOneWidget);
+    });
+
+    testWidgets('swiped away and confirmed, an alarm goes everywhere', (
+      tester,
+    ) async {
+      final remote = FakeRemoteAlarmRepository();
+      final (alarms, scheduler) = await open(
+        tester,
+        remote: remote,
+        existing: [savedAlarm('a', reasonId: 1).copyWith(remoteId: 9)],
+      );
+      await tester.drag(find.byType(AlarmCard), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this alarm?'), findsOneWidget);
+      expect(find.text('Your reason stays in My Reasons.'), findsOneWidget);
+
+      // Cancel brings the card home.
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(alarms.store, hasLength(1));
+      expect(find.byType(AlarmCard), findsOneWidget);
+
+      await tester.drag(find.byType(AlarmCard), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(remote.removed, [9]);
+      expect(scheduler.cancelled, ['a']);
+      expect(alarms.store, isEmpty);
+      expect(find.byType(AlarmCard), findsNothing);
+      expect(find.text('Set your first alarm'), findsOneWidget);
+    });
+
+    testWidgets('offline, a deleted alarm comes back and it says so', (
+      tester,
+    ) async {
+      final (alarms, _) = await open(
+        tester,
+        remote: FakeRemoteAlarmRepository()..fail = true,
+        existing: [savedAlarm('a', reasonId: 1).copyWith(remoteId: 9)],
+      );
+      await tester.drag(find.byType(AlarmCard), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(alarms.store, hasLength(1));
+      expect(find.byType(AlarmCard), findsOneWidget);
+      expect(find.textContaining('Couldn’t delete the alarm'), findsOneWidget);
+    });
+
+    testWidgets('without alarm access: a banner, and no ring is promised', (
+      tester,
+    ) async {
+      final (_, scheduler) = await open(
+        tester,
+        access: false,
+        existing: [
+          savedAlarm('a', reasonId: 1).copyWith(repeatWeekdays: const [1]),
+        ],
+      );
+      expect(find.text('Alarm access is off'), findsOneWidget);
+      expect(find.text('Won’t ring · Alarm access is off'), findsOneWidget);
+
+      await tester.tap(find.text('Alarm access is off'));
+      await tester.pumpAndSettle();
+      expect(scheduler.requests, 1);
+      expect(find.text('Alarm access is off'), findsNothing);
+      expect(find.textContaining('Next ring · '), findsOneWidget);
     });
 
     testWidgets('another time makes cards; ring again says what it does', (

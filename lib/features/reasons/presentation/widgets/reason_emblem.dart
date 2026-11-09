@@ -19,7 +19,8 @@ enum ReasonAlarmBadge { none, on, off }
 ///
 /// [disc] is the reason screen's header look: a 46 circle (the tint at 22 % over the
 /// card) with the icon in the tint mixed into white. [size] (46 before scaling)
-/// shrinks or grows the whole mark (an alarm card's 40 disc).
+/// shrinks or grows the whole mark (an alarm card's 28 disc). [muted] drains it to
+/// grey (#2C2C2E with a grey icon): the look of a switched-off alarm.
 class ReasonEmblem extends StatelessWidget {
   const ReasonEmblem({
     super.key,
@@ -29,6 +30,7 @@ class ReasonEmblem extends StatelessWidget {
     this.badge = ReasonAlarmBadge.none,
     this.disc = false,
     this.size = 46,
+    this.muted = false,
   });
 
   final String areaName;
@@ -37,11 +39,16 @@ class ReasonEmblem extends StatelessWidget {
   final ReasonAlarmBadge badge;
   final bool disc;
   final double size;
+  final bool muted;
 
   @override
   Widget build(BuildContext context) {
     final tint = AppColor.tintOf(areaColor);
-    final ink = disc ? Color.lerp(AppColor.white, tint, 0.85)! : tint;
+    final ink = muted
+        ? AppColor.textSecondary
+        : disc
+        ? Color.lerp(AppColor.white, tint, 0.85)!
+        : tint;
     // Everything inside keeps its proportion to the 46 mark.
     final k = size / 46;
     final letter = Text(
@@ -63,10 +70,12 @@ class ReasonEmblem extends StatelessWidget {
             decoration: disc
                 ? BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color.alphaBlend(
-                      tint.withValues(alpha: 0.22),
-                      AppColor.cardColor,
-                    ),
+                    color: muted
+                        ? AppColor.surfaceSecondary
+                        : Color.alphaBlend(
+                            tint.withValues(alpha: 0.22),
+                            AppColor.cardColor,
+                          ),
                   )
                 : BoxDecoration(
                     color: tint.withValues(alpha: 0.15),

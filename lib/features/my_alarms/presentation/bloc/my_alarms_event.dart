@@ -9,8 +9,8 @@ abstract class MyAlarmsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Switches off one-off alarms that have rung (sent on open and whenever the app comes
-/// back); the list itself follows [WatchMyAlarmsEvent].
+/// Switches off one-off alarms that have rung and checks alarm access (sent on open
+/// and whenever the app comes back); the list itself follows [WatchMyAlarmsEvent].
 class LoadMyAlarmsEvent extends MyAlarmsEvent {
   const LoadMyAlarmsEvent();
 }
@@ -35,4 +35,20 @@ class MyAlarmsAlarmToggledEvent extends MyAlarmsEvent {
 
   @override
   List<Object?> get props => [alarm, enabled];
+}
+
+/// "Enable Alarm Access": the system's prompt (or its settings), then access is
+/// checked again.
+class MyAlarmsAccessRequestedEvent extends MyAlarmsEvent {
+  const MyAlarmsAccessRequestedEvent();
+}
+
+/// A card was swiped away and the delete confirmed: the alarm goes everywhere.
+class MyAlarmsAlarmDeletedEvent extends MyAlarmsEvent {
+  final Alarm alarm;
+
+  const MyAlarmsAlarmDeletedEvent(this.alarm);
+
+  @override
+  List<Object?> get props => [alarm];
 }

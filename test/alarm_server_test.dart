@@ -46,7 +46,7 @@ class FakeAlarmRemote implements AlarmRemoteDataSource {
 }
 
 void main() {
-  // Saturday 8 Nov 2026, 7:00.
+  // Sunday 8 Nov 2026, 7:00.
   final now = DateTime(2026, 11, 8, 7);
 
   // 6:30 on weekdays, 8:00 at the weekend, on the server as alarm 12.
