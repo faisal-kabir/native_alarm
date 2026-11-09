@@ -54,7 +54,6 @@ abstract final class _Sheet {
   static const maxHeightFactor = 0.88;
   static const scrim = Color(0x80000000);
   static const grabber = Color(0x4DEBEBF5);
-  static const chip = Color(0x3D767680); // rgba(118,118,128,.24)
 }
 
 class _SheetRoute<T> extends PopupRoute<T> {
@@ -252,10 +251,14 @@ class AppSheet extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
+    this.subtitle,
     this.footer,
   });
 
   final String title;
+
+  /// One quiet line under the title ("Each alarm plays one reason.").
+  final String? subtitle;
   final Widget body;
   final Widget? footer;
 
@@ -286,18 +289,31 @@ class AppSheet extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: appTheme(context).textTheme.headlineSmall!
-                          .copyWith(
-                            fontSize: 20.spMin,
-                            height: 23.5 / 20,
-                            letterSpacing: -0.4,
-                            color: AppColor.titleColor,
-                          ),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          title,
+                          style: appTheme(context).textTheme.headlineSmall!
+                              .copyWith(
+                                fontSize: 20.spMin,
+                                height: 23.5 / 20,
+                                letterSpacing: -0.4,
+                                color: AppColor.titleColor,
+                              ),
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        SizedBox(height: 3.h),
+                        Text(
+                          subtitle!,
+                          style: appTheme(context).textTheme.bodyMedium!
+                              .copyWith(color: AppColor.textSecondary),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 SizedBox(width: 12.w),
@@ -351,7 +367,7 @@ class _CloseChip extends StatelessWidget {
           height: 30.r,
           alignment: Alignment.center,
           decoration: const BoxDecoration(
-            color: _Sheet.chip,
+            color: AppColor.controlFill,
             shape: BoxShape.circle,
           ),
           child: AppSvgIcon(

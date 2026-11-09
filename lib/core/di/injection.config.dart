@@ -23,21 +23,44 @@ import 'package:eala/core/speech/dictation_controller.dart' as _i84;
 import 'package:eala/core/speech/speech_module.dart' as _i942;
 import 'package:eala/core/speech/speech_recognizer.dart' as _i965;
 import 'package:eala/core/storage/storage_module.dart' as _i964;
+import 'package:eala/core/supabase/own_user_id.dart' as _i712;
 import 'package:eala/core/supabase/supabase_module.dart' as _i543;
 import 'package:eala/features/alarm/data/datasources/alarm_local_data_source.dart'
     as _i276;
+import 'package:eala/features/alarm/data/platform_alarm_scheduler.dart'
+    as _i222;
 import 'package:eala/features/alarm/data/repositories/alarm_repository_impl.dart'
     as _i695;
 import 'package:eala/features/alarm/domain/repositories/alarm_repository.dart'
     as _i1032;
+import 'package:eala/features/alarm/domain/repositories/alarm_scheduler.dart'
+    as _i173;
+import 'package:eala/features/alarm/domain/usecases/alarm_access_usecases.dart'
+    as _i278;
 import 'package:eala/features/alarm/domain/usecases/delete_alarm_usecase.dart'
     as _i962;
 import 'package:eala/features/alarm/domain/usecases/get_alarms_usecase.dart'
     as _i586;
 import 'package:eala/features/alarm/domain/usecases/save_alarm_usecase.dart'
     as _i357;
+import 'package:eala/features/alarm/domain/usecases/watch_alarms_usecase.dart'
+    as _i258;
 import 'package:eala/features/alarm/presentation/bloc/alarm_list_bloc.dart'
     as _i646;
+import 'package:eala/features/alarm_audio/data/datasources/alarm_audio_file_store.dart'
+    as _i899;
+import 'package:eala/features/alarm_audio/data/datasources/alarm_audio_local_data_source.dart'
+    as _i51;
+import 'package:eala/features/alarm_audio/data/datasources/alarm_audio_remote_data_source.dart'
+    as _i466;
+import 'package:eala/features/alarm_audio/data/repositories/alarm_audio_repository_impl.dart'
+    as _i198;
+import 'package:eala/features/alarm_audio/domain/repositories/alarm_audio_repository.dart'
+    as _i1012;
+import 'package:eala/features/alarm_audio/domain/usecases/refresh_alarm_audio_usecase.dart'
+    as _i619;
+import 'package:eala/features/alarm_audio/domain/usecases/watch_alarm_audio_usecase.dart'
+    as _i393;
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_local_data_source.dart'
     as _i504;
 import 'package:eala/features/area_of_life/data/datasources/area_of_life_remote_data_source.dart'
@@ -76,14 +99,32 @@ import 'package:eala/features/auth/domain/usecases/sync_user_profile_usecase.dar
     as _i157;
 import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.dart'
     as _i798;
+import 'package:eala/features/create_alarm/data/datasources/alarm_remote_data_source.dart'
+    as _i181;
+import 'package:eala/features/create_alarm/data/repositories/remote_alarm_repository_impl.dart'
+    as _i430;
+import 'package:eala/features/create_alarm/domain/repositories/remote_alarm_repository.dart'
+    as _i452;
+import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart'
+    as _i73;
+import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart'
+    as _i218;
+import 'package:eala/features/create_alarm/domain/usecases/set_alarm_enabled_usecase.dart'
+    as _i97;
+import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart'
+    as _i40;
+import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_bloc.dart'
+    as _i494;
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart'
     as _i946;
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.dart'
     as _i64;
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart'
-    as _i874;
+    as _i875;
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart'
     as _i1005;
+import 'package:eala/features/reason_detail/domain/usecases/delete_reason_with_alarm_usecase.dart'
+    as _i874;
 import 'package:eala/features/reason_detail/presentation/bloc/reason_detail_bloc.dart'
     as _i252;
 import 'package:eala/features/reasons/data/datasources/reason_local_data_source.dart'
@@ -97,8 +138,6 @@ import 'package:eala/features/reasons/domain/repositories/reason_repository.dart
     as _i23;
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart'
     as _i1004;
-import 'package:eala/features/reasons/domain/usecases/delete_reason_usecase.dart'
-    as _i1063;
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart'
     as _i4;
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart'
@@ -192,6 +231,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i360.AppInfoDataSource>(
       () => _i360.AppInfoDataSourceImpl(),
     );
+    gh.lazySingleton<_i899.AlarmAudioFileStore>(
+      () => _i899.AlarmAudioFileStoreImpl(),
+    );
     gh.lazySingleton<_i125.UserProfileLocalDataSource>(
       () => _i125.UserProfileLocalDataSourceImpl(
         gh<_i558.FlutterSecureStorage>(),
@@ -212,14 +254,14 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i570.AuthRemoteDataSource>(
       () => _i570.AuthRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
+    gh.lazySingleton<_i51.AlarmAudioLocalDataSource>(
+      () => _i51.AlarmAudioLocalDataSourceImpl(gh<_i81.AppDatabase>()),
+    );
     gh.lazySingleton<_i546.SoundRemoteDataSource>(
       () => _i546.SoundRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i22.VoiceRemoteDataSource>(
       () => _i22.VoiceRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
-    );
-    gh.lazySingleton<_i981.ReasonRemoteDataSource>(
-      () => _i981.ReasonRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i209.SettingsLocalDataSource>(
       () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
@@ -239,11 +281,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i429.ReasonLocalDataSource>(
       () => _i429.ReasonLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
+    gh.lazySingleton<_i466.AlarmAudioRemoteDataSource>(
+      () => _i466.AlarmAudioRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
     gh.lazySingleton<_i653.AuthRepository>(
       () => _i9.AuthRepositoryImpl(gh<_i570.AuthRemoteDataSource>()),
     );
     gh.lazySingleton<_i760.AreaOfLifeRemoteDataSource>(
       () => _i760.AreaOfLifeRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
+    gh.lazySingleton<_i712.OwnUserId>(
+      () => _i712.OwnUserId(gh<_i454.SupabaseClient>()),
     );
     gh.lazySingleton<_i118.NotificationService>(
       () => _i118.NotificationService(
@@ -251,8 +299,20 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i153.LocalNotificationPresenter>(),
       ),
     );
+    gh.lazySingleton<_i181.AlarmRemoteDataSource>(
+      () => _i181.AlarmRemoteDataSourceImpl(
+        gh<_i454.SupabaseClient>(),
+        gh<_i712.OwnUserId>(),
+      ),
+    );
     gh.factory<_i84.DictationController>(
       () => _i84.SpeechDictationController(gh<_i965.SpeechRecognizer>()),
+    );
+    gh.lazySingleton<_i981.ReasonRemoteDataSource>(
+      () => _i981.ReasonRemoteDataSourceImpl(
+        gh<_i454.SupabaseClient>(),
+        gh<_i712.OwnUserId>(),
+      ),
     );
     gh.lazySingleton<_i1064.SoundRepository>(
       () => _i727.SoundRepositoryImpl(gh<_i546.SoundRemoteDataSource>()),
@@ -318,9 +378,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1004.CreateReasonUseCase>(
       () => _i1004.CreateReasonUseCase(gh<_i23.ReasonRepository>()),
     );
-    gh.lazySingleton<_i1063.DeleteReasonUseCase>(
-      () => _i1063.DeleteReasonUseCase(gh<_i23.ReasonRepository>()),
-    );
     gh.lazySingleton<_i4.RefreshReasonsUseCase>(
       () => _i4.RefreshReasonsUseCase(gh<_i23.ReasonRepository>()),
     );
@@ -335,6 +392,19 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i305.WatchReasonsUseCase>(
       () => _i305.WatchReasonsUseCase(gh<_i23.ReasonRepository>()),
+    );
+    gh.lazySingleton<_i452.RemoteAlarmRepository>(
+      () => _i430.RemoteAlarmRepositoryImpl(
+        gh<_i181.AlarmRemoteDataSource>(),
+        gh<_i429.ReasonLocalDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i1012.AlarmAudioRepository>(
+      () => _i198.AlarmAudioRepositoryImpl(
+        gh<_i466.AlarmAudioRemoteDataSource>(),
+        gh<_i51.AlarmAudioLocalDataSource>(),
+        gh<_i899.AlarmAudioFileStore>(),
+      ),
     );
     gh.factory<_i743.ReasonsBloc>(
       () => _i743.ReasonsBloc(
@@ -351,6 +421,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i357.SaveAlarmUseCase>(
       () => _i357.SaveAlarmUseCase(gh<_i1032.AlarmRepository>()),
     );
+    gh.lazySingleton<_i258.WatchAlarmsUseCase>(
+      () => _i258.WatchAlarmsUseCase(gh<_i1032.AlarmRepository>()),
+    );
     gh.lazySingleton<_i25.GetCachedUserProfileUseCase>(
       () => _i25.GetCachedUserProfileUseCase(gh<_i512.UserProfileRepository>()),
     );
@@ -360,8 +433,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i798.UpdateDeviceInfoUseCase>(
       () => _i798.UpdateDeviceInfoUseCase(gh<_i512.UserProfileRepository>()),
     );
-    gh.factory<_i1005.MyAlarmsBloc>(
-      () => _i1005.MyAlarmsBloc(gh<_i586.GetAlarmsUseCase>()),
+    gh.lazySingleton<_i173.AlarmScheduler>(
+      () => _i222.PlatformAlarmScheduler(
+        gh<_i156.AlarmPlatformClient>(),
+        gh<_i1012.AlarmAudioRepository>(),
+      ),
     );
     gh.lazySingleton<_i414.RefreshVoicesUseCase>(
       () => _i414.RefreshVoicesUseCase(gh<_i334.VoiceRepository>()),
@@ -369,17 +445,27 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i904.WatchVoicesUseCase>(
       () => _i904.WatchVoicesUseCase(gh<_i334.VoiceRepository>()),
     );
+    gh.lazySingleton<_i73.CreateAlarmUseCase>(
+      () => _i73.CreateAlarmUseCase(
+        gh<_i1032.AlarmRepository>(),
+        gh<_i452.RemoteAlarmRepository>(),
+        gh<_i173.AlarmScheduler>(),
+      ),
+    );
+    gh.lazySingleton<_i40.UploadPendingAlarmsUseCase>(
+      () => _i40.UploadPendingAlarmsUseCase(
+        gh<_i1032.AlarmRepository>(),
+        gh<_i452.RemoteAlarmRepository>(),
+      ),
+    );
     gh.factory<_i64.ReasonReadyBloc>(
       () => _i64.ReasonReadyBloc(gh<_i836.RenameReasonUseCase>()),
     );
-    gh.factory<_i874.DashboardBloc>(
-      () => _i874.DashboardBloc(
-        gh<_i36.AnalyticsService>(),
-        gh<_i131.EnsureSignedInUseCase>(),
-        gh<_i157.SyncUserProfileUseCase>(),
-        gh<_i798.UpdateDeviceInfoUseCase>(),
-        gh<_i49.GetAppInfoUseCase>(),
-      ),
+    gh.lazySingleton<_i278.HasAlarmAccessUseCase>(
+      () => _i278.HasAlarmAccessUseCase(gh<_i173.AlarmScheduler>()),
+    );
+    gh.lazySingleton<_i278.RequestAlarmAccessUseCase>(
+      () => _i278.RequestAlarmAccessUseCase(gh<_i173.AlarmScheduler>()),
     );
     gh.lazySingleton<_i478.GetMatterSuggestionsUseCase>(
       () => _i478.GetMatterSuggestionsUseCase(gh<_i650.AreaOfLifeRepository>()),
@@ -394,6 +480,32 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i375.WatchAreasOfLifeUseCase>(
       () => _i375.WatchAreasOfLifeUseCase(gh<_i650.AreaOfLifeRepository>()),
     );
+    gh.lazySingleton<_i619.RefreshAlarmAudioUseCase>(
+      () => _i619.RefreshAlarmAudioUseCase(gh<_i1012.AlarmAudioRepository>()),
+    );
+    gh.lazySingleton<_i393.WatchAlarmAudioUseCase>(
+      () => _i393.WatchAlarmAudioUseCase(gh<_i1012.AlarmAudioRepository>()),
+    );
+    gh.lazySingleton<_i218.RescheduleAlarmsUseCase>(
+      () => _i218.RescheduleAlarmsUseCase(
+        gh<_i1032.AlarmRepository>(),
+        gh<_i173.AlarmScheduler>(),
+      ),
+    );
+    gh.lazySingleton<_i97.SetAlarmEnabledUseCase>(
+      () => _i97.SetAlarmEnabledUseCase(
+        gh<_i1032.AlarmRepository>(),
+        gh<_i173.AlarmScheduler>(),
+      ),
+    );
+    gh.lazySingleton<_i874.DeleteReasonWithAlarmUseCase>(
+      () => _i874.DeleteReasonWithAlarmUseCase(
+        gh<_i23.ReasonRepository>(),
+        gh<_i1032.AlarmRepository>(),
+        gh<_i452.RemoteAlarmRepository>(),
+        gh<_i173.AlarmScheduler>(),
+      ),
+    );
     gh.factory<_i646.AlarmListBloc>(
       () => _i646.AlarmListBloc(
         gh<_i586.GetAlarmsUseCase>(),
@@ -406,7 +518,8 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i151.WatchReasonUseCase>(),
         gh<_i39.UpdateReasonUseCase>(),
         gh<_i836.RenameReasonUseCase>(),
-        gh<_i1063.DeleteReasonUseCase>(),
+        gh<_i874.DeleteReasonWithAlarmUseCase>(),
+        gh<_i258.WatchAlarmsUseCase>(),
         gh<_i375.WatchAreasOfLifeUseCase>(),
         gh<_i190.RefreshAreasOfLifeUseCase>(),
         gh<_i904.WatchVoicesUseCase>(),
@@ -428,6 +541,37 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i902.GetSoundTypesUseCase>(),
         gh<_i262.GetSoundQuoteUseCase>(),
         gh<_i1004.CreateReasonUseCase>(),
+      ),
+    );
+    gh.factoryParam<_i494.CreateAlarmBloc, int?, dynamic>(
+      (reasonId, _) => _i494.CreateAlarmBloc(
+        gh<_i305.WatchReasonsUseCase>(),
+        gh<_i393.WatchAlarmAudioUseCase>(),
+        gh<_i586.GetAlarmsUseCase>(),
+        gh<_i73.CreateAlarmUseCase>(),
+        gh<_i278.HasAlarmAccessUseCase>(),
+        gh<_i278.RequestAlarmAccessUseCase>(),
+        reasonId,
+      ),
+    );
+    gh.factory<_i875.DashboardBloc>(
+      () => _i875.DashboardBloc(
+        gh<_i36.AnalyticsService>(),
+        gh<_i131.EnsureSignedInUseCase>(),
+        gh<_i157.SyncUserProfileUseCase>(),
+        gh<_i798.UpdateDeviceInfoUseCase>(),
+        gh<_i49.GetAppInfoUseCase>(),
+        gh<_i619.RefreshAlarmAudioUseCase>(),
+        gh<_i218.RescheduleAlarmsUseCase>(),
+        gh<_i40.UploadPendingAlarmsUseCase>(),
+      ),
+    );
+    gh.factory<_i1005.MyAlarmsBloc>(
+      () => _i1005.MyAlarmsBloc(
+        gh<_i586.GetAlarmsUseCase>(),
+        gh<_i258.WatchAlarmsUseCase>(),
+        gh<_i305.WatchReasonsUseCase>(),
+        gh<_i97.SetAlarmEnabledUseCase>(),
       ),
     );
     return this;

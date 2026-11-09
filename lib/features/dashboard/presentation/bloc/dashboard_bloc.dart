@@ -8,7 +8,10 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/firebase/analytics_service.dart';
 import '../../../../core/notification/fcm_token.dart';
 import '../../../../core/usecase/usecase.dart';
+import '../../../alarm_audio/domain/usecases/refresh_alarm_audio_usecase.dart';
 import '../../../auth/domain/entities/device_info.dart';
+import '../../../create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
+import '../../../create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import '../../../auth/domain/usecases/ensure_signed_in_usecase.dart';
 import '../../../auth/domain/usecases/sync_user_profile_usecase.dart';
 import '../../../auth/domain/usecases/update_device_info_usecase.dart';
@@ -17,8 +20,12 @@ import 'dashboard_event.dart';
 import 'dashboard_state.dart';
 
 /// The mother screen's own work: which tab is showing (and logging it to Analytics),
-/// and keeping the Supabase session and the user's server row alive while the app
-/// runs. The tabs' data lives in their features (My Alarms, Reasons, Settings).
+/// keeping the Supabase session and the user's server row alive while the app runs,
+/// and bringing the alarm sounds and sound tracks (rows and files, needed to make
+/// alarms offline) up to date in the background every time the app opens, when
+/// repeating alarms that have rung are set for their next day too, and alarms made
+/// offline are sent to the server. The tabs' data
+/// lives in their features (My Alarms, Reasons, Settings).
 @injectable
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   /// Analytics screen names, in tab order.
@@ -29,6 +36,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final SyncUserProfileUseCase syncUserProfileUseCase;
   final UpdateDeviceInfoUseCase updateDeviceInfoUseCase;
   final GetAppInfoUseCase getAppInfoUseCase;
+  final RefreshAlarmAudioUseCase refreshAlarmAudioUseCase;
+  final RescheduleAlarmsUseCase rescheduleAlarmsUseCase;
+  final UploadPendingAlarmsUseCase uploadPendingAlarmsUseCase;
 
   StreamSubscription<String>? _tokenSubscription;
 
@@ -38,12 +48,24 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     this.syncUserProfileUseCase,
     this.updateDeviceInfoUseCase,
     this.getAppInfoUseCase,
+    this.refreshAlarmAudioUseCase,
+    this.rescheduleAlarmsUseCase,
+    this.uploadPendingAlarmsUseCase,
   ) : super(const DashboardState()) {
     on<DashboardTabChangedEvent>((event, emit) {
       analytics.logScreen(screenNames[event.index]);
       emit(DashboardState(selectedIndex: event.index));
     });
     on<EnsureSessionEvent>(_onEnsureSession);
+    on<RescheduleAlarmsEvent>((event, emit) async {
+      final result = await rescheduleAlarmsUseCase(
+        RescheduleAlarmsParams(DateTime.now()),
+      );
+      result.fold(
+        (failure) => debugPrint('Alarms not rescheduled: ${failure.message}'),
+        (moved) => debugPrint('Alarms set for their next day: $moved'),
+      );
+    });
     on<FcmTokenChangedEvent>((event, emit) => _updateDeviceInfo());
 
     // The token usually arrives after the session is ready, and Firebase refreshes it
@@ -66,6 +88,12 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     if (user == null) return;
     debugPrint('Supabase user ${user.id} (anonymous: ${user.isAnonymous})');
 
+    // Run alongside the rest; their tables need the session.
+    final audio = refreshAlarmAudioUseCase(NoParams());
+    final pending = uploadPendingAlarmsUseCase(
+      UploadPendingAlarmsParams(DateTime.now()),
+    );
+
     // Keep a fresh copy of the user's row on the device; on failure the previous
     // copy (if any) stays available.
     final profile = await syncUserProfileUseCase(NoParams());
@@ -75,6 +103,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     );
 
     await _updateDeviceInfo();
+
+    (await audio).fold(
+      (failure) =>
+          debugPrint('Alarm sounds not all updated: ${failure.message}'),
+      (_) => debugPrint('Alarm sounds up to date'),
+    );
+    (await pending).fold(
+      (failure) => debugPrint('Alarms not all sent: ${failure.message}'),
+      (sent) => debugPrint('Alarms sent to the server: $sent'),
+    );
   }
 
   /// Sends platform, app version and FCM token to the server when any of them differs

@@ -11,8 +11,10 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val alarmId = intent.getStringExtra(AlarmAudioService.EXTRA_ALARM_ID) ?: "default_alarm"
         val runIndex = intent.getIntExtra(AlarmAudioService.EXTRA_RUN_INDEX, 0)
-        val audioTrackId = AlarmConfigStore.load(context, alarmId)?.audioTrackId ?: "morning_message"
+        val config = AlarmConfigStore.load(context, alarmId)
+        val audioTrackId = config?.audioTrackId ?: "morning_message"
         Log.d("AlarmReceiver", "Alarm triggered for ID: $alarmId, run: $runIndex")
+        if (runIndex == 0 && config != null) AlarmScheduler.scheduleNextWeeklyRing(context, config)
 
         // 1. Wake the physical screen from black standby
         try {

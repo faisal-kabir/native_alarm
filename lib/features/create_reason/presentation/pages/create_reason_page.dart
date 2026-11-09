@@ -24,8 +24,17 @@ import '../widgets/select_voice_step.dart';
 /// To add a step: build its page widget, append it to [_steps], raise
 /// `AppConstant.createReasonStepCount`, name its index in `CreateReasonState` and give
 /// `CreateReasonState.canContinue` a case.
+///
+/// [returnReason]: opened by another flow that needs a Reason (the alarm editor's
+/// "New Reason"): once saved, it pops with the [Reason] instead of showing the ready
+/// screen. Push it with `extra: CreateReasonPage.returnReasonExtra`.
 class CreateReasonPage extends StatelessWidget {
-  const CreateReasonPage({super.key});
+  const CreateReasonPage({super.key, this.returnReason = false});
+
+  final bool returnReason;
+
+  /// The route's `extra` that asks for [returnReason].
+  static const String returnReasonExtra = 'returnReason';
 
   @override
   Widget build(BuildContext context) {
@@ -34,13 +43,15 @@ class CreateReasonPage extends StatelessWidget {
         ..add(const LoadAreasEvent())
         ..add(const LoadVoicesEvent())
         ..add(const LoadSoundTypesEvent()),
-      child: const _CreateReasonView(),
+      child: _CreateReasonView(returnReason: returnReason),
     );
   }
 }
 
 class _CreateReasonView extends StatefulWidget {
-  const _CreateReasonView();
+  const _CreateReasonView({required this.returnReason});
+
+  final bool returnReason;
 
   @override
   State<_CreateReasonView> createState() => _CreateReasonViewState();
@@ -65,10 +76,15 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
   }
 
   /// The reason is saved: the ready screen takes this page's place, so back from it
-  /// lands on the reasons list, not on a finished form.
+  /// lands on the reasons list, not on a finished form. A flow that asked for the
+  /// Reason gets it back instead.
   void _openReady(BuildContext context, CreateReasonState state) {
     final reason = state.createdReason;
     if (reason == null) return;
+    if (widget.returnReason) {
+      context.pop(reason);
+      return;
+    }
     context.pushReplacement(RouteNames.reasonReadyPath, extra: reason);
   }
 

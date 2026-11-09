@@ -35,5 +35,6 @@ Reason reasonFromJson(Map<String, dynamic> json) {
     voiceId: id('voice_id'),
     voice: voice == null ? null : VoiceModel.fromJson(voice),
     createdAt: DateTime.tryParse('${json['created_at']}')?.toLocal(),
+    alarmId: (json['alarm_id'] as num?)?.toInt(),
   );
 }

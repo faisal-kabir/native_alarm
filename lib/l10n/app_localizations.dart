@@ -901,11 +901,11 @@ abstract class AppLocalizations {
   /// **'Couldn’t save your changes. Check your connection and try again.'**
   String get reason_detail_save_failed;
 
-  /// No description provided for @reason_detail_more_below.
+  /// No description provided for @common_more_below.
   ///
   /// In en, this message translates to:
   /// **'More below'**
-  String get reason_detail_more_below;
+  String get common_more_below;
 
   /// No description provided for @reason_detail_area_sheet.
   ///
@@ -1027,11 +1027,418 @@ abstract class AppLocalizations {
   /// **'This can’t be undone.'**
   String get reason_delete_message;
 
+  /// No description provided for @reason_delete_alarm_message.
+  ///
+  /// In en, this message translates to:
+  /// **'Its alarm will be deleted too. Every alarm needs a reason.'**
+  String get reason_delete_alarm_message;
+
   /// No description provided for @reason_delete_failed.
   ///
   /// In en, this message translates to:
   /// **'Couldn’t delete this reason. Check your connection and try again.'**
   String get reason_delete_failed;
+
+  /// No description provided for @common_ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get common_ok;
+
+  /// Title of the alarm editor for a new alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Alarm'**
+  String get create_alarm_title;
+
+  /// No description provided for @create_alarm_section.
+  ///
+  /// In en, this message translates to:
+  /// **'What you’ll hear'**
+  String get create_alarm_section;
+
+  /// No description provided for @create_alarm_choose_reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a reason'**
+  String get create_alarm_choose_reason;
+
+  /// When there is no reason left to pick: the tap opens the reason maker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a reason'**
+  String get create_alarm_add_reason;
+
+  /// No description provided for @create_alarm_reason_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should Eala say?'**
+  String get create_alarm_reason_hint;
+
+  /// No description provided for @create_alarm_choose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose'**
+  String get create_alarm_choose;
+
+  /// No description provided for @create_alarm_change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get create_alarm_change;
+
+  /// No description provided for @create_alarm_soundtrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Soundtrack'**
+  String get create_alarm_soundtrack;
+
+  /// No description provided for @create_alarm_alarm_sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm sound'**
+  String get create_alarm_alarm_sound;
+
+  /// No description provided for @create_alarm_ring_again.
+  ///
+  /// In en, this message translates to:
+  /// **'Ring again if I’m not up'**
+  String get create_alarm_ring_again;
+
+  /// No description provided for @create_alarm_again_off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get create_alarm_again_off;
+
+  /// No description provided for @create_alarm_again_once.
+  ///
+  /// In en, this message translates to:
+  /// **'Once'**
+  String get create_alarm_again_once;
+
+  /// No description provided for @create_alarm_again_twice.
+  ///
+  /// In en, this message translates to:
+  /// **'Twice'**
+  String get create_alarm_again_twice;
+
+  /// Under "Ring again" = Off; {count} is create_alarm_again_count_0, drawn white.
+  ///
+  /// In en, this message translates to:
+  /// **'Rings {count}. Stopping it ends it.'**
+  String create_alarm_again_note_0(String count);
+
+  /// Ring again = Once; {count} is drawn white.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}, 5 minutes later.'**
+  String create_alarm_again_note_1(String count);
+
+  /// Ring again = Twice; {count} is drawn white.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}, 5 minutes apart.'**
+  String create_alarm_again_note_2(String count);
+
+  /// No description provided for @create_alarm_again_count_0.
+  ///
+  /// In en, this message translates to:
+  /// **'once'**
+  String get create_alarm_again_count_0;
+
+  /// No description provided for @create_alarm_again_count_1.
+  ///
+  /// In en, this message translates to:
+  /// **'1 more ring'**
+  String get create_alarm_again_count_1;
+
+  /// No description provided for @create_alarm_again_count_2.
+  ///
+  /// In en, this message translates to:
+  /// **'2 more rings'**
+  String get create_alarm_again_count_2;
+
+  /// No description provided for @create_alarm_enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get create_alarm_enabled;
+
+  /// No description provided for @create_alarm_blocked_title.
+  ///
+  /// In en, this message translates to:
+  /// **'This alarm won’t ring'**
+  String get create_alarm_blocked_title;
+
+  /// No description provided for @create_alarm_blocked_action.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Alarm Access'**
+  String get create_alarm_blocked_action;
+
+  /// No description provided for @create_alarm_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Alarm'**
+  String get create_alarm_save;
+
+  /// No description provided for @create_alarm_save_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save the alarm. Try again.'**
+  String get create_alarm_save_failed;
+
+  /// No description provided for @create_alarm_limit_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm limit'**
+  String get create_alarm_limit_title;
+
+  /// No description provided for @create_alarm_limit_note.
+  ///
+  /// In en, this message translates to:
+  /// **'You can have up to {count} alarms.'**
+  String create_alarm_limit_note(int count);
+
+  /// No description provided for @create_alarm_add_time.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another time'**
+  String get create_alarm_add_time;
+
+  /// No description provided for @create_alarm_hint_once.
+  ///
+  /// In en, this message translates to:
+  /// **'Rings once · tap days to repeat'**
+  String get create_alarm_hint_once;
+
+  /// A day moved to another time card; shown for a moment.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} moved from {time}'**
+  String create_alarm_moved(String day, String time);
+
+  /// Screen reader: a day another time card rings.
+  ///
+  /// In en, this message translates to:
+  /// **'{day}, rings at {time}. Move it here'**
+  String create_alarm_day_away(String day, String time);
+
+  /// Screen reader: a time card header.
+  ///
+  /// In en, this message translates to:
+  /// **'{time}, {repeat}. {hint}'**
+  String create_alarm_card_semantics(String time, String repeat, String hint);
+
+  /// No description provided for @create_alarm_close_clock.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the clock'**
+  String get create_alarm_close_clock;
+
+  /// No description provided for @create_alarm_open_clock.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the time'**
+  String get create_alarm_open_clock;
+
+  /// No description provided for @create_alarm_hour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hour'**
+  String get create_alarm_hour;
+
+  /// No description provided for @create_alarm_minute.
+  ///
+  /// In en, this message translates to:
+  /// **'Minute'**
+  String get create_alarm_minute;
+
+  /// No description provided for @create_alarm_meridiem.
+  ///
+  /// In en, this message translates to:
+  /// **'AM or PM'**
+  String get create_alarm_meridiem;
+
+  /// No description provided for @repeat_once.
+  ///
+  /// In en, this message translates to:
+  /// **'Once'**
+  String get repeat_once;
+
+  /// No description provided for @repeat_every_day.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get repeat_every_day;
+
+  /// No description provided for @repeat_weekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekdays'**
+  String get repeat_weekdays;
+
+  /// No description provided for @repeat_weekends.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekends'**
+  String get repeat_weekends;
+
+  /// No description provided for @repeat_every_single.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {day}'**
+  String repeat_every_single(String day);
+
+  /// No description provided for @repeat_every_except.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day except {days}'**
+  String repeat_every_except(String days);
+
+  /// The seven short day names, Sunday first, comma-separated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun,Mon,Tue,Wed,Thu,Fri,Sat'**
+  String get day_short;
+
+  /// The seven day names, Sunday first, comma-separated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'**
+  String get day_names;
+
+  /// No description provided for @reason_picker_title.
+  ///
+  /// In en, this message translates to:
+  /// **'What should wake you up?'**
+  String get reason_picker_title;
+
+  /// No description provided for @reason_picker_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Each alarm plays one reason.'**
+  String get reason_picker_subtitle;
+
+  /// No description provided for @reason_picker_all_taken.
+  ///
+  /// In en, this message translates to:
+  /// **'Every reason already has an alarm.'**
+  String get reason_picker_all_taken;
+
+  /// No description provided for @reason_picker_select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Reason'**
+  String get reason_picker_select;
+
+  /// No description provided for @reason_picker_new.
+  ///
+  /// In en, this message translates to:
+  /// **'New Reason'**
+  String get reason_picker_new;
+
+  /// No description provided for @reason_picker_none.
+  ///
+  /// In en, this message translates to:
+  /// **'You don’t have any reasons yet.'**
+  String get reason_picker_none;
+
+  /// No description provided for @soundtrack_sheet_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Music that plays behind your message.'**
+  String get soundtrack_sheet_subtitle;
+
+  /// No description provided for @soundtrack_sheet_select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Soundtrack'**
+  String get soundtrack_sheet_select;
+
+  /// No description provided for @alarm_sound_sheet_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap play to hear it.'**
+  String get alarm_sound_sheet_subtitle;
+
+  /// No description provided for @alarm_sound_sheet_select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Sound'**
+  String get alarm_sound_sheet_select;
+
+  /// Screen reader: one alarm card.
+  ///
+  /// In en, this message translates to:
+  /// **'{time}, {repeat}. {reason}. {status}'**
+  String my_alarms_alarm_semantics(
+    String time,
+    String repeat,
+    String reason,
+    String status,
+  );
+
+  /// No description provided for @my_alarms_status_on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get my_alarms_status_on;
+
+  /// No description provided for @my_alarms_status_off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get my_alarms_status_off;
+
+  /// The section title once there is an alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Next alarm'**
+  String get my_alarms_next_alarm;
+
+  /// Beside the slot pills once there is an alarm.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} of {total}'**
+  String my_alarms_slot_meter_used(int used, int total);
+
+  /// No description provided for @my_alarms_next_ring.
+  ///
+  /// In en, this message translates to:
+  /// **'Next ring · {when}'**
+  String my_alarms_next_ring(String when);
+
+  /// No description provided for @my_alarms_today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get my_alarms_today;
+
+  /// No description provided for @my_alarms_tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get my_alarms_tomorrow;
+
+  /// No description provided for @my_alarms_off_note.
+  ///
+  /// In en, this message translates to:
+  /// **'Off · won’t ring'**
+  String get my_alarms_off_note;
+
+  /// No description provided for @my_alarms_toggle_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t change the alarm. Try again.'**
+  String get my_alarms_toggle_failed;
+
+  /// The seven one-letter day names, Sunday first, comma-separated.
+  ///
+  /// In en, this message translates to:
+  /// **'S,M,T,W,T,F,S'**
+  String get day_letters;
 }
 
 class _AppLocalizationsDelegate

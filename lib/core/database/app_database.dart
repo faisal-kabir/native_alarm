@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../features/alarm/data/models/alarms_table.dart';
+import '../../features/alarm_audio/data/models/alarm_audios_table.dart';
 import '../../features/area_of_life/data/models/areas_of_life_table.dart';
 import '../../features/reasons/data/models/reasons_table.dart';
 import '../../features/settings/data/models/settings_table.dart';
@@ -17,13 +18,14 @@ part 'app_database.g.dart';
     SettingsTable,
     AreasOfLifeTable,
     VoicesTable,
+    AlarmAudiosTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -49,6 +51,24 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(voicesTable, voicesTable.groupTitle);
         await m.addColumn(voicesTable, voicesTable.groupDescription);
       }
+      // v9: alarm_audios (the device's copy of alarm_sound and sound_track, with the
+      // names of their downloaded files) was added.
+      if (from < 9) await m.createTable(alarmAudiosTable);
+      // v10: an alarm keeps what the editor chose (its Reason, soundtrack, alarm
+      // sound, ring again, a time per day).
+      if (from < 10) {
+        for (final column in <GeneratedColumn<Object>>[
+          alarmsTable.reasonId,
+          alarmsTable.soundTrackId,
+          alarmsTable.alarmSoundId,
+          alarmsTable.ringAgain,
+          alarmsTable.dayTimes,
+        ]) {
+          await m.addColumn(alarmsTable, column);
+        }
+      }
+      // v11: an alarm keeps the server's id for it (`alarm.id`).
+      if (from < 11) await m.addColumn(alarmsTable, alarmsTable.remoteId);
     },
   );
 }

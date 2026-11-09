@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import UserNotifications
 import ActivityKit
 import AppIntents
@@ -146,12 +147,120 @@ struct AlarmConfig: Codable {
     var repeatIntervalSec: Int
     var tuneName: String?
     var title: String?
+    /// A weekly alarm: weekday (1 = Mon ... 7 = Sun) -> minutes after midnight. The
+    /// system rings it every week by itself. nil = rings once, at `timeMs`.
+    var ringDays: [Int: Int]?
 
     static let maxRepeatCount = 20
     static let minIntervalSec = 5
 
     var safeRepeatCount: Int { min(max(repeatCount, 0), AlarmConfig.maxRepeatCount) }
     var safeIntervalSec: Int { max(repeatIntervalSec, AlarmConfig.minIntervalSec) }
+
+    /// The weekly alarm's times, earliest first, each with the weekdays that ring at it.
+    var weeklyTimes: [(minutes: Int, weekdays: [Int])] {
+        guard let ringDays = ringDays else { return [] }
+        return Dictionary(grouping: ringDays.keys, by: { ringDays[$0]! })
+            .map { (minutes: $0.key, weekdays: $0.value.sorted()) }
+            .sorted { $0.minutes < $1.minutes }
+    }
+
+    /// AlarmKit ids of the main alarm, one per entry of `weeklyTimes` (AlarmKit repeats
+    /// one time on several weekdays per alarm): the first is the alarm id's own.
+    var mainIds: [UUID] {
+        [AlarmIdMapper.uuid(for: alarmId)]
+            + weeklyTimes.dropFirst().map { AlarmIdMapper.uuid(for: "\(alarmId)@\($0.minutes)") }
+    }
+
+    /// Notification ids of the main ring (iOS < 26): one per weekday of a weekly alarm.
+    static func notificationIds(alarmId: String) -> [String] {
+        [alarmId] + (1...7).map { "\(alarmId)#\($0)" }
+    }
+
+    /// `ringDays` from Flutter: weekday (1...7) -> minutes (0..<1440); anything else is dropped.
+    static func parseRingDays(_ value: Any?) -> [Int: Int]? {
+        guard let map = value as? [AnyHashable: Any] else { return nil }
+        var days: [Int: Int] = [:]
+        for (key, value) in map {
+            guard let day = (key as? NSNumber)?.intValue ?? Int("\(key)"), (1...7).contains(day),
+                  let minutes = (value as? NSNumber)?.intValue, (0..<1440).contains(minutes) else { continue }
+            days[day] = minutes
+        }
+        return days.isEmpty ? nil : days
+    }
+}
+
+/// The alarm's own copy of its sound (a downloaded alarm sound from Flutter), in
+/// Library/Sounds where AlarmKit and notifications find it by name. Converted to CAF
+/// (IMA4), a format both can play. The copy belongs to the alarm, so Flutter may
+/// replace or delete the original afterwards.
+enum AlarmTuneStore {
+    private static var soundsDir: URL? {
+        FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Sounds", isDirectory: true)
+    }
+
+    private static func prefix(_ alarmId: String) -> String {
+        "eala-" + alarmId.map { $0.isLetter || $0.isNumber ? String($0) : "_" }.joined() + "-"
+    }
+
+    /// Installs [filePath] for [alarmId] and returns the sound's name, or nil (missing or
+    /// unplayable file: the default tune rings). Downloaded file names change with their
+    /// content, so an unchanged file is not converted again.
+    static func install(filePath: String?, alarmId: String) -> String? {
+        guard let filePath = filePath, !filePath.isEmpty, let dir = soundsDir else { return nil }
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: filePath) else {
+            AlarmFlowLogger.shared.log("AlarmTuneStore: file not found: \(filePath)")
+            return nil
+        }
+        let source = URL(fileURLWithPath: filePath)
+        let name = prefix(alarmId) + source.deletingPathExtension().lastPathComponent + ".caf"
+        let target = dir.appendingPathComponent(name)
+        remove(alarmId: alarmId, keeping: name)
+        if fm.fileExists(atPath: target.path) { return name }
+        do {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            try convert(source, to: target)
+            return name
+        } catch {
+            try? fm.removeItem(at: target)
+            AlarmFlowLogger.shared.log("AlarmTuneStore: could not install \(filePath): \(error)")
+            return nil
+        }
+    }
+
+    /// Deletes the alarm's copies (all but [keeping]).
+    static func remove(alarmId: String, keeping: String? = nil) {
+        guard let dir = soundsDir,
+              let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return }
+        for name in names where name.hasPrefix(prefix(alarmId)) && name != keeping {
+            try? FileManager.default.removeItem(at: dir.appendingPathComponent(name))
+        }
+    }
+
+    private static func convert(_ source: URL, to target: URL) throws {
+        let input = try AVAudioFile(forReading: source)
+        let format = input.processingFormat
+        let output = try AVAudioFile(
+            forWriting: target,
+            settings: [
+                AVFormatIDKey: kAudioFormatAppleIMA4,
+                AVSampleRateKey: format.sampleRate,
+                AVNumberOfChannelsKey: format.channelCount,
+            ],
+            commonFormat: format.commonFormat,
+            interleaved: format.isInterleaved
+        )
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 32_768) else {
+            throw NSError(domain: "AlarmTuneStore", code: 1)
+        }
+        while input.framePosition < input.length {
+            try input.read(into: buffer)
+            if buffer.frameLength == 0 { break }
+            try output.write(from: buffer)
+        }
+    }
 }
 
 final class AlarmConfigStore {
@@ -190,12 +299,14 @@ enum AlarmUnlockCoordinator {
             // The ringing alarm may be the main alarm or an internal repeat (which has its
             // own random UUID). Stopping only the main UUID left a repeat stuck in
             // "alerting", and iOS rang it again hours later. Stop everything that rings.
-            let mainUUID = AlarmIdMapper.uuid(for: alarmId)
-            var toStop: Set<UUID> = [mainUUID]
+            // Only what is ringing: a weekly alarm stays set for its next day.
+            var toStop: Set<UUID> = []
             if let alarms = try? AlarmManager.shared.alarms {
                 for alarm in alarms where alarm.state == .alerting {
                     toStop.insert(alarm.id)
                 }
+            } else {
+                toStop.insert(AlarmIdMapper.uuid(for: alarmId))
             }
             for uuid in toStop {
                 do {
@@ -358,7 +469,7 @@ final class BackupAlarmManager {
             do {
                 _ = try await AlarmManager.shared.schedule(
                     id: uuid,
-                    configuration: AlarmScheduler.shared.makeConfiguration(config: config, fireDate: fireDate, runIndex: next)
+                    configuration: AlarmScheduler.shared.makeConfiguration(config: config, schedule: .fixed(fireDate), runIndex: next)
                 )
                 appendMapping(mainAlarmId: alarmId, backupId: uuid.uuidString)
                 scheduleNotification(config: config, index: next, fireDate: Date().addingTimeInterval(0.5), rings: false)
@@ -501,6 +612,9 @@ final class AlarmScheduler {
         for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix(configPrefix) {
             let alarmId = String(key.dropFirst(configPrefix.count))
             owners[AlarmIdMapper.uuid(for: alarmId)] = alarmId
+            for uuid in AlarmConfigStore.shared.load(alarmId)?.mainIds ?? [] {
+                owners[uuid] = alarmId
+            }
         }
         for (mainId, backupIds) in BackupAlarmManager.shared.getMapping() {
             for bId in backupIds {
@@ -564,7 +678,7 @@ final class AlarmScheduler {
 
     #if canImport(AlarmKit)
     @available(iOS 26.0, *)
-    func makeConfiguration(config: AlarmConfig, fireDate: Date, runIndex: Int = 0) -> AlarmManager.AlarmConfiguration<NativeAlarmMetadata> {
+    func makeConfiguration(config: AlarmConfig, schedule: Alarm.Schedule, runIndex: Int = 0) -> AlarmManager.AlarmConfiguration<NativeAlarmMetadata> {
         let missionButton = AlarmButton(
             text: LocalizedStringResource(stringLiteral: config.missionName),
             textColor: .white,
@@ -600,16 +714,35 @@ final class AlarmScheduler {
             config.tuneName.map { .named($0) } ?? .default
 
         return AlarmManager.AlarmConfiguration.alarm(
-            schedule: .fixed(fireDate),
+            schedule: schedule,
             attributes: attributes,
             stopIntent: StopAndPlayIntent(alarmId: config.alarmId, audioTrackId: config.audioTrackId, runIndex: runIndex),
             secondaryIntent: OpenAndPlayIntent(alarmId: config.alarmId, audioTrackId: config.audioTrackId, runIndex: runIndex),
             sound: sound
         )
     }
+
+    /// The main alarm's AlarmKit schedules with their ids: one fixed ring, or one weekly
+    /// schedule per time of the week.
+    @available(iOS 26.0, *)
+    private func mainSchedules(config: AlarmConfig, timeMs: Int64) -> [(UUID, Alarm.Schedule)] {
+        let times = config.weeklyTimes
+        if times.isEmpty {
+            let triggerDate = Date(timeIntervalSince1970: Double(timeMs) / 1000.0)
+            return [(AlarmIdMapper.uuid(for: config.alarmId), .fixed(triggerDate))]
+        }
+        let weekdays: [Locale.Weekday] = [.monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday]
+        return zip(config.mainIds, times).map { id, time in
+            (id, .relative(Alarm.Schedule.Relative(
+                time: Alarm.Schedule.Relative.Time(hour: time.minutes / 60, minute: time.minutes % 60),
+                repeats: .weekly(time.weekdays.map { weekdays[$0 - 1] })
+            )))
+        }
+    }
     #endif
 
     func schedule(config: AlarmConfig, timeMs: Int64) {
+        let previous = AlarmConfigStore.shared.load(config.alarmId)
         AlarmConfigStore.shared.save(config)
 
         #if canImport(AlarmKit)
@@ -620,21 +753,26 @@ final class AlarmScheduler {
                         _ = try? await AlarmManager.shared.requestAuthorization()
                     }
 
-                    let triggerDate = Date(timeIntervalSince1970: Double(timeMs) / 1000.0)
-                    let uuid = AlarmIdMapper.uuid(for: config.alarmId)
-                    // Re-scheduling the same alarm replaces the old one.
-                    try? AlarmManager.shared.cancel(id: uuid)
-                    _ = try await AlarmManager.shared.schedule(
-                        id: uuid,
-                        configuration: self.makeConfiguration(config: config, fireDate: triggerDate)
-                    )
-                    AlarmFlowLogger.shared.log("AlarmScheduler: Scheduled via AlarmKit alarmId=\(config.alarmId) uuid=\(uuid)")
+                    // Re-scheduling the same alarm replaces the old one (and times of the
+                    // week it no longer has).
+                    for uuid in Set((previous?.mainIds ?? []) + config.mainIds) {
+                        try? AlarmManager.shared.cancel(id: uuid)
+                    }
+                    for (uuid, schedule) in self.mainSchedules(config: config, timeMs: timeMs) {
+                        _ = try await AlarmManager.shared.schedule(
+                            id: uuid,
+                            configuration: self.makeConfiguration(config: config, schedule: schedule)
+                        )
+                        AlarmFlowLogger.shared.log("AlarmScheduler: Scheduled via AlarmKit alarmId=\(config.alarmId) uuid=\(uuid) schedule=\(schedule)")
+                    }
 
                     // Repeats are set one by one after each Slide to stop (scheduleNextRepeat).
                     BackupAlarmManager.shared.cancelBackupAlarms(for: config.alarmId)
                     return
                 } catch {
                     AlarmFlowLogger.shared.log("AlarmScheduler: AlarmKit failed (\(error)), falling back to notifications")
+                    // Times of the week already set would ring twice.
+                    for uuid in config.mainIds { try? AlarmManager.shared.cancel(id: uuid) }
                     self.scheduleLocalNotification(config: config, timeMs: timeMs)
                     BackupAlarmManager.shared.scheduleBackupAlarms(config: config, timeMs: timeMs)
                 }
@@ -648,6 +786,8 @@ final class AlarmScheduler {
     }
 
     func scheduleLocalNotification(config: AlarmConfig, timeMs: Int64) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: AlarmConfig.notificationIds(alarmId: config.alarmId))
         let triggerDate = Date(timeIntervalSince1970: Double(timeMs) / 1000.0)
         let delay = max(1.0, triggerDate.timeIntervalSinceNow)
 
@@ -667,35 +807,67 @@ final class AlarmScheduler {
             content.interruptionLevel = .timeSensitive
         }
 
-        let request = UNNotificationRequest(
-            identifier: config.alarmId,
-            content: content,
-            trigger: UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        )
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                AlarmFlowLogger.shared.log("AlarmScheduler: notification schedule error: \(error)")
+        // A weekly alarm rings every week on each of its days by itself.
+        var requests: [UNNotificationRequest] = []
+        if let ringDays = config.ringDays {
+            for (day, minutes) in ringDays {
+                var when = DateComponents()
+                when.weekday = day % 7 + 1 // 1 = Mon ... 7 = Sun -> Calendar's 1 = Sun ... 7 = Sat
+                when.hour = minutes / 60
+                when.minute = minutes % 60
+                requests.append(UNNotificationRequest(
+                    identifier: "\(config.alarmId)#\(day)",
+                    content: content,
+                    trigger: UNCalendarNotificationTrigger(dateMatching: when, repeats: true)
+                ))
             }
+        } else {
+            requests.append(UNNotificationRequest(
+                identifier: config.alarmId,
+                content: content,
+                trigger: UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+            ))
+        }
+        for request in requests {
+            center.add(request) { error in
+                if let error = error {
+                    AlarmFlowLogger.shared.log("AlarmScheduler: notification schedule error: \(error)")
+                }
+            }
+        }
+    }
+
+    /// The message after a ring is over. A weekly alarm stays set for its next day (only
+    /// its ring-again repeats go, as on Android); a one-off alarm is done.
+    func finish(alarmId: String) {
+        if AlarmConfigStore.shared.load(alarmId)?.ringDays != nil {
+            BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
+        } else {
+            cancel(alarmId: alarmId)
         }
     }
 
     func cancel(alarmId: String) {
         BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
+        let config = AlarmConfigStore.shared.load(alarmId)
 
         #if canImport(AlarmKit)
         if #available(iOS 26.0, *) {
-            let uuid = AlarmIdMapper.uuid(for: alarmId)
-            do {
-                try AlarmManager.shared.cancel(id: uuid)
-            } catch {
-                AlarmFlowLogger.shared.log("AlarmScheduler.cancel: \(error)")
+            for uuid in config?.mainIds ?? [AlarmIdMapper.uuid(for: alarmId)] {
+                do {
+                    try AlarmManager.shared.cancel(id: uuid)
+                } catch {
+                    AlarmFlowLogger.shared.log("AlarmScheduler.cancel: \(error)")
+                }
             }
         }
         #endif
 
+        let ids = AlarmConfig.notificationIds(alarmId: alarmId)
         UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: [alarmId])
+            .removePendingNotificationRequests(withIdentifiers: ids)
         UNUserNotificationCenter.current()
-            .removeDeliveredNotifications(withIdentifiers: [alarmId])
+            .removeDeliveredNotifications(withIdentifiers: ids)
+        AlarmTuneStore.remove(alarmId: alarmId)
     }
 }

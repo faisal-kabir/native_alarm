@@ -19,9 +19,24 @@ class AddCard extends StatelessWidget {
     required this.subtitle,
     required this.label,
     this.onTap,
+    this.color = AppColor.cardColor,
   });
 
+  /// Just the quiet row (e.g. "New Reason" at the end of a picker); [color] is
+  /// `AppColor.surfaceSecondary` inside a sheet.
+  const AddCard.row({
+    super.key,
+    required this.label,
+    this.onTap,
+    this.color = AppColor.cardColor,
+  }) : first = false,
+       title = '',
+       subtitle = '';
+
   final bool first;
+
+  /// The card's fill.
+  final Color color;
 
   /// Empty-state headline.
   final String title;
@@ -40,7 +55,7 @@ class AddCard extends StatelessWidget {
       label: first ? title : label,
       excludeSemantics: true,
       child: Material(
-        color: AppColor.cardColor,
+        color: color,
         borderRadius: BorderRadius.circular(20.r),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

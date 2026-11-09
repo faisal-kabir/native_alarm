@@ -39,9 +39,31 @@ object AlarmScheduler {
     /** Schedules the main alarm. Replaces and cleans up anything scheduled before for this id. */
     fun schedule(context: Context, config: AlarmConfig, timeMs: Long) {
         cancelAll(context, config.alarmId)
-        AlarmConfigStore.save(context, config)
+        AlarmConfigStore.save(context, config.copy(ringTimeMs = timeMs))
         setExact(context, config.alarmId, 0, timeMs)
         Log.d(TAG, "Main alarm scheduled: ${config.alarmId} at $timeMs")
+    }
+
+    /**
+     * A weekly alarm's main alarm just rang: set its next day now, so it rings next week even
+     * if the app is never opened (iOS repeats weekly alarms by itself). Leaves the repeats alone.
+     */
+    fun scheduleNextWeeklyRing(context: Context, config: AlarmConfig) {
+        val next = config.nextWeeklyRing(System.currentTimeMillis()) ?: return
+        setExact(context, config.alarmId, 0, next)
+        Log.d(TAG, "Weekly alarm ${config.alarmId} set again for $next")
+    }
+
+    /**
+     * After a reboot or app update (AlarmManager forgets its alarms, see [AlarmBootReceiver]):
+     * sets the main alarm again — a weekly alarm on its next day, a one-off alarm only if its
+     * time is still ahead. Ring-again repeats that were waiting are not set again.
+     */
+    fun restore(context: Context, config: AlarmConfig) {
+        val now = System.currentTimeMillis()
+        val next = config.nextWeeklyRing(now) ?: config.ringTimeMs?.takeIf { it > now } ?: return
+        setExact(context, config.alarmId, 0, next)
+        Log.d(TAG, "Main alarm ${config.alarmId} set again for $next")
     }
 
     /** Schedules internal repeat number [runIndex] (1-based) and shows its notification. */

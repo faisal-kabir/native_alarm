@@ -20,6 +20,7 @@ class SelectItem {
     this.subtitle,
     required this.tint,
     this.iconPath,
+    this.iconFile,
     this.tileText,
   });
 
@@ -33,6 +34,9 @@ class SelectItem {
   /// Server path of a single-colour SVG painted in [tint] (see `mediaUrl`). Without
   /// one (or when it can not be loaded) the first letter of [title] is shown instead.
   final String? iconPath;
+
+  /// The same icon already downloaded by the app (full path): used offline first.
+  final String? iconFile;
 
   /// Short text shown in the tile instead of an icon or letter, e.g. "45s".
   final String? tileText;
@@ -58,12 +62,21 @@ class AnimatedSelectList extends StatelessWidget {
     required this.onSelected,
     this.animateIn = true,
     this.rowColor = AppColor.cardColor,
+    this.markBuilder,
+    this.footer,
   });
 
   final List<SelectItem> items;
   final Object? selectedId;
   final ValueChanged<SelectItem> onSelected;
   final bool animateIn;
+
+  /// What ends a row instead of the check circle (e.g. a play button); return a
+  /// `SizedBox.shrink()` for nothing.
+  final Widget Function(SelectItem item, bool selected)? markBuilder;
+
+  /// A last row under the choices, 8 below them (e.g. "New Reason").
+  final Widget? footer;
 
   /// The cards' fill: `AppColor.surfaceSecondary` inside a sheet (whose own fill is
   /// the card colour).
@@ -93,10 +106,18 @@ class AnimatedSelectList extends StatelessWidget {
                     item: items[i],
                     selected: items[i].id == selectedId,
                     color: rowColor,
+                    mark: markBuilder?.call(
+                      items[i],
+                      items[i].id == selectedId,
+                    ),
                     onTap: () => onSelected(items[i]),
                   ),
                 ),
               ),
+            ],
+            if (footer != null) ...[
+              if (items.isNotEmpty) SizedBox(height: 8.h),
+              footer!,
             ],
           ],
         ),
@@ -114,12 +135,16 @@ class SelectRow extends StatefulWidget {
     required this.selected,
     required this.onTap,
     this.color = AppColor.cardColor,
+    this.mark,
   });
 
   final SelectItem item;
   final bool selected;
   final VoidCallback onTap;
   final Color color;
+
+  /// Replaces the check circle at the row's end.
+  final Widget? mark;
 
   @override
   State<SelectRow> createState() => _SelectRowState();
@@ -179,6 +204,7 @@ class _SelectRowState extends State<SelectRow>
     if (path == null || path.isEmpty) return letter;
     return CachedSvgIcon(
       path: path,
+      file: item.iconFile,
       size: 20.r,
       color: item.tint,
       fallback: Center(child: letter),
@@ -259,7 +285,7 @@ class _SelectRowState extends State<SelectRow>
                 ),
               ),
               SizedBox(width: 13.w),
-              CheckCircle(on: on),
+              widget.mark ?? CheckCircle(on: on),
             ],
           ),
         ),

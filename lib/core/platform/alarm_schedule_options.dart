@@ -7,6 +7,8 @@ class AlarmScheduleOptions {
     this.repeatCount = 2,
     this.repeatIntervalSec = 10,
     this.tuneAsset,
+    this.tuneFile,
+    this.ringDays = const {},
     this.title,
     this.subtitle,
     this.stopHintText,
@@ -23,6 +25,15 @@ class AlarmScheduleOptions {
   /// `null` uses the platform default tune.
   final String? tuneAsset;
 
+  /// Full path of a sound file on the device (a downloaded alarm sound). Native keeps
+  /// its own copy when the alarm is set, so this file may change or go afterwards.
+  /// Wins over [tuneAsset]; a missing or unplayable file rings the default tune.
+  final String? tuneFile;
+
+  /// A weekly alarm: weekday (1=Mon .. 7=Sun) → minutes after midnight. Native sets
+  /// the next of these rings on its own after each ring. Empty = rings once.
+  final Map<int, int> ringDays;
+
   /// Text next to the alarm icon on the alarm screen. Defaults to the mission text.
   final String? title;
 
@@ -36,6 +47,8 @@ class AlarmScheduleOptions {
     'repeatCount': repeatCount,
     'repeatIntervalSec': repeatIntervalSec,
     if (tuneAsset != null) 'tuneAsset': tuneAsset,
+    if (tuneFile != null) 'tuneFile': tuneFile,
+    if (ringDays.isNotEmpty) 'ringDays': ringDays,
     if (title != null) 'title': title,
     if (subtitle != null) 'subtitle': subtitle,
     if (stopHintText != null) 'stopHintText': stopHintText,

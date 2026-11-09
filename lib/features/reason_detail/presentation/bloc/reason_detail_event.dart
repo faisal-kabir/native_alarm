@@ -25,6 +25,11 @@ class ReasonDetailVoicesWatchedEvent extends ReasonDetailEvent {
   const ReasonDetailVoicesWatchedEvent();
 }
 
+/// The alarms saved on the device (followed while the screen is open).
+class ReasonDetailAlarmsWatchedEvent extends ReasonDetailEvent {
+  const ReasonDetailAlarmsWatchedEvent();
+}
+
 /// Asks the server for the sound types (tones); also "Try again".
 class ReasonDetailSoundTypesRequestedEvent extends ReasonDetailEvent {
   const ReasonDetailSoundTypesRequestedEvent();
@@ -51,7 +56,8 @@ class ReasonDetailSavedEvent extends ReasonDetailEvent {
   const ReasonDetailSavedEvent();
 }
 
-/// "Delete" was confirmed: the reason goes (server, then device).
+/// "Delete" was confirmed: the reason goes, and the alarm that plays it with it
+/// (server, then device).
 class ReasonDetailDeleteRequestedEvent extends ReasonDetailEvent {
   const ReasonDetailDeleteRequestedEvent();
 }

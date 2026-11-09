@@ -210,6 +210,8 @@ class MainActivity : FlutterActivity() {
                         repeatCount = call.argument<Number>("repeatCount")?.toInt() ?: 0,
                         repeatIntervalSec = call.argument<Number>("repeatIntervalSec")?.toInt() ?: 10,
                         tuneAsset = call.argument<String>("tuneAsset")?.takeIf { it.isNotEmpty() },
+                        tuneFile = AlarmTuneStore.install(this, call.argument<String>("tuneFile"), alarmId),
+                        ringDays = AlarmConfig.parseRingDays(call.argument<Any>("ringDays")),
                     )
                     scheduleAlarm(config, timeMs)
                     result.success(null)
@@ -294,6 +296,7 @@ class MainActivity : FlutterActivity() {
     private fun cancelAlarm(alarmId: String) {
         AlarmScheduler.cancelAll(this, alarmId)
         AlarmConfigStore.remove(this, alarmId)
+        AlarmTuneStore.remove(this, alarmId)
         AlarmPlugin.sendEvent(mapOf("event" to "alarmCancelled", "alarmId" to alarmId))
     }
 

@@ -193,8 +193,10 @@ import UserNotifications
                     missionName: missionName,
                     repeatCount: (args["repeatCount"] as? NSNumber)?.intValue ?? 0,
                     repeatIntervalSec: (args["repeatIntervalSec"] as? NSNumber)?.intValue ?? 10,
-                    tuneName: installTune(assetPath: args["tuneAsset"] as? String),
-                    title: (args["title"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+                    tuneName: AlarmTuneStore.install(filePath: args["tuneFile"] as? String, alarmId: alarmId)
+                        ?? installTune(assetPath: args["tuneAsset"] as? String),
+                    title: (args["title"] as? String).flatMap { $0.isEmpty ? nil : $0 },
+                    ringDays: AlarmConfig.parseRingDays(args["ringDays"])
                 )
                 self.currentAlarmId = alarmId
                 AlarmScheduler.shared.schedule(config: config, timeMs: timeMs)
@@ -221,7 +223,7 @@ import UserNotifications
         case "dismissAlarm":
             AudioPlaybackManager.shared.stop()
             if !self.currentAlarmId.isEmpty {
-                AlarmScheduler.shared.cancel(alarmId: self.currentAlarmId)
+                AlarmScheduler.shared.finish(alarmId: self.currentAlarmId)
             }
             self.sendEvent(["event": "alarmDismissed", "alarmId": self.currentAlarmId])
             result(nil)

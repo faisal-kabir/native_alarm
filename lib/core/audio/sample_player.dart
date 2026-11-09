@@ -13,6 +13,9 @@ abstract class SamplePlayer {
   /// be loaded or played.
   Future<void> play(String url);
 
+  /// Plays a file already on the device (e.g. a downloaded alarm sound).
+  Future<void> playFile(String path);
+
   Future<void> stop();
 
   Future<void> dispose();
@@ -30,6 +33,12 @@ class CachedSamplePlayer implements SamplePlayer {
     final file = await DefaultCacheManager().getSingleFile(url);
     await _player.stop();
     await _player.play(DeviceFileSource(file.path));
+  }
+
+  @override
+  Future<void> playFile(String path) async {
+    await _player.stop();
+    await _player.play(DeviceFileSource(path));
   }
 
   @override

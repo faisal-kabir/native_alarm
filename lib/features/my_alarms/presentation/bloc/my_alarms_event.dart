@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../alarm/domain/entities/alarm.dart';
+
 abstract class MyAlarmsEvent extends Equatable {
   const MyAlarmsEvent();
 
@@ -7,7 +9,30 @@ abstract class MyAlarmsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Reads the saved alarms; sent on open and whenever the app comes back.
+/// Switches off one-off alarms that have rung (sent on open and whenever the app comes
+/// back); the list itself follows [WatchMyAlarmsEvent].
 class LoadMyAlarmsEvent extends MyAlarmsEvent {
   const LoadMyAlarmsEvent();
+}
+
+/// Follows the saved alarms, so a change made anywhere (the editor, a Reason deleted
+/// with its alarm) shows at once.
+class WatchMyAlarmsEvent extends MyAlarmsEvent {
+  const WatchMyAlarmsEvent();
+}
+
+/// Follows the cached reasons, so each alarm shows the Reason it plays.
+class WatchMyAlarmsReasonsEvent extends MyAlarmsEvent {
+  const WatchMyAlarmsReasonsEvent();
+}
+
+/// An alarm card's switch.
+class MyAlarmsAlarmToggledEvent extends MyAlarmsEvent {
+  final Alarm alarm;
+  final bool enabled;
+
+  const MyAlarmsAlarmToggledEvent(this.alarm, {required this.enabled});
+
+  @override
+  List<Object?> get props => [alarm, enabled];
 }

@@ -95,6 +95,71 @@ class $AlarmsTableTable extends AlarmsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _reasonIdMeta = const VerificationMeta(
+    'reasonId',
+  );
+  @override
+  late final GeneratedColumn<int> reasonId = GeneratedColumn<int>(
+    'reason_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _soundTrackIdMeta = const VerificationMeta(
+    'soundTrackId',
+  );
+  @override
+  late final GeneratedColumn<int> soundTrackId = GeneratedColumn<int>(
+    'sound_track_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _alarmSoundIdMeta = const VerificationMeta(
+    'alarmSoundId',
+  );
+  @override
+  late final GeneratedColumn<int> alarmSoundId = GeneratedColumn<int>(
+    'alarm_sound_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ringAgainMeta = const VerificationMeta(
+    'ringAgain',
+  );
+  @override
+  late final GeneratedColumn<int> ringAgain = GeneratedColumn<int>(
+    'ring_again',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Map<int, int>?, String> dayTimes =
+      GeneratedColumn<String>(
+        'day_times',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      ).withConverter<Map<int, int>?>($AlarmsTableTable.$converterdayTimesn);
+  static const VerificationMeta _remoteIdMeta = const VerificationMeta(
+    'remoteId',
+  );
+  @override
+  late final GeneratedColumn<int> remoteId = GeneratedColumn<int>(
+    'remote_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     alarmId,
@@ -105,6 +170,12 @@ class $AlarmsTableTable extends AlarmsTable
     ringtoneId,
     label,
     missionName,
+    reasonId,
+    soundTrackId,
+    alarmSoundId,
+    ringAgain,
+    dayTimes,
+    remoteId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -176,6 +247,42 @@ class $AlarmsTableTable extends AlarmsTable
         ),
       );
     }
+    if (data.containsKey('reason_id')) {
+      context.handle(
+        _reasonIdMeta,
+        reasonId.isAcceptableOrUnknown(data['reason_id']!, _reasonIdMeta),
+      );
+    }
+    if (data.containsKey('sound_track_id')) {
+      context.handle(
+        _soundTrackIdMeta,
+        soundTrackId.isAcceptableOrUnknown(
+          data['sound_track_id']!,
+          _soundTrackIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alarm_sound_id')) {
+      context.handle(
+        _alarmSoundIdMeta,
+        alarmSoundId.isAcceptableOrUnknown(
+          data['alarm_sound_id']!,
+          _alarmSoundIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ring_again')) {
+      context.handle(
+        _ringAgainMeta,
+        ringAgain.isAcceptableOrUnknown(data['ring_again']!, _ringAgainMeta),
+      );
+    }
+    if (data.containsKey('remote_id')) {
+      context.handle(
+        _remoteIdMeta,
+        remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta),
+      );
+    }
     return context;
   }
 
@@ -219,6 +326,32 @@ class $AlarmsTableTable extends AlarmsTable
         DriftSqlType.string,
         data['${effectivePrefix}mission_name'],
       ),
+      reasonId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reason_id'],
+      ),
+      soundTrackId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sound_track_id'],
+      ),
+      alarmSoundId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}alarm_sound_id'],
+      ),
+      ringAgain: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ring_again'],
+      )!,
+      dayTimes: $AlarmsTableTable.$converterdayTimesn.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}day_times'],
+        ),
+      ),
+      remoteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}remote_id'],
+      ),
     );
   }
 
@@ -229,6 +362,10 @@ class $AlarmsTableTable extends AlarmsTable
 
   static TypeConverter<List<int>, String> $converterrepeatWeekdays =
       const WeekdaysConverter();
+  static TypeConverter<Map<int, int>, String> $converterdayTimes =
+      const DayTimesConverter();
+  static TypeConverter<Map<int, int>?, String?> $converterdayTimesn =
+      NullAwareTypeConverter.wrap($converterdayTimes);
 }
 
 class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
@@ -240,6 +377,16 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
   final String ringtoneId;
   final String? label;
   final String? missionName;
+  final int? reasonId;
+  final int? soundTrackId;
+  final int? alarmSoundId;
+  final int ringAgain;
+
+  /// [Alarm.dayTimes] as JSON (`{"1": 390, ...}`), null when the days share a time.
+  final Map<int, int>? dayTimes;
+
+  /// [Alarm.remoteId]: the server's `alarm.id`, null until uploaded.
+  final int? remoteId;
   const AlarmRecord({
     required this.alarmId,
     required this.enabled,
@@ -249,6 +396,12 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
     required this.ringtoneId,
     this.label,
     this.missionName,
+    this.reasonId,
+    this.soundTrackId,
+    this.alarmSoundId,
+    required this.ringAgain,
+    this.dayTimes,
+    this.remoteId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -269,6 +422,24 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
     if (!nullToAbsent || missionName != null) {
       map['mission_name'] = Variable<String>(missionName);
     }
+    if (!nullToAbsent || reasonId != null) {
+      map['reason_id'] = Variable<int>(reasonId);
+    }
+    if (!nullToAbsent || soundTrackId != null) {
+      map['sound_track_id'] = Variable<int>(soundTrackId);
+    }
+    if (!nullToAbsent || alarmSoundId != null) {
+      map['alarm_sound_id'] = Variable<int>(alarmSoundId);
+    }
+    map['ring_again'] = Variable<int>(ringAgain);
+    if (!nullToAbsent || dayTimes != null) {
+      map['day_times'] = Variable<String>(
+        $AlarmsTableTable.$converterdayTimesn.toSql(dayTimes),
+      );
+    }
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<int>(remoteId);
+    }
     return map;
   }
 
@@ -286,6 +457,22 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
       missionName: missionName == null && nullToAbsent
           ? const Value.absent()
           : Value(missionName),
+      reasonId: reasonId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reasonId),
+      soundTrackId: soundTrackId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soundTrackId),
+      alarmSoundId: alarmSoundId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alarmSoundId),
+      ringAgain: Value(ringAgain),
+      dayTimes: dayTimes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dayTimes),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
     );
   }
 
@@ -303,6 +490,12 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
       ringtoneId: serializer.fromJson<String>(json['ringtoneId']),
       label: serializer.fromJson<String?>(json['label']),
       missionName: serializer.fromJson<String?>(json['missionName']),
+      reasonId: serializer.fromJson<int?>(json['reasonId']),
+      soundTrackId: serializer.fromJson<int?>(json['soundTrackId']),
+      alarmSoundId: serializer.fromJson<int?>(json['alarmSoundId']),
+      ringAgain: serializer.fromJson<int>(json['ringAgain']),
+      dayTimes: serializer.fromJson<Map<int, int>?>(json['dayTimes']),
+      remoteId: serializer.fromJson<int?>(json['remoteId']),
     );
   }
   @override
@@ -317,6 +510,12 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
       'ringtoneId': serializer.toJson<String>(ringtoneId),
       'label': serializer.toJson<String?>(label),
       'missionName': serializer.toJson<String?>(missionName),
+      'reasonId': serializer.toJson<int?>(reasonId),
+      'soundTrackId': serializer.toJson<int?>(soundTrackId),
+      'alarmSoundId': serializer.toJson<int?>(alarmSoundId),
+      'ringAgain': serializer.toJson<int>(ringAgain),
+      'dayTimes': serializer.toJson<Map<int, int>?>(dayTimes),
+      'remoteId': serializer.toJson<int?>(remoteId),
     };
   }
 
@@ -329,6 +528,12 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
     String? ringtoneId,
     Value<String?> label = const Value.absent(),
     Value<String?> missionName = const Value.absent(),
+    Value<int?> reasonId = const Value.absent(),
+    Value<int?> soundTrackId = const Value.absent(),
+    Value<int?> alarmSoundId = const Value.absent(),
+    int? ringAgain,
+    Value<Map<int, int>?> dayTimes = const Value.absent(),
+    Value<int?> remoteId = const Value.absent(),
   }) => AlarmRecord(
     alarmId: alarmId ?? this.alarmId,
     enabled: enabled ?? this.enabled,
@@ -338,6 +543,12 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
     ringtoneId: ringtoneId ?? this.ringtoneId,
     label: label.present ? label.value : this.label,
     missionName: missionName.present ? missionName.value : this.missionName,
+    reasonId: reasonId.present ? reasonId.value : this.reasonId,
+    soundTrackId: soundTrackId.present ? soundTrackId.value : this.soundTrackId,
+    alarmSoundId: alarmSoundId.present ? alarmSoundId.value : this.alarmSoundId,
+    ringAgain: ringAgain ?? this.ringAgain,
+    dayTimes: dayTimes.present ? dayTimes.value : this.dayTimes,
+    remoteId: remoteId.present ? remoteId.value : this.remoteId,
   );
   AlarmRecord copyWithCompanion(AlarmsTableCompanion data) {
     return AlarmRecord(
@@ -357,6 +568,16 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
       missionName: data.missionName.present
           ? data.missionName.value
           : this.missionName,
+      reasonId: data.reasonId.present ? data.reasonId.value : this.reasonId,
+      soundTrackId: data.soundTrackId.present
+          ? data.soundTrackId.value
+          : this.soundTrackId,
+      alarmSoundId: data.alarmSoundId.present
+          ? data.alarmSoundId.value
+          : this.alarmSoundId,
+      ringAgain: data.ringAgain.present ? data.ringAgain.value : this.ringAgain,
+      dayTimes: data.dayTimes.present ? data.dayTimes.value : this.dayTimes,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
     );
   }
 
@@ -370,7 +591,13 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
           ..write('audioTrackId: $audioTrackId, ')
           ..write('ringtoneId: $ringtoneId, ')
           ..write('label: $label, ')
-          ..write('missionName: $missionName')
+          ..write('missionName: $missionName, ')
+          ..write('reasonId: $reasonId, ')
+          ..write('soundTrackId: $soundTrackId, ')
+          ..write('alarmSoundId: $alarmSoundId, ')
+          ..write('ringAgain: $ringAgain, ')
+          ..write('dayTimes: $dayTimes, ')
+          ..write('remoteId: $remoteId')
           ..write(')'))
         .toString();
   }
@@ -385,6 +612,12 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
     ringtoneId,
     label,
     missionName,
+    reasonId,
+    soundTrackId,
+    alarmSoundId,
+    ringAgain,
+    dayTimes,
+    remoteId,
   );
   @override
   bool operator ==(Object other) =>
@@ -397,7 +630,13 @@ class AlarmRecord extends DataClass implements Insertable<AlarmRecord> {
           other.audioTrackId == this.audioTrackId &&
           other.ringtoneId == this.ringtoneId &&
           other.label == this.label &&
-          other.missionName == this.missionName);
+          other.missionName == this.missionName &&
+          other.reasonId == this.reasonId &&
+          other.soundTrackId == this.soundTrackId &&
+          other.alarmSoundId == this.alarmSoundId &&
+          other.ringAgain == this.ringAgain &&
+          other.dayTimes == this.dayTimes &&
+          other.remoteId == this.remoteId);
 }
 
 class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
@@ -409,6 +648,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
   final Value<String> ringtoneId;
   final Value<String?> label;
   final Value<String?> missionName;
+  final Value<int?> reasonId;
+  final Value<int?> soundTrackId;
+  final Value<int?> alarmSoundId;
+  final Value<int> ringAgain;
+  final Value<Map<int, int>?> dayTimes;
+  final Value<int?> remoteId;
   final Value<int> rowid;
   const AlarmsTableCompanion({
     this.alarmId = const Value.absent(),
@@ -419,6 +664,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
     this.ringtoneId = const Value.absent(),
     this.label = const Value.absent(),
     this.missionName = const Value.absent(),
+    this.reasonId = const Value.absent(),
+    this.soundTrackId = const Value.absent(),
+    this.alarmSoundId = const Value.absent(),
+    this.ringAgain = const Value.absent(),
+    this.dayTimes = const Value.absent(),
+    this.remoteId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AlarmsTableCompanion.insert({
@@ -430,6 +681,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
     required String ringtoneId,
     this.label = const Value.absent(),
     this.missionName = const Value.absent(),
+    this.reasonId = const Value.absent(),
+    this.soundTrackId = const Value.absent(),
+    this.alarmSoundId = const Value.absent(),
+    this.ringAgain = const Value.absent(),
+    this.dayTimes = const Value.absent(),
+    this.remoteId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : alarmId = Value(alarmId),
        enabled = Value(enabled),
@@ -445,6 +702,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
     Expression<String>? ringtoneId,
     Expression<String>? label,
     Expression<String>? missionName,
+    Expression<int>? reasonId,
+    Expression<int>? soundTrackId,
+    Expression<int>? alarmSoundId,
+    Expression<int>? ringAgain,
+    Expression<String>? dayTimes,
+    Expression<int>? remoteId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -456,6 +719,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
       if (ringtoneId != null) 'ringtone_id': ringtoneId,
       if (label != null) 'label': label,
       if (missionName != null) 'mission_name': missionName,
+      if (reasonId != null) 'reason_id': reasonId,
+      if (soundTrackId != null) 'sound_track_id': soundTrackId,
+      if (alarmSoundId != null) 'alarm_sound_id': alarmSoundId,
+      if (ringAgain != null) 'ring_again': ringAgain,
+      if (dayTimes != null) 'day_times': dayTimes,
+      if (remoteId != null) 'remote_id': remoteId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -469,6 +738,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
     Value<String>? ringtoneId,
     Value<String?>? label,
     Value<String?>? missionName,
+    Value<int?>? reasonId,
+    Value<int?>? soundTrackId,
+    Value<int?>? alarmSoundId,
+    Value<int>? ringAgain,
+    Value<Map<int, int>?>? dayTimes,
+    Value<int?>? remoteId,
     Value<int>? rowid,
   }) {
     return AlarmsTableCompanion(
@@ -480,6 +755,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
       ringtoneId: ringtoneId ?? this.ringtoneId,
       label: label ?? this.label,
       missionName: missionName ?? this.missionName,
+      reasonId: reasonId ?? this.reasonId,
+      soundTrackId: soundTrackId ?? this.soundTrackId,
+      alarmSoundId: alarmSoundId ?? this.alarmSoundId,
+      ringAgain: ringAgain ?? this.ringAgain,
+      dayTimes: dayTimes ?? this.dayTimes,
+      remoteId: remoteId ?? this.remoteId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -513,6 +794,26 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
     if (missionName.present) {
       map['mission_name'] = Variable<String>(missionName.value);
     }
+    if (reasonId.present) {
+      map['reason_id'] = Variable<int>(reasonId.value);
+    }
+    if (soundTrackId.present) {
+      map['sound_track_id'] = Variable<int>(soundTrackId.value);
+    }
+    if (alarmSoundId.present) {
+      map['alarm_sound_id'] = Variable<int>(alarmSoundId.value);
+    }
+    if (ringAgain.present) {
+      map['ring_again'] = Variable<int>(ringAgain.value);
+    }
+    if (dayTimes.present) {
+      map['day_times'] = Variable<String>(
+        $AlarmsTableTable.$converterdayTimesn.toSql(dayTimes.value),
+      );
+    }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<int>(remoteId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -530,6 +831,12 @@ class AlarmsTableCompanion extends UpdateCompanion<AlarmRecord> {
           ..write('ringtoneId: $ringtoneId, ')
           ..write('label: $label, ')
           ..write('missionName: $missionName, ')
+          ..write('reasonId: $reasonId, ')
+          ..write('soundTrackId: $soundTrackId, ')
+          ..write('alarmSoundId: $alarmSoundId, ')
+          ..write('ringAgain: $ringAgain, ')
+          ..write('dayTimes: $dayTimes, ')
+          ..write('remoteId: $remoteId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2240,6 +2547,566 @@ class VoicesTableCompanion extends UpdateCompanion<VoiceRecord> {
   }
 }
 
+class $AlarmAudiosTableTable extends AlarmAudiosTable
+    with TableInfo<$AlarmAudiosTableTable, AlarmAudioRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AlarmAudiosTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _iconMeta = const VerificationMeta('icon');
+  @override
+  late final GeneratedColumn<String> icon = GeneratedColumn<String>(
+    'icon',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<int> color = GeneratedColumn<int>(
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audioMeta = const VerificationMeta('audio');
+  @override
+  late final GeneratedColumn<String> audio = GeneratedColumn<String>(
+    'audio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _iconFileMeta = const VerificationMeta(
+    'iconFile',
+  );
+  @override
+  late final GeneratedColumn<String> iconFile = GeneratedColumn<String>(
+    'icon_file',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audioFileMeta = const VerificationMeta(
+    'audioFile',
+  );
+  @override
+  late final GeneratedColumn<String> audioFile = GeneratedColumn<String>(
+    'audio_file',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    kind,
+    id,
+    title,
+    description,
+    icon,
+    color,
+    audio,
+    iconFile,
+    audioFile,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'alarm_audios';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AlarmAudioRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('icon')) {
+      context.handle(
+        _iconMeta,
+        icon.isAcceptableOrUnknown(data['icon']!, _iconMeta),
+      );
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    }
+    if (data.containsKey('audio')) {
+      context.handle(
+        _audioMeta,
+        audio.isAcceptableOrUnknown(data['audio']!, _audioMeta),
+      );
+    }
+    if (data.containsKey('icon_file')) {
+      context.handle(
+        _iconFileMeta,
+        iconFile.isAcceptableOrUnknown(data['icon_file']!, _iconFileMeta),
+      );
+    }
+    if (data.containsKey('audio_file')) {
+      context.handle(
+        _audioFileMeta,
+        audioFile.isAcceptableOrUnknown(data['audio_file']!, _audioFileMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {kind, id};
+  @override
+  AlarmAudioRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AlarmAudioRecord(
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      icon: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon'],
+      ),
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color'],
+      ),
+      audio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}audio'],
+      ),
+      iconFile: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_file'],
+      ),
+      audioFile: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}audio_file'],
+      ),
+    );
+  }
+
+  @override
+  $AlarmAudiosTableTable createAlias(String alias) {
+    return $AlarmAudiosTableTable(attachedDatabase, alias);
+  }
+}
+
+class AlarmAudioRecord extends DataClass
+    implements Insertable<AlarmAudioRecord> {
+  final String kind;
+  final int id;
+  final String title;
+  final String? description;
+  final String? icon;
+  final int? color;
+  final String? audio;
+  final String? iconFile;
+  final String? audioFile;
+  const AlarmAudioRecord({
+    required this.kind,
+    required this.id,
+    required this.title,
+    this.description,
+    this.icon,
+    this.color,
+    this.audio,
+    this.iconFile,
+    this.audioFile,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['kind'] = Variable<String>(kind);
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || icon != null) {
+      map['icon'] = Variable<String>(icon);
+    }
+    if (!nullToAbsent || color != null) {
+      map['color'] = Variable<int>(color);
+    }
+    if (!nullToAbsent || audio != null) {
+      map['audio'] = Variable<String>(audio);
+    }
+    if (!nullToAbsent || iconFile != null) {
+      map['icon_file'] = Variable<String>(iconFile);
+    }
+    if (!nullToAbsent || audioFile != null) {
+      map['audio_file'] = Variable<String>(audioFile);
+    }
+    return map;
+  }
+
+  AlarmAudiosTableCompanion toCompanion(bool nullToAbsent) {
+    return AlarmAudiosTableCompanion(
+      kind: Value(kind),
+      id: Value(id),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      icon: icon == null && nullToAbsent ? const Value.absent() : Value(icon),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
+      audio: audio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audio),
+      iconFile: iconFile == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconFile),
+      audioFile: audioFile == null && nullToAbsent
+          ? const Value.absent()
+          : Value(audioFile),
+    );
+  }
+
+  factory AlarmAudioRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AlarmAudioRecord(
+      kind: serializer.fromJson<String>(json['kind']),
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      icon: serializer.fromJson<String?>(json['icon']),
+      color: serializer.fromJson<int?>(json['color']),
+      audio: serializer.fromJson<String?>(json['audio']),
+      iconFile: serializer.fromJson<String?>(json['iconFile']),
+      audioFile: serializer.fromJson<String?>(json['audioFile']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'kind': serializer.toJson<String>(kind),
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'icon': serializer.toJson<String?>(icon),
+      'color': serializer.toJson<int?>(color),
+      'audio': serializer.toJson<String?>(audio),
+      'iconFile': serializer.toJson<String?>(iconFile),
+      'audioFile': serializer.toJson<String?>(audioFile),
+    };
+  }
+
+  AlarmAudioRecord copyWith({
+    String? kind,
+    int? id,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    Value<String?> icon = const Value.absent(),
+    Value<int?> color = const Value.absent(),
+    Value<String?> audio = const Value.absent(),
+    Value<String?> iconFile = const Value.absent(),
+    Value<String?> audioFile = const Value.absent(),
+  }) => AlarmAudioRecord(
+    kind: kind ?? this.kind,
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    icon: icon.present ? icon.value : this.icon,
+    color: color.present ? color.value : this.color,
+    audio: audio.present ? audio.value : this.audio,
+    iconFile: iconFile.present ? iconFile.value : this.iconFile,
+    audioFile: audioFile.present ? audioFile.value : this.audioFile,
+  );
+  AlarmAudioRecord copyWithCompanion(AlarmAudiosTableCompanion data) {
+    return AlarmAudioRecord(
+      kind: data.kind.present ? data.kind.value : this.kind,
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      icon: data.icon.present ? data.icon.value : this.icon,
+      color: data.color.present ? data.color.value : this.color,
+      audio: data.audio.present ? data.audio.value : this.audio,
+      iconFile: data.iconFile.present ? data.iconFile.value : this.iconFile,
+      audioFile: data.audioFile.present ? data.audioFile.value : this.audioFile,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlarmAudioRecord(')
+          ..write('kind: $kind, ')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('icon: $icon, ')
+          ..write('color: $color, ')
+          ..write('audio: $audio, ')
+          ..write('iconFile: $iconFile, ')
+          ..write('audioFile: $audioFile')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    kind,
+    id,
+    title,
+    description,
+    icon,
+    color,
+    audio,
+    iconFile,
+    audioFile,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AlarmAudioRecord &&
+          other.kind == this.kind &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.icon == this.icon &&
+          other.color == this.color &&
+          other.audio == this.audio &&
+          other.iconFile == this.iconFile &&
+          other.audioFile == this.audioFile);
+}
+
+class AlarmAudiosTableCompanion extends UpdateCompanion<AlarmAudioRecord> {
+  final Value<String> kind;
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<String?> icon;
+  final Value<int?> color;
+  final Value<String?> audio;
+  final Value<String?> iconFile;
+  final Value<String?> audioFile;
+  final Value<int> rowid;
+  const AlarmAudiosTableCompanion({
+    this.kind = const Value.absent(),
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.color = const Value.absent(),
+    this.audio = const Value.absent(),
+    this.iconFile = const Value.absent(),
+    this.audioFile = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AlarmAudiosTableCompanion.insert({
+    required String kind,
+    required int id,
+    required String title,
+    this.description = const Value.absent(),
+    this.icon = const Value.absent(),
+    this.color = const Value.absent(),
+    this.audio = const Value.absent(),
+    this.iconFile = const Value.absent(),
+    this.audioFile = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : kind = Value(kind),
+       id = Value(id),
+       title = Value(title);
+  static Insertable<AlarmAudioRecord> custom({
+    Expression<String>? kind,
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<String>? icon,
+    Expression<int>? color,
+    Expression<String>? audio,
+    Expression<String>? iconFile,
+    Expression<String>? audioFile,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (kind != null) 'kind': kind,
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (icon != null) 'icon': icon,
+      if (color != null) 'color': color,
+      if (audio != null) 'audio': audio,
+      if (iconFile != null) 'icon_file': iconFile,
+      if (audioFile != null) 'audio_file': audioFile,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AlarmAudiosTableCompanion copyWith({
+    Value<String>? kind,
+    Value<int>? id,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<String?>? icon,
+    Value<int?>? color,
+    Value<String?>? audio,
+    Value<String?>? iconFile,
+    Value<String?>? audioFile,
+    Value<int>? rowid,
+  }) {
+    return AlarmAudiosTableCompanion(
+      kind: kind ?? this.kind,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      audio: audio ?? this.audio,
+      iconFile: iconFile ?? this.iconFile,
+      audioFile: audioFile ?? this.audioFile,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (icon.present) {
+      map['icon'] = Variable<String>(icon.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<int>(color.value);
+    }
+    if (audio.present) {
+      map['audio'] = Variable<String>(audio.value);
+    }
+    if (iconFile.present) {
+      map['icon_file'] = Variable<String>(iconFile.value);
+    }
+    if (audioFile.present) {
+      map['audio_file'] = Variable<String>(audioFile.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlarmAudiosTableCompanion(')
+          ..write('kind: $kind, ')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('icon: $icon, ')
+          ..write('color: $color, ')
+          ..write('audio: $audio, ')
+          ..write('iconFile: $iconFile, ')
+          ..write('audioFile: $audioFile, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2250,6 +3117,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $VoicesTableTable voicesTable = $VoicesTableTable(this);
+  late final $AlarmAudiosTableTable alarmAudiosTable = $AlarmAudiosTableTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2260,6 +3130,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     settingsTable,
     areasOfLifeTable,
     voicesTable,
+    alarmAudiosTable,
   ];
 }
 
@@ -2273,6 +3144,12 @@ typedef $$AlarmsTableTableCreateCompanionBuilder =
       required String ringtoneId,
       Value<String?> label,
       Value<String?> missionName,
+      Value<int?> reasonId,
+      Value<int?> soundTrackId,
+      Value<int?> alarmSoundId,
+      Value<int> ringAgain,
+      Value<Map<int, int>?> dayTimes,
+      Value<int?> remoteId,
       Value<int> rowid,
     });
 typedef $$AlarmsTableTableUpdateCompanionBuilder =
@@ -2285,6 +3162,12 @@ typedef $$AlarmsTableTableUpdateCompanionBuilder =
       Value<String> ringtoneId,
       Value<String?> label,
       Value<String?> missionName,
+      Value<int?> reasonId,
+      Value<int?> soundTrackId,
+      Value<int?> alarmSoundId,
+      Value<int> ringAgain,
+      Value<Map<int, int>?> dayTimes,
+      Value<int?> remoteId,
       Value<int> rowid,
     });
 
@@ -2337,6 +3220,37 @@ class $$AlarmsTableTableFilterComposer
     column: $table.missionName,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<int> get reasonId => $composableBuilder(
+    column: $table.reasonId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get soundTrackId => $composableBuilder(
+    column: $table.soundTrackId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get alarmSoundId => $composableBuilder(
+    column: $table.alarmSoundId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ringAgain => $composableBuilder(
+    column: $table.ringAgain,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Map<int, int>?, Map<int, int>, String>
+  get dayTimes => $composableBuilder(
+    column: $table.dayTimes,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get remoteId => $composableBuilder(
+    column: $table.remoteId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$AlarmsTableTableOrderingComposer
@@ -2387,6 +3301,36 @@ class $$AlarmsTableTableOrderingComposer
     column: $table.missionName,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get reasonId => $composableBuilder(
+    column: $table.reasonId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get soundTrackId => $composableBuilder(
+    column: $table.soundTrackId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get alarmSoundId => $composableBuilder(
+    column: $table.alarmSoundId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ringAgain => $composableBuilder(
+    column: $table.ringAgain,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dayTimes => $composableBuilder(
+    column: $table.dayTimes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get remoteId => $composableBuilder(
+    column: $table.remoteId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AlarmsTableTableAnnotationComposer
@@ -2430,6 +3374,28 @@ class $$AlarmsTableTableAnnotationComposer
     column: $table.missionName,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get reasonId =>
+      $composableBuilder(column: $table.reasonId, builder: (column) => column);
+
+  GeneratedColumn<int> get soundTrackId => $composableBuilder(
+    column: $table.soundTrackId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get alarmSoundId => $composableBuilder(
+    column: $table.alarmSoundId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get ringAgain =>
+      $composableBuilder(column: $table.ringAgain, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Map<int, int>?, String> get dayTimes =>
+      $composableBuilder(column: $table.dayTimes, builder: (column) => column);
+
+  GeneratedColumn<int> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
 }
 
 class $$AlarmsTableTableTableManager
@@ -2471,6 +3437,12 @@ class $$AlarmsTableTableTableManager
                 Value<String> ringtoneId = const Value.absent(),
                 Value<String?> label = const Value.absent(),
                 Value<String?> missionName = const Value.absent(),
+                Value<int?> reasonId = const Value.absent(),
+                Value<int?> soundTrackId = const Value.absent(),
+                Value<int?> alarmSoundId = const Value.absent(),
+                Value<int> ringAgain = const Value.absent(),
+                Value<Map<int, int>?> dayTimes = const Value.absent(),
+                Value<int?> remoteId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AlarmsTableCompanion(
                 alarmId: alarmId,
@@ -2481,6 +3453,12 @@ class $$AlarmsTableTableTableManager
                 ringtoneId: ringtoneId,
                 label: label,
                 missionName: missionName,
+                reasonId: reasonId,
+                soundTrackId: soundTrackId,
+                alarmSoundId: alarmSoundId,
+                ringAgain: ringAgain,
+                dayTimes: dayTimes,
+                remoteId: remoteId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2493,6 +3471,12 @@ class $$AlarmsTableTableTableManager
                 required String ringtoneId,
                 Value<String?> label = const Value.absent(),
                 Value<String?> missionName = const Value.absent(),
+                Value<int?> reasonId = const Value.absent(),
+                Value<int?> soundTrackId = const Value.absent(),
+                Value<int?> alarmSoundId = const Value.absent(),
+                Value<int> ringAgain = const Value.absent(),
+                Value<Map<int, int>?> dayTimes = const Value.absent(),
+                Value<int?> remoteId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AlarmsTableCompanion.insert(
                 alarmId: alarmId,
@@ -2503,6 +3487,12 @@ class $$AlarmsTableTableTableManager
                 ringtoneId: ringtoneId,
                 label: label,
                 missionName: missionName,
+                reasonId: reasonId,
+                soundTrackId: soundTrackId,
+                alarmSoundId: alarmSoundId,
+                ringAgain: ringAgain,
+                dayTimes: dayTimes,
+                remoteId: remoteId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3478,6 +4468,299 @@ typedef $$VoicesTableTableProcessedTableManager =
       VoiceRecord,
       PrefetchHooks Function()
     >;
+typedef $$AlarmAudiosTableTableCreateCompanionBuilder =
+    AlarmAudiosTableCompanion Function({
+      required String kind,
+      required int id,
+      required String title,
+      Value<String?> description,
+      Value<String?> icon,
+      Value<int?> color,
+      Value<String?> audio,
+      Value<String?> iconFile,
+      Value<String?> audioFile,
+      Value<int> rowid,
+    });
+typedef $$AlarmAudiosTableTableUpdateCompanionBuilder =
+    AlarmAudiosTableCompanion Function({
+      Value<String> kind,
+      Value<int> id,
+      Value<String> title,
+      Value<String?> description,
+      Value<String?> icon,
+      Value<int?> color,
+      Value<String?> audio,
+      Value<String?> iconFile,
+      Value<String?> audioFile,
+      Value<int> rowid,
+    });
+
+class $$AlarmAudiosTableTableFilterComposer
+    extends Composer<_$AppDatabase, $AlarmAudiosTableTable> {
+  $$AlarmAudiosTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get audio => $composableBuilder(
+    column: $table.audio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconFile => $composableBuilder(
+    column: $table.iconFile,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get audioFile => $composableBuilder(
+    column: $table.audioFile,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AlarmAudiosTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $AlarmAudiosTableTable> {
+  $$AlarmAudiosTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get icon => $composableBuilder(
+    column: $table.icon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get audio => $composableBuilder(
+    column: $table.audio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get iconFile => $composableBuilder(
+    column: $table.iconFile,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get audioFile => $composableBuilder(
+    column: $table.audioFile,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AlarmAudiosTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AlarmAudiosTableTable> {
+  $$AlarmAudiosTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get icon =>
+      $composableBuilder(column: $table.icon, builder: (column) => column);
+
+  GeneratedColumn<int> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get audio =>
+      $composableBuilder(column: $table.audio, builder: (column) => column);
+
+  GeneratedColumn<String> get iconFile =>
+      $composableBuilder(column: $table.iconFile, builder: (column) => column);
+
+  GeneratedColumn<String> get audioFile =>
+      $composableBuilder(column: $table.audioFile, builder: (column) => column);
+}
+
+class $$AlarmAudiosTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AlarmAudiosTableTable,
+          AlarmAudioRecord,
+          $$AlarmAudiosTableTableFilterComposer,
+          $$AlarmAudiosTableTableOrderingComposer,
+          $$AlarmAudiosTableTableAnnotationComposer,
+          $$AlarmAudiosTableTableCreateCompanionBuilder,
+          $$AlarmAudiosTableTableUpdateCompanionBuilder,
+          (
+            AlarmAudioRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $AlarmAudiosTableTable,
+              AlarmAudioRecord
+            >,
+          ),
+          AlarmAudioRecord,
+          PrefetchHooks Function()
+        > {
+  $$AlarmAudiosTableTableTableManager(
+    _$AppDatabase db,
+    $AlarmAudiosTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AlarmAudiosTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AlarmAudiosTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AlarmAudiosTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> kind = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String?> icon = const Value.absent(),
+                Value<int?> color = const Value.absent(),
+                Value<String?> audio = const Value.absent(),
+                Value<String?> iconFile = const Value.absent(),
+                Value<String?> audioFile = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AlarmAudiosTableCompanion(
+                kind: kind,
+                id: id,
+                title: title,
+                description: description,
+                icon: icon,
+                color: color,
+                audio: audio,
+                iconFile: iconFile,
+                audioFile: audioFile,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String kind,
+                required int id,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                Value<String?> icon = const Value.absent(),
+                Value<int?> color = const Value.absent(),
+                Value<String?> audio = const Value.absent(),
+                Value<String?> iconFile = const Value.absent(),
+                Value<String?> audioFile = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AlarmAudiosTableCompanion.insert(
+                kind: kind,
+                id: id,
+                title: title,
+                description: description,
+                icon: icon,
+                color: color,
+                audio: audio,
+                iconFile: iconFile,
+                audioFile: audioFile,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AlarmAudiosTableTable, AlarmAudioRecord>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AlarmAudiosTableTable,
+                    AlarmAudioRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AlarmAudiosTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AlarmAudiosTableTable,
+      AlarmAudioRecord,
+      $$AlarmAudiosTableTableFilterComposer,
+      $$AlarmAudiosTableTableOrderingComposer,
+      $$AlarmAudiosTableTableAnnotationComposer,
+      $$AlarmAudiosTableTableCreateCompanionBuilder,
+      $$AlarmAudiosTableTableUpdateCompanionBuilder,
+      (
+        AlarmAudioRecord,
+        BaseReferences<_$AppDatabase, $AlarmAudiosTableTable, AlarmAudioRecord>,
+      ),
+      AlarmAudioRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3492,4 +4775,6 @@ class $AppDatabaseManager {
       $$AreasOfLifeTableTableTableManager(_db, _db.areasOfLifeTable);
   $$VoicesTableTableTableManager get voicesTable =>
       $$VoicesTableTableTableManager(_db, _db.voicesTable);
+  $$AlarmAudiosTableTableTableManager get alarmAudiosTable =>
+      $$AlarmAudiosTableTableTableManager(_db, _db.alarmAudiosTable);
 }

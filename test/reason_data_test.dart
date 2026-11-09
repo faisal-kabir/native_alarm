@@ -214,6 +214,12 @@ void main() {
       expect((reason.area, reason.sound, reason.voice), (null, null, null));
       expect((reason.areaId, reason.soundTypeId, reason.voiceId), (4, 5, 6));
       expect((reason.why, reason.lengthSeconds), ('', 30));
+      expect(reason.alarmId, isNull);
+    });
+
+    test('alarm_id says which alarm plays it', () {
+      final reason = reasonFromJson({...serverRow(9, 'X'), 'alarm_id': 12});
+      expect(reason.alarmId, 12);
     });
   });
 

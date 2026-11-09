@@ -2,6 +2,7 @@ import 'package:eala/main.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/alarm/presentation/pages/alarm_list_page.dart';
+import '../../features/create_alarm/presentation/pages/create_alarm_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/create_reason/presentation/pages/create_reason_page.dart';
 import '../../features/create_reason/presentation/pages/reason_ready_page.dart';
@@ -40,7 +41,12 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RouteNames.createReasonPath,
       name: RouteNames.createReason,
-      pageBuilder: (context, state) => appPage(state, const CreateReasonPage()),
+      pageBuilder: (context, state) => appPage(
+        state,
+        CreateReasonPage(
+          returnReason: state.extra == CreateReasonPage.returnReasonExtra,
+        ),
+      ),
     ),
     GoRoute(
       path: RouteNames.reasonReadyPath,
@@ -55,6 +61,17 @@ final GoRouter appRouter = GoRouter(
       redirect: _needsReason,
       pageBuilder: (context, state) =>
           appPage(state, ReasonDetailPage(reason: state.extra! as Reason)),
+    ),
+    GoRoute(
+      path: RouteNames.createAlarmPath,
+      name: RouteNames.createAlarm,
+      // `extra`: the id of a Reason the alarm starts with (optional).
+      pageBuilder: (context, state) => appPage(
+        state,
+        CreateAlarmPage(
+          reasonId: state.extra is int ? state.extra! as int : null,
+        ),
+      ),
     ),
   ],
   errorBuilder: (context, state) =>

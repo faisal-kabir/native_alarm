@@ -28,6 +28,10 @@ class Reason extends Equatable {
   final Voice? voice;
   final DateTime? createdAt;
 
+  /// The server's `alarm.id` of the alarm that plays it. A Reason belongs to one
+  /// alarm at most: null means it is free for a new alarm.
+  final int? alarmId;
+
   const Reason({
     required this.id,
     required this.name,
@@ -41,6 +45,7 @@ class Reason extends Equatable {
     required this.voiceId,
     this.voice,
     this.createdAt,
+    this.alarmId,
   });
 
   /// The area's display name, e.g. "Health" (empty when unknown).
@@ -73,5 +78,6 @@ class Reason extends Equatable {
     voiceId,
     voice,
     createdAt,
+    alarmId,
   ];
 }

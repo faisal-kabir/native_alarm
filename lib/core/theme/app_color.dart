@@ -48,6 +48,10 @@ abstract final class AppColor {
   // Settings
   static const Color danger = Color(0xFFFF453A);
   static const Color divider = Color(0xA6545458); // rgba(84,84,88,.65)
+
+  /// iOS's quiet control fill: the clock wheel's band, free day circles, a segmented
+  /// control's track, a sheet's close chip.
+  static const Color controlFill = Color(0x3D767680); // rgba(118,118,128,.24)
   static const Color toggleOn = Color(0xFF30D158);
   static const Color toggleOff = Color(0x52787880); // rgba(120,120,128,.32)
   // The warm glow at the bottom of the Settings screen, light to dark.

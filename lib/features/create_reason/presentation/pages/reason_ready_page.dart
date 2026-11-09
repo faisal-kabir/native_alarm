@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_color.dart';
 import '../../../../core/widgets/ghost_button.dart';
 import '../../../../core/widgets/highlighted_title.dart';
@@ -120,6 +121,17 @@ class _ReadyViewState extends State<_ReadyView>
     context.pop();
   }
 
+  /// The alarm editor in this page's place, the new reason already chosen; back from it
+  /// returns to where Create Reason was opened. A name being edited is saved first.
+  void _useWithAlarm() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    HapticFeedback.lightImpact();
+    context.pushReplacement(
+      RouteNames.createAlarmPath,
+      extra: widget.reason.id,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
@@ -215,7 +227,7 @@ class _ReadyViewState extends State<_ReadyView>
                         PillButton(
                           label: strings.reason_ready_use_with_alarm,
                           enabled: true,
-                          onPressed: _saveForLater,
+                          onPressed: _useWithAlarm,
                         ),
                         SizedBox(height: 10.h),
                         GhostButton(

@@ -7,6 +7,8 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../../../core/utils/load_status.dart';
 import '../../../../core/utils/text_utils.dart';
+import '../../../alarm/domain/entities/alarm.dart';
+import '../../../alarm/domain/usecases/watch_alarms_usecase.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
 import '../../../area_of_life/domain/entities/purpose_suggestion.dart';
 import '../../../area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
@@ -14,7 +16,7 @@ import '../../../area_of_life/domain/usecases/get_purpose_suggestions_usecase.da
 import '../../../area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
 import '../../../area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
 import '../../../reasons/domain/entities/reason.dart';
-import '../../../reasons/domain/usecases/delete_reason_usecase.dart';
+import '../../domain/usecases/delete_reason_with_alarm_usecase.dart';
 import '../../../reasons/domain/usecases/rename_reason_usecase.dart';
 import '../../../reasons/domain/usecases/update_reason_usecase.dart';
 import '../../../reasons/domain/usecases/watch_reason_usecase.dart';
@@ -34,7 +36,8 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
   final WatchReasonUseCase watchReasonUseCase;
   final UpdateReasonUseCase updateReasonUseCase;
   final RenameReasonUseCase renameReasonUseCase;
-  final DeleteReasonUseCase deleteReasonUseCase;
+  final DeleteReasonWithAlarmUseCase deleteReasonUseCase;
+  final WatchAlarmsUseCase watchAlarmsUseCase;
   final WatchAreasOfLifeUseCase watchAreasUseCase;
   final RefreshAreasOfLifeUseCase refreshAreasUseCase;
   final WatchVoicesUseCase watchVoicesUseCase;
@@ -48,6 +51,7 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
     this.updateReasonUseCase,
     this.renameReasonUseCase,
     this.deleteReasonUseCase,
+    this.watchAlarmsUseCase,
     this.watchAreasUseCase,
     this.refreshAreasUseCase,
     this.watchVoicesUseCase,
@@ -60,6 +64,7 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
     on<ReasonDetailStartedEvent>(_onStarted);
     on<ReasonDetailAreasWatchedEvent>(_onWatchAreas);
     on<ReasonDetailVoicesWatchedEvent>(_onWatchVoices);
+    on<ReasonDetailAlarmsWatchedEvent>(_onWatchAlarms);
     on<ReasonDetailSoundTypesRequestedEvent>(_onLoadSoundTypes);
     on<ReasonDetailDraftChangedEvent>(
       (event, emit) => emit(state.copyWith(draft: event.draft)),
@@ -78,7 +83,7 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
   ) async {
     if (state.deleting || state.deleted) return;
     emit(state.copyWith(deleting: true));
-    final result = await deleteReasonUseCase(state.reason.id);
+    final result = await deleteReasonUseCase(state.reason);
     emit(
       result.fold(
         (_) => state.copyWith(
@@ -98,6 +103,7 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
   ) async {
     add(const ReasonDetailAreasWatchedEvent());
     add(const ReasonDetailVoicesWatchedEvent());
+    add(const ReasonDetailAlarmsWatchedEvent());
     add(const ReasonDetailSoundTypesRequestedEvent());
     await emit.forEach<Either<Failure, Reason?>>(
       watchReasonUseCase(state.reason.id),
@@ -137,6 +143,15 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
           result.fold((_) => state, (voices) => state.copyWith(voices: voices)),
     );
   }
+
+  Future<void> _onWatchAlarms(
+    ReasonDetailAlarmsWatchedEvent event,
+    Emitter<ReasonDetailState> emit,
+  ) => emit.forEach<Either<Failure, List<Alarm>>>(
+    watchAlarmsUseCase(NoParams()),
+    onData: (result) =>
+        result.fold((_) => state, (alarms) => state.copyWith(alarms: alarms)),
+  );
 
   Future<void> _onLoadSoundTypes(
     ReasonDetailSoundTypesRequestedEvent event,

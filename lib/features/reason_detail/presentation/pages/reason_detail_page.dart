@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_alert.dart';
 import '../../../../core/widgets/app_svg_icon.dart';
 import '../../../../core/widgets/cached_svg_icon.dart';
 import '../../../../core/widgets/choice_sheet.dart';
+import '../../../../core/widgets/hinted_scroll_view.dart';
 import '../../../../core/widgets/list_group.dart';
 import '../../../../core/widgets/suggestion_list.dart';
 import '../../../../core/widgets/text_sheet.dart';
@@ -19,6 +20,9 @@ import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
 import '../../../create_reason/presentation/widgets/reason_choice_items.dart';
 import '../../../create_reason/presentation/widgets/reason_name_field.dart';
+import '../../../alarm/domain/entities/alarm.dart';
+import '../../../create_alarm/domain/entities/alarm_schedule.dart';
+import '../../../create_alarm/presentation/widgets/schedule_cards.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../../reasons/presentation/widgets/reason_emblem.dart';
 import '../bloc/reason_detail_bloc.dart';
@@ -63,9 +67,6 @@ class _DetailView extends StatefulWidget {
 
 class _DetailViewState extends State<_DetailView> {
   late final ReasonDetailBloc _bloc = context.read<ReasonDetailBloc>();
-
-  /// "There is more below": shown while the content can scroll further down.
-  bool _moreBelow = false;
 
   ReasonDetailState get _state => _bloc.state;
 
@@ -220,19 +221,22 @@ class _DetailViewState extends State<_DetailView> {
     _bloc.add(const ReasonDetailDiscardedEvent());
   }
 
-  /// "…": the actions sheet; Delete asks once ("Delete “name”?"), then deletes.
+  /// "…": the actions sheet; Delete asks once ("Delete “name”?", saying its alarm goes
+  /// too when it has one), then deletes.
   Future<void> _more() async {
     HapticFeedback.selectionClick();
     final strings = appLanguage(context);
     final name = _state.reason.name;
-    if (!await showReasonActions(context, name: name) || !mounted) return;
+    if (!await showReasonActions(context, _state.alarm, name: name) || !mounted) return;
     // The sheet is gone first; the question comes a moment later.
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
     final delete = await showAppAlert<bool>(
       context,
       title: strings.reason_delete_title(name),
-      message: strings.reason_delete_message,
+      message: _state.hasAlarm
+          ? strings.reason_delete_alarm_message
+          : strings.reason_delete_message,
       actions: [
         AppAlertAction(label: strings.common_cancel, value: false),
         AppAlertAction(
@@ -251,18 +255,6 @@ class _DetailViewState extends State<_DetailView> {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_state.dirty && !await _confirmDiscard()) return;
     if (mounted) context.pop();
-  }
-
-  bool _onScroll(ScrollMetrics m) {
-    if (m.axis != Axis.vertical) return false;
-    // 24 dp of slack: a few dp of overflow is rounding, not content.
-    final more = m.maxScrollExtent > 24 && m.pixels < m.maxScrollExtent - 24;
-    if (more != _moreBelow) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && more != _moreBelow) setState(() => _moreBelow = more);
-      });
-    }
-    return false;
   }
 
   // ------------------------------------------------------------------- build
@@ -304,34 +296,19 @@ class _DetailViewState extends State<_DetailView> {
                   child: _NavBar(onBack: _back, onMore: _more),
                 ),
                 Expanded(
-                  child: Stack(
-                    children: [
-                      NotificationListener<ScrollMetricsNotification>(
-                        onNotification: (n) => _onScroll(n.metrics),
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (n) => _onScroll(n.metrics),
-                          child: SingleChildScrollView(
-                            padding: REdgeInsets.fromLTRB(24, 10, 24, 26),
-                            child: _Body(
-                              state: state,
-                              onRename: (name) =>
-                                  _bloc.add(ReasonDetailRenamedEvent(name)),
-                              onArea: _pickArea,
-                              onPurpose: () => _pickText(why: false),
-                              onWhy: () => _pickText(why: true),
-                              onTone: _pickTone,
-                              onVoice: _pickVoice,
-                              onLength: _pickLength,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 12.w,
-                        bottom: 10.h,
-                        child: _ScrollHint(visible: _moreBelow),
-                      ),
-                    ],
+                  child: HintedScrollView(
+                    padding: REdgeInsets.fromLTRB(24, 10, 24, 26),
+                    child: _Body(
+                      state: state,
+                      onRename: (name) =>
+                          _bloc.add(ReasonDetailRenamedEvent(name)),
+                      onArea: _pickArea,
+                      onPurpose: () => _pickText(why: false),
+                      onWhy: () => _pickText(why: true),
+                      onTone: _pickTone,
+                      onVoice: _pickVoice,
+                      onLength: _pickLength,
+                    ),
                   ),
                 ),
                 SaveBar(
@@ -484,6 +461,7 @@ class _Body extends StatelessWidget {
     final area = state.area;
     final length = draft.lengthSeconds;
     final icons = Assets.icons.detail;
+    final alarm = state.alarm;
 
     Widget row({
       SvgGenImage? icon,
@@ -520,17 +498,19 @@ class _Body extends StatelessWidget {
           onRename: onRename,
         ),
         SizedBox(height: 24.h),
-        // Linking a reason to an alarm is not built yet: the row is there, inert.
-        ListGroup(
-          children: [
-            ListGroupRow(
-              icon: Assets.icons.alarm,
-              label: strings.reason_detail_connect_alarm,
-              tint: AppColor.primary,
-              chevron: true,
-            ),
-          ],
-        ),
+        // Linking a reason to an alarm is not built yet: the row is there, inert. A
+        // Reason that has its alarm (one alarm, one Reason) shows it below instead.
+        if (!state.hasAlarm)
+          ListGroup(
+            children: [
+              ListGroupRow(
+                icon: Assets.icons.alarm,
+                label: strings.reason_detail_connect_alarm,
+                tint: AppColor.primary,
+                chevron: true,
+              ),
+            ],
+          ),
         _Section(strings.reason_detail_about),
         ListGroup(
           children: [
@@ -586,19 +566,50 @@ class _Body extends StatelessWidget {
             ),
           ],
         ),
-        _Section(strings.reason_detail_alarm),
-        Padding(
-          padding: REdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            strings.reason_detail_no_alarm,
-            style: appTheme(context).textTheme.bodyLarge!.copyWith(
-              fontSize: 16.spMin,
-              height: 1.5,
-              letterSpacing: 0,
-              color: AppColor.textSecondary,
+        if (alarm != null) ...[
+          _Section(strings.reason_detail_alarm),
+          _AlarmRows(alarm: alarm),
+        ] else if (!state.hasAlarm) ...[
+          _Section(strings.reason_detail_alarm),
+          Padding(
+            padding: REdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              strings.reason_detail_no_alarm,
+              style: appTheme(context).textTheme.bodyLarge!.copyWith(
+                fontSize: 16.spMin,
+                height: 1.5,
+                letterSpacing: 0,
+                color: AppColor.textSecondary,
+              ),
             ),
           ),
-        ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The alarm that plays the reason: one row per time it rings ("6:30 AM · Tue Wed",
+/// "9:30 AM · Weekends"), the clock orange. Editing an alarm is not built yet, so the
+/// rows do nothing on tap.
+class _AlarmRows extends StatelessWidget {
+  const _AlarmRows({required this.alarm});
+
+  final Alarm alarm;
+
+  @override
+  Widget build(BuildContext context) {
+    final words = repeatWordsOf(appLanguage(context));
+    return ListGroup(
+      children: [
+        for (final card in groupDays(alarmDraftOf(alarm), () => ''))
+          ListGroupRow(
+            icon: Assets.icons.alarm,
+            iconColor: AppColor.primary,
+            label: card.time.label,
+            value: repeatLabel(card.days, words),
+            chevron: true,
+          ),
       ],
     );
   }
@@ -681,50 +692,6 @@ class _Section extends StatelessWidget {
             fontSize: 20.spMin,
             height: 23.5 / 20,
             letterSpacing: -0.3,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// "There is more below": a 28 round chevron that fades and lifts in (220 ms).
-class _ScrollHint extends StatelessWidget {
-  const _ScrollHint({required this.visible});
-
-  final bool visible;
-
-  @override
-  Widget build(BuildContext context) {
-    const duration = Duration(milliseconds: 220);
-    return IgnorePointer(
-      child: Semantics(
-        label: visible ? appLanguage(context).reason_detail_more_below : null,
-        child: AnimatedSlide(
-          offset: visible ? Offset.zero : const Offset(0, 0.15),
-          duration: duration,
-          curve: Curves.easeOut,
-          child: AnimatedOpacity(
-            opacity: visible ? 1 : 0,
-            duration: duration,
-            child: Container(
-              width: 28.r,
-              height: 28.r,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColor.surfaceSecondary.withValues(alpha: 0.88),
-              ),
-              // The forward chevron turned to point down.
-              child: RotatedBox(
-                quarterTurns: 1,
-                child: AppSvgIcon(
-                  Assets.icons.page.chevron,
-                  size: 14.r,
-                  color: AppColor.textSecondary,
-                ),
-              ),
-            ),
           ),
         ),
       ),

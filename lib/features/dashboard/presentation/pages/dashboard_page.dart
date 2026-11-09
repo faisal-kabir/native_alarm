@@ -27,7 +27,8 @@ class DashboardPage extends StatelessWidget {
       // The first tab is on screen from the start, so it is logged right away.
       create: (BuildContext context) => instance<DashboardBloc>()
         ..add(const DashboardTabChangedEvent(0))
-        ..add(const EnsureSessionEvent()),
+        ..add(const EnsureSessionEvent())
+        ..add(const RescheduleAlarmsEvent()),
       child: const _DashboardView(),
     );
   }
@@ -40,7 +41,8 @@ class _DashboardView extends StatefulWidget {
   State<_DashboardView> createState() => _DashboardViewState();
 }
 
-class _DashboardViewState extends State<_DashboardView> {
+class _DashboardViewState extends State<_DashboardView>
+    with WidgetsBindingObserver {
   final PageController _pageController = PageController();
 
   // One page per tab, in tab order.
@@ -51,7 +53,25 @@ class _DashboardViewState extends State<_DashboardView> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Back in front = opened again: the session, the user's row, the alarm sounds and
+  // the repeating alarms are brought up to date (each skips work that is not needed).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<DashboardBloc>()
+        ..add(const EnsureSessionEvent())
+        ..add(const RescheduleAlarmsEvent());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
   }

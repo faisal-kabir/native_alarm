@@ -35,6 +35,7 @@ import 'package:flutter/material.dart';
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
 import 'package:eala/features/create_reason/presentation/pages/create_reason_page.dart';
 import 'package:eala/features/create_reason/presentation/pages/reason_ready_page.dart';
+import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
 import 'package:eala/features/create_reason/presentation/widgets/reason_name_field.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
@@ -1565,6 +1566,31 @@ void main() {
           expect(find.byType(ReasonRow), findsOneWidget);
           expect(find.text('health'), findsOneWidget);
         });
+
+        testWidgets(
+          'Use with alarm opens the alarm editor, the reason chosen',
+          (tester) async {
+            await toReady(tester);
+            await tester.tap(find.text('Use with alarm'));
+            await tester.pumpAndSettle();
+            expect(find.byType(ReasonReadyPage), findsNothing);
+            expect(find.byType(CreateAlarmPage), findsOneWidget);
+            expect(
+              find.descendant(
+                of: find.byType(CreateAlarmPage),
+                matching: find.text('health'),
+              ),
+              findsOneWidget,
+            );
+            expect(find.text('Save Alarm'), findsOneWidget);
+
+            // Back returns to where Create Reason was opened.
+            await tester.tap(find.text('Cancel'));
+            await tester.pumpAndSettle();
+            expect(find.byType(CreateAlarmPage), findsNothing);
+            expect(find.byType(ReasonRow), findsOneWidget);
+          },
+        );
 
         testWidgets('back does what Save for later does', (tester) async {
           await toReady(tester);

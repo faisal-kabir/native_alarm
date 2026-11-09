@@ -462,7 +462,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn’t save your changes. Check your connection and try again.';
 
   @override
-  String get reason_detail_more_below => 'More below';
+  String get common_more_below => 'More below';
 
   @override
   String get reason_detail_area_sheet => 'What part of life is this for?';
@@ -528,6 +528,239 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_delete_message => 'This can’t be undone.';
 
   @override
+  String get reason_delete_alarm_message =>
+      'Its alarm will be deleted too. Every alarm needs a reason.';
+
+  @override
   String get reason_delete_failed =>
       'Couldn’t delete this reason. Check your connection and try again.';
+
+  @override
+  String get common_ok => 'OK';
+
+  @override
+  String get create_alarm_title => 'Add Alarm';
+
+  @override
+  String get create_alarm_section => 'What you’ll hear';
+
+  @override
+  String get create_alarm_choose_reason => 'Choose a reason';
+
+  @override
+  String get create_alarm_add_reason => 'Add a reason';
+
+  @override
+  String get create_alarm_reason_hint => 'What should Eala say?';
+
+  @override
+  String get create_alarm_choose => 'Choose';
+
+  @override
+  String get create_alarm_change => 'Change';
+
+  @override
+  String get create_alarm_soundtrack => 'Soundtrack';
+
+  @override
+  String get create_alarm_alarm_sound => 'Alarm sound';
+
+  @override
+  String get create_alarm_ring_again => 'Ring again if I’m not up';
+
+  @override
+  String get create_alarm_again_off => 'Off';
+
+  @override
+  String get create_alarm_again_once => 'Once';
+
+  @override
+  String get create_alarm_again_twice => 'Twice';
+
+  @override
+  String create_alarm_again_note_0(String count) {
+    return 'Rings $count. Stopping it ends it.';
+  }
+
+  @override
+  String create_alarm_again_note_1(String count) {
+    return '$count, 5 minutes later.';
+  }
+
+  @override
+  String create_alarm_again_note_2(String count) {
+    return '$count, 5 minutes apart.';
+  }
+
+  @override
+  String get create_alarm_again_count_0 => 'once';
+
+  @override
+  String get create_alarm_again_count_1 => '1 more ring';
+
+  @override
+  String get create_alarm_again_count_2 => '2 more rings';
+
+  @override
+  String get create_alarm_enabled => 'Enabled';
+
+  @override
+  String get create_alarm_blocked_title => 'This alarm won’t ring';
+
+  @override
+  String get create_alarm_blocked_action => 'Enable Alarm Access';
+
+  @override
+  String get create_alarm_save => 'Save Alarm';
+
+  @override
+  String get create_alarm_save_failed => 'Couldn’t save the alarm. Try again.';
+
+  @override
+  String get create_alarm_limit_title => 'Alarm limit';
+
+  @override
+  String create_alarm_limit_note(int count) {
+    return 'You can have up to $count alarms.';
+  }
+
+  @override
+  String get create_alarm_add_time => 'Add another time';
+
+  @override
+  String get create_alarm_hint_once => 'Rings once · tap days to repeat';
+
+  @override
+  String create_alarm_moved(String day, String time) {
+    return '$day moved from $time';
+  }
+
+  @override
+  String create_alarm_day_away(String day, String time) {
+    return '$day, rings at $time. Move it here';
+  }
+
+  @override
+  String create_alarm_card_semantics(String time, String repeat, String hint) {
+    return '$time, $repeat. $hint';
+  }
+
+  @override
+  String get create_alarm_close_clock => 'Close the clock';
+
+  @override
+  String get create_alarm_open_clock => 'Change the time';
+
+  @override
+  String get create_alarm_hour => 'Hour';
+
+  @override
+  String get create_alarm_minute => 'Minute';
+
+  @override
+  String get create_alarm_meridiem => 'AM or PM';
+
+  @override
+  String get repeat_once => 'Once';
+
+  @override
+  String get repeat_every_day => 'Every day';
+
+  @override
+  String get repeat_weekdays => 'Weekdays';
+
+  @override
+  String get repeat_weekends => 'Weekends';
+
+  @override
+  String repeat_every_single(String day) {
+    return 'Every $day';
+  }
+
+  @override
+  String repeat_every_except(String days) {
+    return 'Every day except $days';
+  }
+
+  @override
+  String get day_short => 'Sun,Mon,Tue,Wed,Thu,Fri,Sat';
+
+  @override
+  String get day_names =>
+      'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday';
+
+  @override
+  String get reason_picker_title => 'What should wake you up?';
+
+  @override
+  String get reason_picker_subtitle => 'Each alarm plays one reason.';
+
+  @override
+  String get reason_picker_all_taken => 'Every reason already has an alarm.';
+
+  @override
+  String get reason_picker_select => 'Select Reason';
+
+  @override
+  String get reason_picker_new => 'New Reason';
+
+  @override
+  String get reason_picker_none => 'You don’t have any reasons yet.';
+
+  @override
+  String get soundtrack_sheet_subtitle =>
+      'Music that plays behind your message.';
+
+  @override
+  String get soundtrack_sheet_select => 'Select Soundtrack';
+
+  @override
+  String get alarm_sound_sheet_subtitle => 'Tap play to hear it.';
+
+  @override
+  String get alarm_sound_sheet_select => 'Select Sound';
+
+  @override
+  String my_alarms_alarm_semantics(
+    String time,
+    String repeat,
+    String reason,
+    String status,
+  ) {
+    return '$time, $repeat. $reason. $status';
+  }
+
+  @override
+  String get my_alarms_status_on => 'On';
+
+  @override
+  String get my_alarms_status_off => 'Off';
+
+  @override
+  String get my_alarms_next_alarm => 'Next alarm';
+
+  @override
+  String my_alarms_slot_meter_used(int used, int total) {
+    return '$used of $total';
+  }
+
+  @override
+  String my_alarms_next_ring(String when) {
+    return 'Next ring · $when';
+  }
+
+  @override
+  String get my_alarms_today => 'Today';
+
+  @override
+  String get my_alarms_tomorrow => 'Tomorrow';
+
+  @override
+  String get my_alarms_off_note => 'Off · won’t ring';
+
+  @override
+  String get my_alarms_toggle_failed => 'Couldn’t change the alarm. Try again.';
+
+  @override
+  String get day_letters => 'S,M,T,W,T,F,S';
 }

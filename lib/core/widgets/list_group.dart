@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -51,7 +52,8 @@ class ListGroup extends StatelessWidget {
 ///
 /// [leading] replaces the [icon] (e.g. a server icon). [highlight] turns the value
 /// orange (a changed value, or an empty one asking to be added), with a short fade.
-/// [tint] colours the icon, label and chevron (an action row: "Connect an alarm").
+/// [tint] colours the icon, label and chevron (an action row: "Connect an alarm");
+/// [iconColor] the icon alone (a reason's alarm: an orange clock, a white time).
 class ListGroupRow extends StatelessWidget {
   const ListGroupRow({
     super.key,
@@ -64,6 +66,7 @@ class ListGroupRow extends StatelessWidget {
     this.chevron = false,
     this.danger = false,
     this.tint,
+    this.iconColor,
     this.semanticsLabel,
     this.onTap,
   }) : assert(icon != null || leading != null);
@@ -77,6 +80,7 @@ class ListGroupRow extends StatelessWidget {
   final bool chevron;
   final bool danger;
   final Color? tint;
+  final Color? iconColor;
 
   /// What a screen reader says for the whole row (label and value by default).
   final String? semanticsLabel;
@@ -112,7 +116,7 @@ class ListGroupRow extends StatelessWidget {
                   size: 22.r,
                   color: danger
                       ? AppColor.danger
-                      : tint ?? AppColor.textSecondary,
+                      : iconColor ?? tint ?? AppColor.textSecondary,
                 ),
             SizedBox(width: 12.w),
             if (value == null)
@@ -167,6 +171,61 @@ class ListGroupRow extends StatelessWidget {
       excludeSemantics: true,
       onTap: onTap,
       child: row,
+    );
+  }
+}
+
+/// A [ListGroupRow] ending in an iOS-style switch (51 x 31, green when on): Settings'
+/// notifications, an alarm's "Enabled".
+class ListGroupSwitchRow extends StatelessWidget {
+  const ListGroupSwitchRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final SvgGenImage icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListGroupRow(
+      icon: icon,
+      label: label,
+      trailing: AppSwitch(value: value, onChanged: onChanged),
+    );
+  }
+}
+
+/// The app's on / off switch (iOS style, 51 x 31, green when on). [label] names it
+/// for a screen reader when no row text does.
+class AppSwitch extends StatelessWidget {
+  const AppSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.label,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: label,
+      child: CupertinoSwitch(
+        value: value,
+        onChanged: onChanged,
+        activeTrackColor: AppColor.toggleOn,
+        inactiveTrackColor: AppColor.toggleOff,
+        thumbColor: AppColor.white,
+      ),
     );
   }
 }

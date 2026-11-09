@@ -2,6 +2,7 @@ import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/supabase/own_user_id.dart';
 import '../../domain/entities/reason_draft.dart';
 import '../models/reason_model.dart';
 
@@ -48,53 +49,12 @@ Map<String, Object?> reasonDraftColumns(ReasonDraft draft) => {
 @LazySingleton(as: ReasonRemoteDataSource)
 class ReasonRemoteDataSourceImpl implements ReasonRemoteDataSource {
   final SupabaseClient client;
+  final OwnUserId ownUserId;
 
-  ReasonRemoteDataSourceImpl(this.client);
-
-  /// How long a request waits for the session the app opens on start.
-  static const Duration _sessionWait = Duration(seconds: 15);
-
-  /// The signed-in user's auth id. Right after launch the session may still be
-  /// opening (the dashboard starts it), so this waits for it a little.
-  Future<String> _authUserId() async {
-    final now = client.auth.currentUser?.id;
-    if (now != null) return now;
-    try {
-      final id = await client.auth.onAuthStateChange
-          .map((s) => s.session?.user.id)
-          .firstWhere((id) => id != null)
-          .timeout(_sessionWait);
-      return id!;
-    } catch (_) {
-      throw const ServerException('Not signed in');
-    }
-  }
-
-  /// The `user.id` found for an auth id: it never changes, so it is asked once (a
-  /// refresh or a new reason then needs one request less). A new sign-in asks again.
-  String? _userIdFor;
-  int? _userId;
+  ReasonRemoteDataSourceImpl(this.client, this.ownUserId);
 
   @override
-  Future<int> fetchOwnUserId() async {
-    final authUserId = await _authUserId();
-    final known = _userId;
-    if (known != null && _userIdFor == authUserId) return known;
-    try {
-      final row = await client
-          .from('user')
-          .select('id')
-          .eq('auth_user_id', authUserId)
-          .maybeSingle();
-      if (row == null) throw const ServerException('No user row yet');
-      _userIdFor = authUserId;
-      return _userId = (row['id'] as num).toInt();
-    } on ServerException {
-      rethrow;
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
+  Future<int> fetchOwnUserId() => ownUserId();
 
   @override
   Future<List<String>> fetchNamesStartingWith(int userId, String base) async {

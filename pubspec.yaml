@@ -57,6 +57,7 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   speech_to_text: ^7.5.0
   audioplayers: ^6.8.1
+  path_provider: ^2.1.6
 flutter_gen:
   integrations:
     flutter_svg: true
@@ -99,6 +100,7 @@ flutter:
     - assets/icons/voice/
     - assets/icons/settings/
     - assets/icons/detail/
+    - assets/icons/editor/
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

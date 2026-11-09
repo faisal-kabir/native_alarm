@@ -8,6 +8,9 @@ import '../models/alarms_table.dart';
 
 abstract class AlarmLocalDataSource {
   Future<List<AlarmRecord>> getAlarms();
+
+  /// The saved alarms now and after every change.
+  Stream<List<AlarmRecord>> watchAlarms();
   Future<void> saveAlarm(Alarm alarm);
   Future<void> deleteAlarm(String alarmId);
 }
@@ -28,6 +31,11 @@ class AlarmLocalDataSourceImpl implements AlarmLocalDataSource {
       throw CacheException(e.toString());
     }
   }
+
+  @override
+  Stream<List<AlarmRecord>> watchAlarms() => (db.select(
+    db.alarmsTable,
+  )..orderBy([(t) => OrderingTerm.asc(t.time)])).watch();
 
   @override
   Future<void> saveAlarm(Alarm alarm) async {

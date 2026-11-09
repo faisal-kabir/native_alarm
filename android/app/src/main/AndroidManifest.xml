@@ -64,6 +64,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Sets saved alarms again after a reboot or an app update. -->
+        <receiver
+            android:name=".AlarmBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".AlarmAudioService"
             android:foregroundServiceType="mediaPlayback"

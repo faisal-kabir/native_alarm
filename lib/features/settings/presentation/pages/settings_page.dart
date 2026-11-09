@@ -13,8 +13,6 @@ import '../widgets/horizon.dart';
 import '../widgets/profile_card.dart';
 import '../../../../core/widgets/list_group.dart';
 
-import '../widgets/settings_switch_row.dart';
-
 /// The "Settings" tab of the Dashboard.
 ///
 /// There is no account system yet, so the page always shows the signed-out look: an
@@ -101,21 +99,21 @@ class _SettingsViewState extends State<_SettingsView>
                     _sectionTitle(strings.settings_notifications),
                     ListGroup(
                       children: [
-                        SettingsSwitchRow(
+                        ListGroupSwitchRow(
                           icon: icons.bell,
                           label: strings.settings_notify_billing,
                           value: settings.notifyBilling,
                           onChanged: (v) =>
                               toggle(SettingsNotification.billing, v),
                         ),
-                        SettingsSwitchRow(
+                        ListGroupSwitchRow(
                           icon: Assets.icons.alarm,
                           label: strings.settings_notify_alarms,
                           value: settings.notifyAlarms,
                           onChanged: (v) =>
                               toggle(SettingsNotification.alarms, v),
                         ),
-                        SettingsSwitchRow(
+                        ListGroupSwitchRow(
                           icon: icons.quote,
                           label: strings.settings_notify_quotes,
                           value: settings.notifyQuotes,

@@ -6,8 +6,8 @@ import '../../../../core/widgets/app_svg_icon.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
 
-/// "▬ ▬ ▬  Up to 3 ⓘ": one pill per alarm place, gold while used, then the limit
-/// and an info icon. Tapping it explains how alarms work.
+/// "▬ ▬ ▬  Up to 3 ⓘ": one pill per alarm place, then the limit; once there is an
+/// alarm, the used places are white and it reads "1 of 3"; then an info icon. Tapping it explains how alarms work.
 class SlotMeter extends StatelessWidget {
   const SlotMeter({
     super.key,
@@ -41,14 +41,16 @@ class SlotMeter extends StatelessWidget {
                   width: 14.w,
                   height: 5.h,
                   decoration: BoxDecoration(
-                    color: i < used ? AppColor.primary : AppColor.slotFree,
+                    color: i < used ? AppColor.white : AppColor.slotFree,
                     borderRadius: BorderRadius.circular(3.r),
                   ),
                 ),
               ],
               SizedBox(width: 10.w),
               Text(
-                strings.my_alarms_slot_meter_label(total),
+                used == 0
+                    ? strings.my_alarms_slot_meter_label(total)
+                    : strings.my_alarms_slot_meter_used(used, total),
                 style: appTheme(context).textTheme.labelLarge,
               ),
               SizedBox(width: 5.w),

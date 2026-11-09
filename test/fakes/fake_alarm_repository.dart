@@ -1,4 +1,16 @@
 import 'package:dartz/dartz.dart';
+import 'package:eala/features/create_alarm/domain/usecases/set_alarm_enabled_usecase.dart';
+import 'package:eala/features/alarm/domain/repositories/alarm_scheduler.dart';
+import 'package:eala/features/alarm/domain/usecases/alarm_access_usecases.dart';
+import 'package:eala/features/alarm_audio/domain/usecases/watch_alarm_audio_usecase.dart';
+import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart';
+import 'package:eala/features/create_alarm/domain/repositories/remote_alarm_repository.dart';
+import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
+import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
+import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_bloc.dart';
+import 'package:eala/features/alarm_audio/domain/entities/alarm_audio.dart';
+import 'package:eala/features/alarm_audio/domain/repositories/alarm_audio_repository.dart';
+import 'package:eala/features/alarm_audio/domain/usecases/refresh_alarm_audio_usecase.dart';
 import 'package:eala/core/di/injection.dart';
 import 'package:eala/core/firebase/analytics_service.dart';
 import 'package:eala/features/auth/domain/entities/app_user.dart';
@@ -57,7 +69,8 @@ import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
 import 'package:eala/features/reasons/domain/entities/reason_name.dart';
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
-import 'package:eala/features/reasons/domain/usecases/delete_reason_usecase.dart';
+import 'package:eala/features/reason_detail/domain/usecases/delete_reason_with_alarm_usecase.dart';
+import 'package:eala/features/alarm/domain/usecases/watch_alarms_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/update_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/watch_reason_usecase.dart';
@@ -69,20 +82,31 @@ import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
 /// In-memory [AlarmRepository] so BLoC tests run without a database.
 class FakeAlarmRepository implements AlarmRepository {
   final Map<String, Alarm> store = {};
+  final _changes = StreamController<void>.broadcast();
 
   @override
   Future<Either<Failure, List<Alarm>>> getAlarms() async =>
       Right(store.values.toList());
 
   @override
+  Stream<Either<Failure, List<Alarm>>> watchAlarms() async* {
+    yield Right(store.values.toList());
+    await for (final _ in _changes.stream) {
+      yield Right(store.values.toList());
+    }
+  }
+
+  @override
   Future<Either<Failure, Alarm>> saveAlarm(Alarm alarm) async {
     store[alarm.id] = alarm;
+    _changes.add(null);
     return Right(alarm);
   }
 
   @override
   Future<Either<Failure, void>> deleteAlarm(String alarmId) async {
     store.remove(alarmId);
+    _changes.add(null);
     return const Right(null);
   }
 }
@@ -155,8 +179,10 @@ Reason testReason({
   int voiceId = 1,
   String voice = 'Astra',
   int lengthSeconds = 30,
+  int? alarmId,
 }) => Reason(
   id: id,
+  alarmId: alarmId,
   name: name,
   purpose: purpose,
   why: why,
@@ -454,6 +480,9 @@ class FakeSamplePlayer implements SamplePlayer {
   }
 
   @override
+  Future<void> playFile(String path) => play(path);
+
+  @override
   Future<void> stop() async => stops++;
 
   @override
@@ -543,8 +572,12 @@ Future<void> registerFakeAlarmDependencies(
   AreaOfLifeRepository? areaOfLifeRepository,
   VoiceRepository? voiceRepository,
   SoundRepository? soundRepository,
+  AlarmAudioRepository? alarmAudioRepository,
+  AlarmScheduler? alarmScheduler,
+  FakeRemoteAlarmRepository? remoteAlarmRepository,
 }) async {
   await instance.reset();
+  final remote = remoteAlarmRepository ?? FakeRemoteAlarmRepository();
   instance.registerFactory<AlarmListBloc>(() => buildAlarmListBloc(repository));
   instance.registerLazySingleton<AnalyticsService>(FakeAnalyticsService.new);
   instance.registerLazySingleton<AuthRepository>(FakeAuthRepository.new);
@@ -558,12 +591,26 @@ Future<void> registerFakeAlarmDependencies(
       SyncUserProfileUseCase(instance<UserProfileRepository>()),
       UpdateDeviceInfoUseCase(instance<UserProfileRepository>()),
       GetAppInfoUseCase(FakeSettingsRepository()),
+      RefreshAlarmAudioUseCase(FakeAlarmAudioRepository()),
+      RescheduleAlarmsUseCase(
+        repository,
+        alarmScheduler ?? FakeAlarmScheduler(),
+      ),
+      UploadPendingAlarmsUseCase(repository, remote),
     ),
   );
-  instance.registerFactory<MyAlarmsBloc>(
-    () => MyAlarmsBloc(GetAlarmsUseCase(repository)),
-  );
   final reasons = reasonRepository ?? FakeReasonRepository();
+  instance.registerFactory<MyAlarmsBloc>(
+    () => MyAlarmsBloc(
+      GetAlarmsUseCase(repository),
+      WatchAlarmsUseCase(repository),
+      WatchReasonsUseCase(reasons),
+      SetAlarmEnabledUseCase(
+        repository,
+        alarmScheduler ?? FakeAlarmScheduler(),
+      ),
+    ),
+  );
   instance.registerFactory<ReasonsBloc>(
     () => ReasonsBloc(
       WatchReasonsUseCase(reasons),
@@ -584,7 +631,13 @@ Future<void> registerFakeAlarmDependencies(
       WatchReasonUseCase(reasons),
       UpdateReasonUseCase(reasons),
       RenameReasonUseCase(reasons),
-      DeleteReasonUseCase(reasons),
+      DeleteReasonWithAlarmUseCase(
+        reasons,
+        repository,
+        remote,
+        alarmScheduler ?? FakeAlarmScheduler(),
+      ),
+      WatchAlarmsUseCase(repository),
       WatchAreasOfLifeUseCase(areas),
       RefreshAreasOfLifeUseCase(areas),
       WatchVoicesUseCase(voices),
@@ -621,4 +674,95 @@ Future<void> registerFakeAlarmDependencies(
     () => buildSettingsBloc(settingsRepository ?? FakeSettingsRepository()),
   );
   instance.registerLazySingleton<AlarmPlatformClient>(AlarmPlatformClient.new);
+  instance.registerFactoryParam<CreateAlarmBloc, int?, dynamic>((reasonId, _) {
+    final scheduler = alarmScheduler ?? FakeAlarmScheduler();
+    return CreateAlarmBloc(
+      WatchReasonsUseCase(reasons),
+      WatchAlarmAudioUseCase(
+        alarmAudioRepository ?? FakeAlarmAudioRepository(),
+      ),
+      GetAlarmsUseCase(repository),
+      CreateAlarmUseCase(repository, remote, scheduler),
+      HasAlarmAccessUseCase(scheduler),
+      RequestAlarmAccessUseCase(scheduler),
+      reasonId,
+    );
+  });
+}
+
+/// The server's alarms in tests: each upload gets the next id (from 1); [fail] makes
+/// it fail as offline does.
+class FakeRemoteAlarmRepository implements RemoteAlarmRepository {
+  bool fail = false;
+  final uploaded = <Alarm>[];
+  final removed = <int>[];
+
+  @override
+  Future<Either<Failure, Alarm>> upload(
+    Alarm alarm, {
+    required DateTime now,
+  }) async {
+    if (fail) return const Left(ServerFailure('offline'));
+    uploaded.add(alarm);
+    return Right(alarm.copyWith(remoteId: uploaded.length));
+  }
+
+  @override
+  Future<Either<Failure, Unit>> remove(int remoteId) async {
+    if (fail) return const Left(ServerFailure('offline'));
+    removed.add(remoteId);
+    return const Right(unit);
+  }
+}
+
+/// The device's alarm system in tests: records what was set to ring; [access] is the
+/// permission, [fail] makes scheduling throw.
+class FakeAlarmScheduler implements AlarmScheduler {
+  FakeAlarmScheduler({this.access = true});
+
+  bool access;
+  bool fail = false;
+  int requests = 0;
+  final cancelled = <String>[];
+  final scheduled = <(Alarm, String)>[];
+
+  @override
+  Future<bool> hasAccess() async => access;
+
+  @override
+  Future<void> requestAccess() async {
+    requests++;
+    access = true;
+  }
+
+  @override
+  Future<void> schedule(Alarm alarm, {required String title}) async {
+    if (fail) throw Exception('native refused');
+    scheduled.add((alarm, title));
+  }
+
+  @override
+  Future<void> cancel(String alarmId) async {
+    if (fail) throw Exception('native refused');
+    cancelled.add(alarmId);
+  }
+}
+
+/// Alarm sounds and sound tracks that are never on a server: refreshes are counted.
+class FakeAlarmAudioRepository implements AlarmAudioRepository {
+  FakeAlarmAudioRepository([this.lists = const {}]);
+
+  /// What the device has, per list.
+  final Map<AlarmAudioKind, List<AlarmAudio>> lists;
+  int refreshes = 0;
+
+  @override
+  Stream<Either<Failure, List<AlarmAudio>>> watchAudio(AlarmAudioKind kind) =>
+      Stream.value(Right(lists[kind] ?? const []));
+
+  @override
+  Future<Either<Failure, Unit>> refreshAudio() async {
+    refreshes++;
+    return const Right(unit);
+  }
 }

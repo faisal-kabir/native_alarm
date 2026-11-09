@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 
@@ -23,6 +25,17 @@ class AlarmRepositoryImpl implements AlarmRepository {
       return Left(CacheFailure(e.message));
     }
   }
+
+  @override
+  Stream<Either<Failure, List<Alarm>>> watchAlarms() =>
+      localDataSource.watchAlarms().transform(
+        StreamTransformer.fromHandlers(
+          handleData: (records, sink) =>
+              sink.add(Right([for (final r in records) r.toEntity()])),
+          handleError: (error, _, sink) =>
+              sink.add(Left(CacheFailure(error.toString()))),
+        ),
+      );
 
   @override
   Future<Either<Failure, Alarm>> saveAlarm(Alarm alarm) async {

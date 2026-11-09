@@ -34,6 +34,9 @@ class $AssetsIconsGen {
   /// Directory path: assets/icons/detail
   $AssetsIconsDetailGen get detail => const $AssetsIconsDetailGen();
 
+  /// Directory path: assets/icons/editor
+  $AssetsIconsEditorGen get editor => const $AssetsIconsEditorGen();
+
   /// File path: assets/icons/info.svg
   SvgGenImage get info => const SvgGenImage('assets/icons/info.svg');
 
@@ -86,6 +89,25 @@ class $AssetsIconsDetailGen {
 
   /// List of all assets
   List<SvgGenImage> get values => [clock, heart, target, volume];
+}
+
+class $AssetsIconsEditorGen {
+  const $AssetsIconsEditorGen();
+
+  /// File path: assets/icons/editor/alarm_off.svg
+  SvgGenImage get alarmOff =>
+      const SvgGenImage('assets/icons/editor/alarm_off.svg');
+
+  /// File path: assets/icons/editor/ambient.svg
+  SvgGenImage get ambient =>
+      const SvgGenImage('assets/icons/editor/ambient.svg');
+
+  /// File path: assets/icons/editor/bell_ring.svg
+  SvgGenImage get bellRing =>
+      const SvgGenImage('assets/icons/editor/bell_ring.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [alarmOff, ambient, bellRing];
 }
 
 class $AssetsIconsPageGen {

@@ -18,7 +18,8 @@ enum ReasonAlarmBadge { none, on, off }
 /// (22 + 2.5 black ring) hanging off the lower-right corner.
 ///
 /// [disc] is the reason screen's header look: a 46 circle (the tint at 22 % over the
-/// card) with the icon in the tint mixed into white.
+/// card) with the icon in the tint mixed into white. [size] (46 before scaling)
+/// shrinks or grows the whole mark (an alarm card's 40 disc).
 class ReasonEmblem extends StatelessWidget {
   const ReasonEmblem({
     super.key,
@@ -27,6 +28,7 @@ class ReasonEmblem extends StatelessWidget {
     this.areaIcon,
     this.badge = ReasonAlarmBadge.none,
     this.disc = false,
+    this.size = 46,
   });
 
   final String areaName;
@@ -34,26 +36,29 @@ class ReasonEmblem extends StatelessWidget {
   final String? areaIcon;
   final ReasonAlarmBadge badge;
   final bool disc;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final tint = AppColor.tintOf(areaColor);
     final ink = disc ? Color.lerp(AppColor.white, tint, 0.85)! : tint;
+    // Everything inside keeps its proportion to the 46 mark.
+    final k = size / 46;
     final letter = Text(
       initialOf(areaName),
       style: appTheme(context).textTheme.headlineMedium!
-          .copyWith(fontSize: (disc ? 19 : 21).spMin, color: ink),
+          .copyWith(fontSize: ((disc ? 19 : 21) * k).spMin, color: ink),
     );
     final icon = areaIcon;
     return SizedBox(
-      width: 46.r,
-      height: 46.r,
+      width: size.r,
+      height: size.r,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 46.r,
-            height: 46.r,
+            width: size.r,
+            height: size.r,
             alignment: Alignment.center,
             decoration: disc
                 ? BoxDecoration(
@@ -65,13 +70,13 @@ class ReasonEmblem extends StatelessWidget {
                   )
                 : BoxDecoration(
                     color: tint.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(15.r),
+                    borderRadius: BorderRadius.circular((15 * k).r),
                   ),
             child: icon == null || icon.isEmpty
                 ? letter
                 : CachedSvgIcon(
                     path: icon,
-                    size: (disc ? 21 : 22).r,
+                    size: ((disc ? 21 : 22) * k).r,
                     color: ink,
                     fallback: Center(child: letter),
                   ),

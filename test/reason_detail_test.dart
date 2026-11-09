@@ -2,6 +2,7 @@ import 'package:eala/core/di/injection.dart';
 import 'package:eala/core/router/app_router.dart';
 import 'package:eala/core/router/route_names.dart';
 import 'package:eala/core/widgets/app_sheet.dart';
+import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
 import 'package:eala/features/reason_detail/presentation/bloc/reason_detail_bloc.dart';
@@ -36,16 +37,25 @@ const saved = Reason(
   voice: astra,
 );
 
-/// Opens the dashboard, the Reasons tab and the reason's screen.
-Future<FakeReasonRepository> openDetail(WidgetTester tester) async {
+/// Opens the dashboard, the Reasons tab and the reason's screen ([reason], with
+/// [alarms] on the device).
+Future<FakeReasonRepository> openDetail(
+  WidgetTester tester, {
+  Reason reason = saved,
+  FakeAlarmRepository? alarms,
+  FakeAlarmScheduler? scheduler,
+  FakeRemoteAlarmRepository? remote,
+}) async {
   final reasons = FakeReasonRepository(
-    const [saved],
+    [reason],
     const [health, work],
     const [encouraging, calm],
     const [astra, bold],
   );
   await registerFakeAlarmDependencies(
-    FakeAlarmRepository(),
+    alarms ?? FakeAlarmRepository(),
+    alarmScheduler: scheduler,
+    remoteAlarmRepository: remote,
     reasonRepository: reasons,
     areaOfLifeRepository: FakeAreaOfLifeRepository(
       saved: const [health, work],
@@ -316,5 +326,102 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Couldn’t delete this reason'), findsOneWidget);
     expect(find.byType(ReasonDetailPage), findsOneWidget);
+  });
+
+  group('a reason with its alarm', () {
+    // Played by alarm 'a' (server alarm 12): 6:30 on Tuesday and Wednesday.
+    const withAlarm = Reason(
+      id: 7,
+      name: 'Mornings',
+      lengthSeconds: 30,
+      areaId: 1,
+      area: health,
+      soundTypeId: 1,
+      sound: encouraging,
+      voiceId: 1,
+      voice: astra,
+      alarmId: 12,
+    );
+    FakeAlarmRepository alarmsWithOne() =>
+        FakeAlarmRepository()
+          ..store['a'] = Alarm(
+            id: 'a',
+            enabled: true,
+            time: DateTime(2026, 11, 10, 6, 30),
+            repeatWeekdays: const [2, 3],
+            audioTrackId: 'morning_message',
+            ringtoneId: 'default',
+            reasonId: 7,
+            remoteId: 12,
+          );
+
+    Future<void> askToDelete(WidgetTester tester) async {
+      await tester.tap(find.bySemanticsLabel('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete Reason'));
+      await tester.pumpAndSettle();
+      // The question comes 120 ms after the sheet has gone.
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows its alarm instead of "Connect an alarm"', (
+      tester,
+    ) async {
+      await openDetail(tester, reason: withAlarm, alarms: alarmsWithOne());
+      expect(find.text('Connect an alarm'), findsNothing);
+      expect(find.text('Not in an alarm yet.'), findsNothing);
+      expect(find.text('6:30 AM'), findsOneWidget);
+      expect(find.text('Tue Wed'), findsOneWidget);
+    });
+
+    testWidgets('deleting it deletes its alarm too, everywhere', (
+      tester,
+    ) async {
+      final alarms = alarmsWithOne();
+      final scheduler = FakeAlarmScheduler();
+      final remote = FakeRemoteAlarmRepository();
+      final reasons = await openDetail(
+        tester,
+        reason: withAlarm,
+        alarms: alarms,
+        scheduler: scheduler,
+        remote: remote,
+      );
+      await askToDelete(tester);
+      expect(find.text('Delete “Mornings”?'), findsOneWidget);
+      expect(
+        find.text('Its alarm will be deleted too. Every alarm needs a reason.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(remote.removed, [12]);
+      expect(scheduler.cancelled, ['a']);
+      expect(alarms.store, isEmpty);
+      expect(reasons.deletes, [7]);
+      expect(find.byType(ReasonDetailPage), findsNothing);
+    });
+
+    testWidgets('offline nothing is deleted', (tester) async {
+      final alarms = alarmsWithOne();
+      final remote = FakeRemoteAlarmRepository()..fail = true;
+      final reasons = await openDetail(
+        tester,
+        reason: withAlarm,
+        alarms: alarms,
+        remote: remote,
+      );
+      await askToDelete(tester);
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Couldn’t delete this reason'),
+        findsOneWidget,
+      );
+      expect(alarms.store, hasLength(1));
+      expect(reasons.deletes, isEmpty);
+    });
   });
 }

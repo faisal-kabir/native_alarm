@@ -1,3 +1,4 @@
+import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -12,7 +13,7 @@ import '../../../../main.dart';
 /// always last). Returns true when Delete was chosen (the sheet is gone by then; the
 /// caller asks to confirm).
 Future<bool> showReasonActions(
-  BuildContext context, {
+  BuildContext context, Alarm? alarm, {
   required String name,
 }) async {
   final delete = await showAppSheet<bool>(
@@ -27,11 +28,12 @@ Future<bool> showReasonActions(
             color: AppColor.surfaceSecondary,
             radius: 14,
             children: [
-              ListGroupRow(
-                icon: Assets.icons.alarm,
-                label: strings.reason_actions_use_with_alarm,
-                chevron: true,
-              ),
+              if (alarm == null)
+                ListGroupRow(
+                  icon: Assets.icons.alarm,
+                  label: strings.reason_actions_use_with_alarm,
+                  chevron: true,
+                ),
               ListGroupRow(
                 icon: Assets.icons.settings.trash,
                 label: strings.reason_actions_delete,

@@ -12,6 +12,10 @@ import '../network/media_url.dart';
 /// The file is kept on the device by the cache manager, so an icon that was shown once
 /// is still there offline and is not downloaded again. While it loads, or when it can
 /// not be loaded at all, [fallback] is shown in its place (the same [size] box).
+///
+/// [file] is a copy the app downloaded itself (e.g. an alarm sound's icon): it is
+/// painted from there, with no lookup and no network, and the server copy is used
+/// only if it is gone.
 class CachedSvgIcon extends StatefulWidget {
   const CachedSvgIcon({
     super.key,
@@ -19,10 +23,14 @@ class CachedSvgIcon extends StatefulWidget {
     required this.size,
     required this.color,
     required this.fallback,
+    this.file,
   });
 
   /// The file's path on the server (or a full URL).
   final String path;
+
+  /// A full path of the same icon already on the device.
+  final String? file;
 
   /// Width and height, already scaled by the caller (e.g. `20.r`).
   final double size;
@@ -40,11 +48,15 @@ class _CachedSvgIconState extends State<CachedSvgIcon> {
   static final Map<String, File> _known = {};
 
   late String _url = mediaUrl(widget.path);
-  late Future<File> _file = _find(_url);
+  late Future<File> _file = _find(_url, widget.file);
 
-  static Future<File> _find(String url) {
+  static Future<File> _find(String url, String? own) {
     final known = _known[url];
     if (known != null) return Future.value(known);
+    if (own != null) {
+      final file = File(own);
+      if (file.existsSync()) return Future.value(_known[url] = file);
+    }
     return DefaultCacheManager()
         .getSingleFile(url)
         .then((f) => _known[url] = f);
@@ -53,9 +65,10 @@ class _CachedSvgIconState extends State<CachedSvgIcon> {
   @override
   void didUpdateWidget(CachedSvgIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.path != widget.path) {
+    if (oldWidget.path != widget.path || oldWidget.file != widget.file) {
+      if (oldWidget.file != widget.file) _known.remove(mediaUrl(widget.path));
       _url = mediaUrl(widget.path);
-      _file = _find(_url);
+      _file = _find(_url, widget.file);
     }
   }
 

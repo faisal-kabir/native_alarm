@@ -16,8 +16,14 @@ Run every row on a real device with the phone **locked**.
 | 9 | Button/title texts set from Flutter | Mission button and title show Flutter text. (Slider text: Android only.) |
 | 10 | After row 1/3, kill the app, reopen | No audio replays, no alarm repeats, no message page opens by itself. |
 | 11 | Two alarms with different ids | Each opens the message page with its own `alarmId`. |
+| 12 | Alarm with a chosen alarm sound (`tuneFile`) | That sound rings (loops). Delete/replace the original file afterwards: it still rings (native copy). Missing file: default tune. |
+| 13 | Weekly alarm (`ringDays`), slide without unlock, never open the app | It rings again on its next day at that day's time. |
+| 14 | Weekly alarm, unlock, finish the message | The ring-again repeats are gone; the alarm still rings on its next day. |
+| 15 | Weekly alarm with two times (e.g. Mon 6:30, Sun 8:00) | Each day rings at its own time. |
+| 16 | One-off and weekly alarm set, restart the phone (or install an app update) before their time, never open the app | Both still ring at their time. |
 
 Known platform differences
 - iOS: vibration, "slide to stop" text and screen layout are controlled by iOS (AlarmKit).
 - iOS: internal alarms are pre-scheduled from the main alarm time (`time + interval * n`), because code cannot run on a locked, un-unlocked stop. Android schedules each repeat `interval` seconds after the slide.
 - iOS < 26: no AlarmKit; repeats are time-sensitive notifications with the alarm sound (sound is limited to 30 s by iOS).
+- iOS < 26: a weekly alarm's main ring repeats by itself, but its ring-again notifications are set only from the next `timeMs`; the app sets them again for the next day when it opens.

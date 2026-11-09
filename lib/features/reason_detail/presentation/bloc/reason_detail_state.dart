@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/utils/load_status.dart';
+import '../../../alarm/domain/entities/alarm.dart';
 import '../../../area_of_life/domain/entities/area_of_life.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../../reasons/domain/entities/reason_draft.dart';
@@ -20,6 +21,9 @@ class ReasonDetailState extends Equatable {
   final List<SoundType> soundTypes;
   final LoadStatus soundTypesStatus;
 
+  /// The alarms saved on the device (followed), to find the one that plays it.
+  final List<Alarm> alarms;
+
   final bool saving;
 
   /// Deleting now, and deleted (the screen leaves).
@@ -38,6 +42,7 @@ class ReasonDetailState extends Equatable {
     this.voices = const [],
     this.soundTypes = const [],
     this.soundTypesStatus = LoadStatus.loading,
+    this.alarms = const [],
     this.saving = false,
     this.deleting = false,
     this.deleted = false,
@@ -45,6 +50,18 @@ class ReasonDetailState extends Equatable {
     this.renameFailures = 0,
     this.deleteFailures = 0,
   }) : draft = draft ?? reason.draft;
+
+  /// The alarm on this device that plays it (one alarm, one Reason).
+  Alarm? get alarm {
+    for (final a in alarms) {
+      if (a.reasonId == reason.id) return a;
+    }
+    return null;
+  }
+
+  /// An alarm plays it: on this device, or on the server (`reason.alarm_id`). Deleting
+  /// it deletes that alarm too.
+  bool get hasAlarm => alarm != null || reason.alarmId != null;
 
   /// Something is held that differs from what is saved (the Save bar shows).
   bool get dirty => draft != reason.draft;
@@ -77,6 +94,7 @@ class ReasonDetailState extends Equatable {
     List<Voice>? voices,
     List<SoundType>? soundTypes,
     LoadStatus? soundTypesStatus,
+    List<Alarm>? alarms,
     bool? saving,
     bool? deleting,
     bool? deleted,
@@ -90,6 +108,7 @@ class ReasonDetailState extends Equatable {
     voices: voices ?? this.voices,
     soundTypes: soundTypes ?? this.soundTypes,
     soundTypesStatus: soundTypesStatus ?? this.soundTypesStatus,
+    alarms: alarms ?? this.alarms,
     saving: saving ?? this.saving,
     deleting: deleting ?? this.deleting,
     deleted: deleted ?? this.deleted,
@@ -106,6 +125,7 @@ class ReasonDetailState extends Equatable {
     voices,
     soundTypes,
     soundTypesStatus,
+    alarms,
     saving,
     deleting,
     deleted,

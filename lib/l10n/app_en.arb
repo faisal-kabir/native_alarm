@@ -300,7 +300,7 @@
   "reason_detail_discard_message": "This reason stays as it is now.",
   "reason_detail_keep_editing": "Keep Editing",
   "reason_detail_save_failed": "Couldn’t save your changes. Check your connection and try again.",
-  "reason_detail_more_below": "More below",
+  "common_more_below": "More below",
   "reason_detail_area_sheet": "What part of life is this for?",
   "reason_detail_keep_area": "Keep This Area",
   "reason_detail_purpose_sheet": "What are you working toward?",
@@ -329,5 +329,206 @@
     }
   },
   "reason_delete_message": "This can’t be undone.",
-  "reason_delete_failed": "Couldn’t delete this reason. Check your connection and try again."
+  "reason_delete_alarm_message": "Its alarm will be deleted too. Every alarm needs a reason.",
+  "reason_delete_failed": "Couldn’t delete this reason. Check your connection and try again.",
+  "common_ok": "OK",
+  "create_alarm_title": "Add Alarm",
+  "@create_alarm_title": {
+    "description": "Title of the alarm editor for a new alarm."
+  },
+  "create_alarm_section": "What you’ll hear",
+  "create_alarm_choose_reason": "Choose a reason",
+  "create_alarm_add_reason": "Add a reason",
+  "@create_alarm_add_reason": {
+    "description": "When there is no reason left to pick: the tap opens the reason maker."
+  },
+  "create_alarm_reason_hint": "What should Eala say?",
+  "create_alarm_choose": "Choose",
+  "create_alarm_change": "Change",
+  "create_alarm_soundtrack": "Soundtrack",
+  "create_alarm_alarm_sound": "Alarm sound",
+  "create_alarm_ring_again": "Ring again if I’m not up",
+  "create_alarm_again_off": "Off",
+  "create_alarm_again_once": "Once",
+  "create_alarm_again_twice": "Twice",
+  "create_alarm_again_note_0": "Rings {count}. Stopping it ends it.",
+  "@create_alarm_again_note_0": {
+    "description": "Under \"Ring again\" = Off; {count} is create_alarm_again_count_0, drawn white.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "create_alarm_again_note_1": "{count}, 5 minutes later.",
+  "@create_alarm_again_note_1": {
+    "description": "Ring again = Once; {count} is drawn white.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "create_alarm_again_note_2": "{count}, 5 minutes apart.",
+  "@create_alarm_again_note_2": {
+    "description": "Ring again = Twice; {count} is drawn white.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "create_alarm_again_count_0": "once",
+  "create_alarm_again_count_1": "1 more ring",
+  "create_alarm_again_count_2": "2 more rings",
+  "create_alarm_enabled": "Enabled",
+  "create_alarm_blocked_title": "This alarm won’t ring",
+  "create_alarm_blocked_action": "Enable Alarm Access",
+  "create_alarm_save": "Save Alarm",
+  "create_alarm_save_failed": "Couldn’t save the alarm. Try again.",
+  "create_alarm_limit_title": "Alarm limit",
+  "create_alarm_limit_note": "You can have up to {count} alarms.",
+  "@create_alarm_limit_note": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "create_alarm_add_time": "Add another time",
+  "create_alarm_hint_once": "Rings once · tap days to repeat",
+  "create_alarm_moved": "{day} moved from {time}",
+  "@create_alarm_moved": {
+    "description": "A day moved to another time card; shown for a moment.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "create_alarm_day_away": "{day}, rings at {time}. Move it here",
+  "@create_alarm_day_away": {
+    "description": "Screen reader: a day another time card rings.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "create_alarm_card_semantics": "{time}, {repeat}. {hint}",
+  "@create_alarm_card_semantics": {
+    "description": "Screen reader: a time card header.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "repeat": {
+        "type": "String"
+      },
+      "hint": {
+        "type": "String"
+      }
+    }
+  },
+  "create_alarm_close_clock": "Close the clock",
+  "create_alarm_open_clock": "Change the time",
+  "create_alarm_hour": "Hour",
+  "create_alarm_minute": "Minute",
+  "create_alarm_meridiem": "AM or PM",
+  "repeat_once": "Once",
+  "repeat_every_day": "Every day",
+  "repeat_weekdays": "Weekdays",
+  "repeat_weekends": "Weekends",
+  "repeat_every_single": "Every {day}",
+  "@repeat_every_single": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "repeat_every_except": "Every day except {days}",
+  "@repeat_every_except": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "day_short": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+  "@day_short": {
+    "description": "The seven short day names, Sunday first, comma-separated."
+  },
+  "day_names": "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+  "@day_names": {
+    "description": "The seven day names, Sunday first, comma-separated."
+  },
+  "reason_picker_title": "What should wake you up?",
+  "reason_picker_subtitle": "Each alarm plays one reason.",
+  "reason_picker_all_taken": "Every reason already has an alarm.",
+  "reason_picker_select": "Select Reason",
+  "reason_picker_new": "New Reason",
+  "reason_picker_none": "You don’t have any reasons yet.",
+  "soundtrack_sheet_subtitle": "Music that plays behind your message.",
+  "soundtrack_sheet_select": "Select Soundtrack",
+  "alarm_sound_sheet_subtitle": "Tap play to hear it.",
+  "alarm_sound_sheet_select": "Select Sound",
+  "my_alarms_alarm_semantics": "{time}, {repeat}. {reason}. {status}",
+  "@my_alarms_alarm_semantics": {
+    "description": "Screen reader: one alarm card.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "repeat": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "my_alarms_status_on": "On",
+  "my_alarms_status_off": "Off",
+  "my_alarms_next_alarm": "Next alarm",
+  "@my_alarms_next_alarm": {
+    "description": "The section title once there is an alarm."
+  },
+  "my_alarms_slot_meter_used": "{used} of {total}",
+  "@my_alarms_slot_meter_used": {
+    "description": "Beside the slot pills once there is an alarm.",
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "my_alarms_next_ring": "Next ring · {when}",
+  "@my_alarms_next_ring": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "my_alarms_today": "Today",
+  "my_alarms_tomorrow": "Tomorrow",
+  "my_alarms_off_note": "Off · won’t ring",
+  "my_alarms_toggle_failed": "Couldn’t change the alarm. Try again.",
+  "day_letters": "S,M,T,W,T,F,S",
+  "@day_letters": {
+    "description": "The seven one-letter day names, Sunday first, comma-separated."
+  }
 }

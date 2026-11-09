@@ -321,20 +321,38 @@ class AlarmAudioService : Service() {
         manager?.cancel(RING_NOTIFICATION_ID)
         startForegroundWithCompat(notification, RING_NOTIFICATION_ID)
         manager?.cancel(NOTIFICATION_ID)
-        playRingtone(config?.tuneAsset)
+        playRingtone(config?.tuneFile, config?.tuneAsset)
         startVibration()
 
         launchAlarmScreen()
     }
 
-    private fun playRingtone(tuneAsset: String? = null) {
+    private fun playRingtone(tuneFile: String? = null, tuneAsset: String? = null) {
         stopRingtone()
         val alarmAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
 
-        // 1) Custom tune chosen in Flutter
+        // 1) The alarm's own sound file (a downloaded alarm sound chosen in Flutter)
+        if (!tuneFile.isNullOrEmpty() && java.io.File(tuneFile).isFile) {
+            try {
+                ringtonePlayer = MediaPlayer().apply {
+                    setDataSource(tuneFile)
+                    setAudioAttributes(alarmAttributes)
+                    isLooping = true
+                    prepare()
+                    start()
+                }
+                return
+            } catch (e: Exception) {
+                Log.e("AlarmAudioService", "Alarm sound file failed, using the next tune", e)
+                ringtonePlayer?.release()
+                ringtonePlayer = null
+            }
+        }
+
+        // 2) Custom tune asset chosen in Flutter
         if (!tuneAsset.isNullOrEmpty()) {
             val afd = findAssetFileDescriptor(tuneAsset)
             if (afd != null) {
@@ -356,7 +374,7 @@ class AlarmAudioService : Service() {
             }
         }
 
-        // 2) System default alarm sound
+        // 3) System default alarm sound
         try {
             val alertUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)

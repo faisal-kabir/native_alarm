@@ -1,9 +1,12 @@
 import 'package:eala/core/error/exceptions.dart';
 import 'package:eala/core/notification/fcm_token.dart';
 import 'package:eala/core/error/failures.dart';
+import 'package:eala/features/alarm_audio/domain/usecases/refresh_alarm_audio_usecase.dart';
 import 'package:eala/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:eala/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:eala/features/auth/domain/entities/app_user.dart';
+import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
+import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:eala/features/auth/domain/usecases/ensure_signed_in_usecase.dart';
@@ -76,30 +79,46 @@ void main() {
   test('the Dashboard ensures a session when asked', () async {
     final auth = FakeAuthRepository();
     final profiles = FakeUserProfileRepository();
+    final audio = FakeAlarmAudioRepository();
     final bloc = DashboardBloc(
       FakeAnalyticsService(),
       EnsureSignedInUseCase(auth),
       SyncUserProfileUseCase(profiles),
       UpdateDeviceInfoUseCase(profiles),
       GetAppInfoUseCase(FakeSettingsRepository()),
+      RefreshAlarmAudioUseCase(audio),
+      RescheduleAlarmsUseCase(FakeAlarmRepository(), FakeAlarmScheduler()),
+      UploadPendingAlarmsUseCase(
+        FakeAlarmRepository(),
+        FakeRemoteAlarmRepository(),
+      ),
     )..add(const EnsureSessionEvent());
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
     expect(auth.calls, 1);
     // Once signed in, the user's row is saved on the device.
     expect(profiles.syncs, 1);
+    // ...and the alarm sounds and tracks are brought up to date.
+    expect(audio.refreshes, 1);
     await bloc.close();
   });
 
   test('a refreshed FCM token is passed on to the server', () async {
     final auth = FakeAuthRepository();
     final profiles = FakeUserProfileRepository();
+    final audio = FakeAlarmAudioRepository();
     final bloc = DashboardBloc(
       FakeAnalyticsService(),
       EnsureSignedInUseCase(auth),
       SyncUserProfileUseCase(profiles),
       UpdateDeviceInfoUseCase(profiles),
       GetAppInfoUseCase(FakeSettingsRepository()),
+      RefreshAlarmAudioUseCase(audio),
+      RescheduleAlarmsUseCase(FakeAlarmRepository(), FakeAlarmScheduler()),
+      UploadPendingAlarmsUseCase(
+        FakeAlarmRepository(),
+        FakeRemoteAlarmRepository(),
+      ),
     );
 
     setFcmToken('fresh-token');

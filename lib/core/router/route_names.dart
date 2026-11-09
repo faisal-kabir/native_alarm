@@ -11,4 +11,6 @@ abstract class RouteNames {
   static const reasonReadyPath = '/reasonReady';
   static const reasonDetail = 'reasonDetail';
   static const reasonDetailPath = '/reasonDetail';
+  static const createAlarm = 'createAlarm';
+  static const createAlarmPath = '/createAlarm';
 }
