@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constant.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_color.dart';
 import '../../../../core/utils/load_status.dart';
 import '../../../../core/widgets/app_alert.dart';
@@ -221,13 +222,19 @@ class _DetailViewState extends State<_DetailView> {
     _bloc.add(const ReasonDetailDiscardedEvent());
   }
 
-  /// "…": the actions sheet; Delete asks once ("Delete “name”?", saying its alarm goes
-  /// too when it has one), then deletes.
+  /// "…": the actions sheet. "Use with an alarm" opens the alarm editor; Delete asks
+  /// once ("Delete “name”?", saying its alarm goes too when it has one), then deletes.
   Future<void> _more() async {
     HapticFeedback.selectionClick();
     final strings = appLanguage(context);
     final name = _state.reason.name;
-    if (!await showReasonActions(context, _state.alarm, name: name) || !mounted) return;
+    final action = await showReasonActions(
+      context,
+      name: name,
+      canUseWithAlarm: !_state.hasAlarm,
+    );
+    if (action == null || !mounted) return;
+    if (action == ReasonAction.useWithAlarm) return _useWithAlarm();
     // The sheet is gone first; the question comes a moment later.
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
@@ -249,6 +256,17 @@ class _DetailViewState extends State<_DetailView> {
     if ((delete ?? false) && mounted) {
       _bloc.add(const ReasonDetailDeleteRequestedEvent());
     }
+  }
+
+  /// "Connect an alarm" / "Use with an alarm": the alarm editor with this reason
+  /// already chosen. Back here, the page shows the alarm it made (it follows the
+  /// saved alarms).
+  Future<void> _useWithAlarm() async {
+    HapticFeedback.selectionClick();
+    await context.push<bool>(
+      RouteNames.createAlarmPath,
+      extra: _state.reason.id,
+    );
   }
 
   Future<void> _back() async {
@@ -302,6 +320,7 @@ class _DetailViewState extends State<_DetailView> {
                       state: state,
                       onRename: (name) =>
                           _bloc.add(ReasonDetailRenamedEvent(name)),
+                      onConnectAlarm: _useWithAlarm,
                       onArea: _pickArea,
                       onPurpose: () => _pickText(why: false),
                       onWhy: () => _pickText(why: true),
@@ -436,6 +455,7 @@ class _Body extends StatelessWidget {
   const _Body({
     required this.state,
     required this.onRename,
+    required this.onConnectAlarm,
     required this.onArea,
     required this.onPurpose,
     required this.onWhy,
@@ -446,6 +466,7 @@ class _Body extends StatelessWidget {
 
   final ReasonDetailState state;
   final ValueChanged<String> onRename;
+  final VoidCallback onConnectAlarm;
   final VoidCallback onArea;
   final VoidCallback onPurpose;
   final VoidCallback onWhy;
@@ -498,8 +519,7 @@ class _Body extends StatelessWidget {
           onRename: onRename,
         ),
         SizedBox(height: 24.h),
-        // Linking a reason to an alarm is not built yet: the row is there, inert. A
-        // Reason that has its alarm (one alarm, one Reason) shows it below instead.
+        // A Reason that has its alarm (one alarm, one Reason) shows it below instead.
         if (!state.hasAlarm)
           ListGroup(
             children: [
@@ -508,6 +528,7 @@ class _Body extends StatelessWidget {
                 label: strings.reason_detail_connect_alarm,
                 tint: AppColor.primary,
                 chevron: true,
+                onTap: onConnectAlarm,
               ),
             ],
           ),

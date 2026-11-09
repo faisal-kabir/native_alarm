@@ -4,6 +4,7 @@ import 'package:eala/core/router/route_names.dart';
 import 'package:eala/core/widgets/app_sheet.dart';
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
+import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
 import 'package:eala/features/reason_detail/presentation/bloc/reason_detail_bloc.dart';
 import 'package:eala/features/reason_detail/presentation/pages/reason_detail_page.dart';
@@ -328,6 +329,39 @@ void main() {
     expect(find.byType(ReasonDetailPage), findsOneWidget);
   });
 
+  testWidgets('Connect an alarm opens the alarm editor, the reason chosen', (
+    tester,
+  ) async {
+    await openDetail(tester);
+    await tester.tap(find.text('Connect an alarm'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CreateAlarmPage), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(CreateAlarmPage),
+        matching: find.text('Mornings'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Save Alarm'), findsOneWidget);
+    // Back returns to the reason.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReasonDetailPage), findsOneWidget);
+  });
+
+  testWidgets('… → Use with an alarm opens the alarm editor too', (
+    tester,
+  ) async {
+    await openDetail(tester);
+    await tester.tap(find.bySemanticsLabel('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Use with an alarm'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CreateAlarmPage), findsOneWidget);
+    expect(find.text('Save Alarm'), findsOneWidget);
+  });
+
   group('a reason with its alarm', () {
     // Played by alarm 'a' (server alarm 12): 6:30 on Tuesday and Wednesday.
     const withAlarm = Reason(
@@ -373,6 +407,14 @@ void main() {
       expect(find.text('Not in an alarm yet.'), findsNothing);
       expect(find.text('6:30 AM'), findsOneWidget);
       expect(find.text('Tue Wed'), findsOneWidget);
+    });
+
+    testWidgets('its "…" offers no other alarm', (tester) async {
+      await openDetail(tester, reason: withAlarm, alarms: alarmsWithOne());
+      await tester.tap(find.bySemanticsLabel('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Use with an alarm'), findsNothing);
+      expect(find.text('Delete Reason'), findsOneWidget);
     });
 
     testWidgets('deleting it deletes its alarm too, everywhere', (
