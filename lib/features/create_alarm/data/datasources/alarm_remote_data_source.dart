@@ -21,6 +21,16 @@ abstract class AlarmRemoteDataSource {
   /// [ServerException] when the server keeps any of them; the alarm and its Reason's
   /// link then stay as they were.
   Future<List<Map<String, dynamic>>> deleteAlarm(int id);
+
+  /// Writes the edited [alarm] over its server copy (it had [old]'s values): the
+  /// `alarm` row (its first schedule and every choice), its `sub_alarm` rows replaced
+  /// by its other schedules, and, when the Reason changed, the old Reason's
+  /// `alarm_id` cleared and the new one's set. Answers the row with everything it
+  /// points at ([alarmSelect]) and the Reason it freed (rows, [reasonSelect]). When a
+  /// step fails, [old] is written back as well as the server allows; throws
+  /// [ServerException].
+  Future<({Map<String, dynamic> alarm, List<Map<String, dynamic>> freed})>
+  updateAlarm(Alarm old, Alarm alarm, DateTime now);
 }
 
 @LazySingleton(as: AlarmRemoteDataSource)
@@ -70,6 +80,94 @@ class AlarmRemoteDataSourceImpl implements AlarmRemoteDataSource {
     }
   }
 
+  @override
+  Future<({Map<String, dynamic> alarm, List<Map<String, dynamic>> freed})>
+  updateAlarm(Alarm old, Alarm alarm, DateTime now) async {
+    final id = alarm.remoteId;
+    if (id == null) throw const ServerException('Alarm not on the server');
+    try {
+      final freed = await _write(id, old, alarm, now);
+      final json = await client
+          .from('alarm')
+          .select(alarmSelect)
+          .eq('id', id)
+          .single();
+      return (alarm: json, freed: freed);
+    } catch (e) {
+      // Put the server's copy back as it was (a failure here leaves what it could).
+      try {
+        await _write(id, alarm, old, now);
+      } catch (_) {}
+      throw e is ServerException ? e : ServerException(e.toString());
+    }
+  }
+
+  /// Writes [to] over alarm [id], which held [from]; answers the Reasons it freed.
+  /// Every write asks for the rows it really changed: row-level security that does
+  /// not allow it changes nothing and reports no error.
+  Future<List<Map<String, dynamic>>> _write(
+    int id,
+    Alarm from,
+    Alarm to,
+    DateTime now,
+  ) async {
+    final schedules = serverSchedules(to, now);
+    final updated = await client
+        .from('alarm')
+        .update({
+          ...alarmUpdateColumns(to, schedules.first),
+          'updated_at': now.toUtc().toIso8601String(),
+        })
+        .eq('id', id)
+        .select('id');
+    if (updated.isEmpty) throw const ServerException('Alarm not updated');
+
+    // Its other schedules: the old rows go, the new ones are written.
+    await _deleteSubAlarms(id);
+    if (schedules.length > 1) {
+      await client.from('sub_alarm').insert([
+        for (final s in schedules.skip(1))
+          {'alarm_id': id, ...scheduleColumns(s)},
+      ]);
+    }
+
+    if (from.reasonId == to.reasonId) return const [];
+    final oldReason = from.reasonId;
+    final freed = oldReason == null
+        ? const <Map<String, dynamic>>[]
+        : await client
+              .from('reason')
+              .update({'alarm_id': null})
+              .eq('id', oldReason)
+              .eq('alarm_id', id)
+              .select(reasonSelect);
+    final newReason = to.reasonId;
+    if (newReason != null) {
+      final linked = await client
+          .from('reason')
+          .update({'alarm_id': id})
+          .eq('id', newReason)
+          .select('id');
+      if (linked.isEmpty) throw const ServerException('Reason not linked');
+    }
+    return freed;
+  }
+
+  /// Removes every `sub_alarm` row of alarm [id], checking they really went (a delete
+  /// row-level security refuses removes nothing and reports no error).
+  Future<void> _deleteSubAlarms(int id) async {
+    final subs = await client.from('sub_alarm').select('id').eq('alarm_id', id);
+    if (subs.isEmpty) return;
+    final gone = await client
+        .from('sub_alarm')
+        .delete()
+        .eq('alarm_id', id)
+        .select('id');
+    if (gone.length < subs.length) {
+      throw const ServerException('Sub alarms not deleted');
+    }
+  }
+
   // Every delete asks for the rows it really removed (`select`): row-level security
   // that does not allow a delete removes nothing and reports no error, which would
   // leave rows behind unseen.
@@ -77,20 +175,7 @@ class AlarmRemoteDataSourceImpl implements AlarmRemoteDataSource {
   Future<List<Map<String, dynamic>>> deleteAlarm(int id) async {
     try {
       // Its other schedules first: if they can not go, nothing has changed yet.
-      final subs = await client
-          .from('sub_alarm')
-          .select('id')
-          .eq('alarm_id', id);
-      if (subs.isNotEmpty) {
-        final gone = await client
-            .from('sub_alarm')
-            .delete()
-            .eq('alarm_id', id)
-            .select('id');
-        if (gone.length < subs.length) {
-          throw const ServerException('Sub alarms not deleted');
-        }
-      }
+      await _deleteSubAlarms(id);
 
       // `reason.alarm_id` points at the alarm, so the link goes before the row.
       final freed = await client

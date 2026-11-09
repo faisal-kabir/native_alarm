@@ -60,23 +60,12 @@ class CreateAlarmUseCase implements UseCase<Alarm, CreateAlarmParams> {
       );
 
   Future<Either<Failure, Alarm>> _create(CreateAlarmParams params) async {
-    final draft = finalize(params.draft);
-    final made = Alarm(
+    final made = alarmFromDraft(
+      params.draft,
       id: 'alarm_${params.now.microsecondsSinceEpoch}',
-      enabled: draft.enabled,
-      time: nextRing(draft, params.now),
-      repeatWeekdays: [for (final d in draft.days) alarmWeekday(d)]..sort(),
+      title: params.title,
+      now: params.now,
       audioTrackId: messageTrack,
-      ringtoneId: draft.alarmSoundId?.toString() ?? 'default',
-      label: params.title,
-      missionName: params.title,
-      reasonId: draft.reasonId,
-      soundTrackId: draft.soundTrackId,
-      alarmSoundId: draft.alarmSoundId,
-      ringAgain: draft.again,
-      dayTimes: draft.byDay?.map(
-        (day, time) => MapEntry(alarmWeekday(day), time.minutesOfDay),
-      ),
     );
 
     final alarm = (await remote.upload(

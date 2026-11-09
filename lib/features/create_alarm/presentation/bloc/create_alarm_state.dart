@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../alarm/domain/entities/alarm.dart';
 import '../../../alarm_audio/domain/entities/alarm_audio.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../domain/entities/alarm_draft.dart';
@@ -15,6 +16,10 @@ enum CreateAlarmStatus {
 
   /// Every alarm place is taken: the page closes and says so.
   full,
+
+  /// "Delete Alarm" (editing): being deleted, then gone (the page closes).
+  deleting,
+  deleted,
 }
 
 class CreateAlarmState extends Equatable {
@@ -41,8 +46,15 @@ class CreateAlarmState extends Equatable {
 
   final CreateAlarmStatus status;
 
-  /// Goes up by one on every failed save, so the page can say so.
+  /// Goes up by one on every failed save / delete, so the page can say so.
   final int saveFailures;
+  final int deleteFailures;
+
+  /// The alarm being edited ("Edit Alarm"), as saved; null while making a new one.
+  final Alarm? editing;
+
+  /// What the editor opened with (editing): Save shows only once [view] differs.
+  final AlarmDraft? initial;
 
   CreateAlarmState({
     AlarmDraft? draft,
@@ -55,7 +67,16 @@ class CreateAlarmState extends Equatable {
     this.accessDenied = false,
     this.status = CreateAlarmStatus.editing,
     this.saveFailures = 0,
+    this.deleteFailures = 0,
+    this.editing,
+    this.initial,
   }) : draft = draft ?? AlarmDraft();
+
+  bool get isEdit => editing != null;
+
+  /// Something to save: always for a new alarm; for an edit, once it differs from
+  /// what it opened with (compared as saved: cards that merge back are no change).
+  bool get dirty => !isEdit || finalize(view) != initial;
 
   /// The whole alarm as the page shows it (the cards folded into the draft).
   AlarmDraft get view => fromCards(draft, cards);
@@ -69,12 +90,13 @@ class CreateAlarmState extends Equatable {
   }
 
   /// The Reasons that can be picked: the chosen one first, then every free one. A
-  /// Reason belongs to one alarm: with an `alarm_id` ([Reason.alarmId]) it is taken.
+  /// Reason belongs to one alarm: with an `alarm_id` ([Reason.alarmId]) it is taken,
+  /// unless it is the alarm being edited (its Reason can be picked back).
   List<Reason> get pickableReasons => [
     ?reason,
     for (final r in reasons)
       if (r.id != draft.reasonId &&
-          r.alarmId == null &&
+          (r.alarmId == null || r.alarmId == editing?.remoteId) &&
           !takenReasonIds.contains(r.id))
         r,
   ];
@@ -103,6 +125,7 @@ class CreateAlarmState extends Equatable {
     bool? accessDenied,
     CreateAlarmStatus? status,
     int? saveFailures,
+    int? deleteFailures,
   }) => CreateAlarmState(
     draft: draft ?? this.draft,
     cards: cards ?? this.cards,
@@ -114,6 +137,9 @@ class CreateAlarmState extends Equatable {
     accessDenied: accessDenied ?? this.accessDenied,
     status: status ?? this.status,
     saveFailures: saveFailures ?? this.saveFailures,
+    deleteFailures: deleteFailures ?? this.deleteFailures,
+    editing: editing,
+    initial: initial,
   );
 
   @override
@@ -128,5 +154,8 @@ class CreateAlarmState extends Equatable {
     accessDenied,
     status,
     saveFailures,
+    deleteFailures,
+    editing,
+    initial,
   ];
 }

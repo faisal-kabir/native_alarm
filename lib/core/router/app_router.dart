@@ -2,6 +2,7 @@ import 'package:eala/main.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/alarm/presentation/pages/alarm_list_page.dart';
+import '../../features/alarm/domain/entities/alarm.dart';
 import '../../features/create_alarm/presentation/pages/create_alarm_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/create_reason/presentation/pages/create_reason_page.dart';
@@ -72,6 +73,15 @@ final GoRouter appRouter = GoRouter(
           reasonId: state.extra is int ? state.extra! as int : null,
         ),
       ),
+    ),
+    GoRoute(
+      path: RouteNames.editAlarmPath,
+      name: RouteNames.editAlarm,
+      // `extra`: the saved alarm to edit; without one (a lost link) it goes home.
+      redirect: (context, state) =>
+          state.extra is Alarm ? null : RouteNames.dashboardPath,
+      pageBuilder: (context, state) =>
+          appPage(state, CreateAlarmPage(alarm: state.extra! as Alarm)),
     ),
   ],
   errorBuilder: (context, state) =>

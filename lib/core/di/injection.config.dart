@@ -31,6 +31,7 @@ import 'package:eala/features/alarm/data/platform_alarm_scheduler.dart'
     as _i222;
 import 'package:eala/features/alarm/data/repositories/alarm_repository_impl.dart'
     as _i695;
+import 'package:eala/features/alarm/domain/entities/alarm.dart' as _i959;
 import 'package:eala/features/alarm/domain/repositories/alarm_repository.dart'
     as _i1032;
 import 'package:eala/features/alarm/domain/repositories/alarm_scheduler.dart'
@@ -113,6 +114,8 @@ import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_use
     as _i218;
 import 'package:eala/features/create_alarm/domain/usecases/set_alarm_enabled_usecase.dart'
     as _i97;
+import 'package:eala/features/create_alarm/domain/usecases/update_alarm_usecase.dart'
+    as _i300;
 import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart'
     as _i40;
 import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_bloc.dart'
@@ -461,6 +464,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i173.AlarmScheduler>(),
       ),
     );
+    gh.lazySingleton<_i300.UpdateAlarmUseCase>(
+      () => _i300.UpdateAlarmUseCase(
+        gh<_i1032.AlarmRepository>(),
+        gh<_i452.RemoteAlarmRepository>(),
+        gh<_i173.AlarmScheduler>(),
+      ),
+    );
     gh.lazySingleton<_i40.UploadPendingAlarmsUseCase>(
       () => _i40.UploadPendingAlarmsUseCase(
         gh<_i1032.AlarmRepository>(),
@@ -563,15 +573,18 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1004.CreateReasonUseCase>(),
       ),
     );
-    gh.factoryParam<_i494.CreateAlarmBloc, int?, dynamic>(
-      (reasonId, _) => _i494.CreateAlarmBloc(
+    gh.factoryParam<_i494.CreateAlarmBloc, int?, _i959.Alarm?>(
+      (reasonId, editing) => _i494.CreateAlarmBloc(
         gh<_i305.WatchReasonsUseCase>(),
         gh<_i393.WatchAlarmAudioUseCase>(),
         gh<_i586.GetAlarmsUseCase>(),
         gh<_i73.CreateAlarmUseCase>(),
+        gh<_i300.UpdateAlarmUseCase>(),
+        gh<_i8.RemoveAlarmUseCase>(),
         gh<_i278.HasAlarmAccessUseCase>(),
         gh<_i278.RequestAlarmAccessUseCase>(),
         reasonId,
+        editing,
       ),
     );
     gh.factory<_i875.DashboardBloc>(

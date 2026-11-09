@@ -102,7 +102,12 @@ class CreateAlarmAccessRequestedEvent extends CreateAlarmEvent {
   const CreateAlarmAccessRequestedEvent();
 }
 
-/// "Save Alarm".
+/// "Save Alarm" / "Save Changes".
 class CreateAlarmSavedEvent extends CreateAlarmEvent {
   const CreateAlarmSavedEvent();
+}
+
+/// "Delete Alarm" was confirmed (editing): the alarm goes everywhere.
+class CreateAlarmDeleteRequestedEvent extends CreateAlarmEvent {
+  const CreateAlarmDeleteRequestedEvent();
 }

@@ -6,6 +6,7 @@ import 'package:eala/features/alarm_audio/domain/usecases/watch_alarm_audio_usec
 import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart';
 import 'package:eala/features/create_alarm/domain/repositories/remote_alarm_repository.dart';
 import 'package:eala/features/create_alarm/domain/usecases/remove_alarm_usecase.dart';
+import 'package:eala/features/create_alarm/domain/usecases/update_alarm_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_bloc.dart';
@@ -680,7 +681,10 @@ Future<void> registerFakeAlarmDependencies(
     () => buildSettingsBloc(settingsRepository ?? FakeSettingsRepository()),
   );
   instance.registerLazySingleton<AlarmPlatformClient>(AlarmPlatformClient.new);
-  instance.registerFactoryParam<CreateAlarmBloc, int?, dynamic>((reasonId, _) {
+  instance.registerFactoryParam<CreateAlarmBloc, int?, Alarm?>((
+    reasonId,
+    editing,
+  ) {
     final scheduler = alarmScheduler ?? FakeAlarmScheduler();
     return CreateAlarmBloc(
       WatchReasonsUseCase(reasons),
@@ -689,9 +693,12 @@ Future<void> registerFakeAlarmDependencies(
       ),
       GetAlarmsUseCase(repository),
       CreateAlarmUseCase(repository, remote, scheduler),
+      UpdateAlarmUseCase(repository, remote, scheduler),
+      RemoveAlarmUseCase(repository, remote, scheduler),
       HasAlarmAccessUseCase(scheduler),
       RequestAlarmAccessUseCase(scheduler),
       reasonId,
+      editing,
     );
   });
 }
@@ -703,6 +710,9 @@ class FakeRemoteAlarmRepository implements RemoteAlarmRepository {
   final uploaded = <Alarm>[];
   final removed = <int>[];
 
+  /// Every update, as (what the server held, what was written).
+  final updates = <(Alarm, Alarm)>[];
+
   @override
   Future<Either<Failure, Alarm>> upload(
     Alarm alarm, {
@@ -711,6 +721,17 @@ class FakeRemoteAlarmRepository implements RemoteAlarmRepository {
     if (fail) return const Left(ServerFailure('offline'));
     uploaded.add(alarm);
     return Right(alarm.copyWith(remoteId: uploaded.length));
+  }
+
+  @override
+  Future<Either<Failure, Alarm>> update(
+    Alarm old,
+    Alarm alarm, {
+    required DateTime now,
+  }) async {
+    if (fail) return const Left(ServerFailure('offline'));
+    updates.add((old, alarm));
+    return Right(alarm);
   }
 
   @override

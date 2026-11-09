@@ -611,8 +611,7 @@ class _Body extends StatelessWidget {
 }
 
 /// The alarm that plays the reason: one row per time it rings ("6:30 AM · Tue Wed",
-/// "9:30 AM · Weekends"), the clock orange. Editing an alarm is not built yet, so the
-/// rows do nothing on tap.
+/// "9:30 AM · Weekends"), the clock orange. A row opens the alarm in the editor.
 class _AlarmRows extends StatelessWidget {
   const _AlarmRows({required this.alarm});
 
@@ -630,6 +629,10 @@ class _AlarmRows extends StatelessWidget {
             label: card.time.label,
             value: repeatLabel(card.days, words),
             chevron: true,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              context.push<bool>(RouteNames.editAlarmPath, extra: alarm);
+            },
           ),
       ],
     );

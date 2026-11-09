@@ -5,6 +5,7 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/constants/app_constant.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
+import '../../../alarm/domain/entities/alarm.dart';
 import '../../../alarm/domain/usecases/alarm_access_usecases.dart';
 import '../../../alarm/domain/usecases/get_alarms_usecase.dart';
 import '../../../alarm_audio/domain/entities/alarm_audio.dart';
@@ -14,18 +15,25 @@ import '../../../reasons/domain/usecases/watch_reasons_usecase.dart';
 import '../../domain/entities/alarm_draft.dart';
 import '../../domain/entities/alarm_schedule.dart';
 import '../../domain/usecases/create_alarm_usecase.dart';
+import '../../domain/usecases/remove_alarm_usecase.dart';
+import '../../domain/usecases/update_alarm_usecase.dart';
 import 'create_alarm_event.dart';
 import 'create_alarm_state.dart';
 
-/// "Add Alarm". Holds the whole form (the schedule cards and every choice) and reads
-/// only what the device already has: the cached reasons, alarm sounds and sound tracks,
-/// so an alarm can be made offline. [reasonId] is a Reason it arrives with.
+/// "Add Alarm" / "Edit Alarm". Holds the whole form (the schedule cards and every
+/// choice) and reads only what the device already has: the cached reasons, alarm
+/// sounds and sound tracks, so an alarm can be made offline. [reasonId] is a Reason a
+/// new alarm arrives with; [editing] is a saved alarm to edit (everything filled in
+/// from it, "Save Changes" through [UpdateAlarmUseCase], "Delete Alarm" through
+/// [RemoveAlarmUseCase]).
 @injectable
 class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
   final WatchReasonsUseCase watchReasonsUseCase;
   final WatchAlarmAudioUseCase watchAlarmAudioUseCase;
   final GetAlarmsUseCase getAlarmsUseCase;
   final CreateAlarmUseCase createAlarmUseCase;
+  final UpdateAlarmUseCase updateAlarmUseCase;
+  final RemoveAlarmUseCase removeAlarmUseCase;
   final HasAlarmAccessUseCase hasAlarmAccessUseCase;
   final RequestAlarmAccessUseCase requestAlarmAccessUseCase;
 
@@ -34,10 +42,13 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
     this.watchAlarmAudioUseCase,
     this.getAlarmsUseCase,
     this.createAlarmUseCase,
+    this.updateAlarmUseCase,
+    this.removeAlarmUseCase,
     this.hasAlarmAccessUseCase,
     this.requestAlarmAccessUseCase,
     @factoryParam int? reasonId,
-  ) : super(_first(reasonId)) {
+    @factoryParam Alarm? editing,
+  ) : super(editing == null ? _first(reasonId) : _edit(editing)) {
     on<CreateAlarmStartedEvent>(_onStarted);
     on<CreateAlarmReasonsWatchedEvent>(_onWatchReasons);
     on<CreateAlarmSoundsWatchedEvent>(_onWatchSounds);
@@ -82,6 +93,21 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
     );
     on<CreateAlarmAccessRequestedEvent>(_onAccessRequested);
     on<CreateAlarmSavedEvent>(_onSave);
+    on<CreateAlarmDeleteRequestedEvent>(_onDelete);
+  }
+
+  /// A saved alarm, every choice filled in; its schedule as cards.
+  static CreateAlarmState _edit(Alarm alarm) {
+    final draft = editorDraftOf(alarm);
+    var next = 0;
+    final cards = groupDays(draft, () => 't${next++}');
+    return CreateAlarmState(
+      draft: draft,
+      cards: cards,
+      nextCardId: next,
+      editing: alarm,
+      initial: finalize(fromCards(draft, cards)),
+    );
   }
 
   /// A new alarm: 6:30 AM, once, on, no ring again; one card.
@@ -101,10 +127,15 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
     add(const CreateAlarmReasonsWatchedEvent());
     add(const CreateAlarmSoundsWatchedEvent());
 
-    final alarms = (await getAlarmsUseCase(NoParams()))
-        .getOrElse(() => const []);
+    final editing = state.editing;
+    final alarms = [
+      for (final a in (await getAlarmsUseCase(
+        NoParams(),
+      )).getOrElse(() => const []))
+        if (a.id != editing?.id) a,
+    ];
     // Every way in checks for a free place first; this catches one that did not.
-    if (alarms.length >= AppConstant.maxAlarmCount) {
+    if (editing == null && alarms.length >= AppConstant.maxAlarmCount) {
       emit(state.copyWith(status: CreateAlarmStatus.full));
       return;
     }
@@ -132,7 +163,8 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
     ),
   );
 
-  /// Both lists, from the device; each starts on its first row until one is chosen.
+  /// Both lists, from the device; a new alarm starts on each list's first row until
+  /// one is chosen (an edited one keeps what it was saved with).
   Future<void> _onWatchSounds(
     CreateAlarmSoundsWatchedEvent event,
     Emitter<CreateAlarmState> emit,
@@ -150,7 +182,10 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
         AlarmAudioKind.soundTrack,
         (list) => state.copyWith(
           soundTracks: list,
-          draft: state.draft.soundTrackId == null && list.isNotEmpty
+          draft:
+              !state.isEdit &&
+                  state.draft.soundTrackId == null &&
+                  list.isNotEmpty
               ? state.draft.copyWith(soundTrackId: list.first.id)
               : null,
         ),
@@ -159,7 +194,10 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
         AlarmAudioKind.alarmSound,
         (list) => state.copyWith(
           alarmSounds: list,
-          draft: state.draft.alarmSoundId == null && list.isNotEmpty
+          draft:
+              !state.isEdit &&
+                  state.draft.alarmSoundId == null &&
+                  list.isNotEmpty
               ? state.draft.copyWith(alarmSoundId: list.first.id)
               : null,
         ),
@@ -183,14 +221,22 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
   ) async {
     final reason = state.reason;
     if (reason == null || state.status != CreateAlarmStatus.editing) return;
+    final editing = state.editing;
+    if (editing != null && !state.dirty) return;
     emit(state.copyWith(status: CreateAlarmStatus.saving));
-    final result = await createAlarmUseCase(
-      CreateAlarmParams(
-        draft: state.view,
-        title: reason.name,
-        now: DateTime.now(),
-      ),
-    );
+    final now = DateTime.now();
+    final result = editing == null
+        ? await createAlarmUseCase(
+            CreateAlarmParams(draft: state.view, title: reason.name, now: now),
+          )
+        : await updateAlarmUseCase(
+            UpdateAlarmParams(
+              alarm: editing,
+              draft: state.view,
+              title: reason.name,
+              now: now,
+            ),
+          );
     emit(
       result.fold(
         (failure) => failure is AlarmLimitFailure
@@ -200,6 +246,25 @@ class CreateAlarmBloc extends Bloc<CreateAlarmEvent, CreateAlarmState> {
                 saveFailures: state.saveFailures + 1,
               ),
         (_) => state.copyWith(status: CreateAlarmStatus.saved),
+      ),
+    );
+  }
+
+  Future<void> _onDelete(
+    CreateAlarmDeleteRequestedEvent event,
+    Emitter<CreateAlarmState> emit,
+  ) async {
+    final editing = state.editing;
+    if (editing == null || state.status != CreateAlarmStatus.editing) return;
+    emit(state.copyWith(status: CreateAlarmStatus.deleting));
+    final result = await removeAlarmUseCase(editing);
+    emit(
+      result.fold(
+        (_) => state.copyWith(
+          status: CreateAlarmStatus.editing,
+          deleteFailures: state.deleteFailures + 1,
+        ),
+        (_) => state.copyWith(status: CreateAlarmStatus.deleted),
       ),
     );
   }

@@ -10,6 +10,15 @@ abstract class RemoteAlarmRepository {
   /// [Alarm.remoteId]); [now] dates its schedules' next rings.
   Future<Either<Failure, Alarm>> upload(Alarm alarm, {required DateTime now});
 
+  /// Writes the edited [alarm] (its [Alarm.remoteId] set) over its server copy, which
+  /// held [old] (its schedules, its Reason's link moved when the Reason changed), and
+  /// answers it as the server now holds it. On failure the server keeps [old].
+  Future<Either<Failure, Alarm>> update(
+    Alarm old,
+    Alarm alarm, {
+    required DateTime now,
+  });
+
   /// Removes server alarm [remoteId] (and its schedules, and its Reason's link).
   Future<Either<Failure, Unit>> remove(int remoteId);
 }

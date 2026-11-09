@@ -1183,6 +1183,24 @@ abstract class AppLocalizations {
   /// **'Save Alarm'**
   String get create_alarm_save;
 
+  /// No description provided for @create_alarm_edit_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Alarm'**
+  String get create_alarm_edit_title;
+
+  /// No description provided for @create_alarm_save_changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get create_alarm_save_changes;
+
+  /// No description provided for @create_alarm_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Alarm'**
+  String get create_alarm_delete;
+
   /// No description provided for @create_alarm_save_failed.
   ///
   /// In en, this message translates to:

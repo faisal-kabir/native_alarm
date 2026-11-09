@@ -195,6 +195,55 @@ DateTime nextRing(AlarmDraft draft, DateTime now) {
 /// An editor day (0 = Sun .. 6 = Sat) as the alarm counts it (1 = Mon .. 7 = Sun).
 int alarmWeekday(int day) => day == 0 ? 7 : day;
 
+/// The saved alarm the editor's [draft] makes (finalized first: equal times are a
+/// simple alarm): days 1 = Mon .. 7 = Sun, `dayTimes` in minutes after midnight per
+/// day, its next ring after [now], [title] (the Reason's name) as its label. [id],
+/// [audioTrackId] and [remoteId] are the caller's (a new alarm's or the one edited).
+Alarm alarmFromDraft(
+  AlarmDraft draft, {
+  required String id,
+  required String title,
+  required DateTime now,
+  required String audioTrackId,
+  int? remoteId,
+}) {
+  final d = finalize(draft);
+  return Alarm(
+    id: id,
+    enabled: d.enabled,
+    time: nextRing(d, now),
+    repeatWeekdays: [for (final day in d.days) alarmWeekday(day)]..sort(),
+    audioTrackId: audioTrackId,
+    ringtoneId: d.alarmSoundId?.toString() ?? 'default',
+    label: title,
+    missionName: title,
+    reasonId: d.reasonId,
+    soundTrackId: d.soundTrackId,
+    alarmSoundId: d.alarmSoundId,
+    ringAgain: d.again,
+    dayTimes: d.byDay?.map(
+      (day, time) => MapEntry(alarmWeekday(day), time.minutesOfDay),
+    ),
+    remoteId: remoteId,
+  );
+}
+
+/// A saved [alarm] as the editor opens it: its schedule ([alarmDraftOf]) and every
+/// other choice (Reason, sounds, ring again, on / off).
+AlarmDraft editorDraftOf(Alarm alarm) {
+  final schedule = alarmDraftOf(alarm);
+  return AlarmDraft(
+    time: schedule.time,
+    days: schedule.days,
+    byDay: schedule.byDay,
+    reasonId: alarm.reasonId,
+    soundTrackId: alarm.soundTrackId,
+    alarmSoundId: alarm.alarmSoundId,
+    again: alarm.ringAgain,
+    enabled: alarm.enabled,
+  );
+}
+
 /// A saved [alarm]'s schedule as the editor's draft (time, days, a time per day).
 AlarmDraft alarmDraftOf(Alarm alarm) {
   AlarmTime at(int minutes) => AlarmTime.fromMinutes(minutes);

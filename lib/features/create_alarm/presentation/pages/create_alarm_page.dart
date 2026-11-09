@@ -17,6 +17,7 @@ import '../../../../core/widgets/rise_in.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
+import '../../../alarm/domain/entities/alarm.dart';
 import '../../../create_reason/presentation/pages/create_reason_page.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../bloc/create_alarm_bloc.dart';
@@ -46,15 +47,18 @@ Future<void> showAlarmLimitAlert(BuildContext context) {
 /// Opened from My Alarms (which checks there is a free place first); [reasonId] is a
 /// Reason it arrives with. It pops with `true` once the alarm is saved.
 class CreateAlarmPage extends StatelessWidget {
-  const CreateAlarmPage({super.key, this.reasonId});
+  const CreateAlarmPage({super.key, this.reasonId, this.alarm});
 
   final int? reasonId;
+
+  /// A saved alarm to edit ("Edit Alarm"): everything filled in from it.
+  final Alarm? alarm;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (BuildContext context) =>
-          instance<CreateAlarmBloc>(param1: reasonId)
+          instance<CreateAlarmBloc>(param1: reasonId, param2: alarm)
             ..add(const CreateAlarmStartedEvent()),
       child: const _CreateAlarmView(),
     );
@@ -70,29 +74,45 @@ class _CreateAlarmView extends StatelessWidget {
     return BlocListener<CreateAlarmBloc, CreateAlarmState>(
       listener: (context, state) {
         switch (state.status) {
-          case CreateAlarmStatus.saved:
+          case CreateAlarmStatus.saved || CreateAlarmStatus.deleted:
             context.pop(true);
           case CreateAlarmStatus.full:
             // Every way in checks first; this catches one that did not.
             context.pop();
             showAlarmLimitAlert(appContext);
-          case CreateAlarmStatus.editing || CreateAlarmStatus.saving:
+          case CreateAlarmStatus.editing ||
+              CreateAlarmStatus.saving ||
+              CreateAlarmStatus.deleting:
             break;
         }
       },
       listenWhen: (a, b) => a.status != b.status,
-      child: BlocListener<CreateAlarmBloc, CreateAlarmState>(
-        listenWhen: (a, b) => a.saveFailures != b.saveFailures,
-        listener: (context, _) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.create_alarm_save_failed)),
-        ),
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<CreateAlarmBloc, CreateAlarmState>(
+            listenWhen: (a, b) => a.saveFailures != b.saveFailures,
+            listener: (context, _) => ScaffoldMessenger.of(context)
+                .showSnackBar(
+                  SnackBar(content: Text(strings.create_alarm_save_failed)),
+                ),
+          ),
+          BlocListener<CreateAlarmBloc, CreateAlarmState>(
+            listenWhen: (a, b) => a.deleteFailures != b.deleteFailures,
+            listener: (context, _) => ScaffoldMessenger.of(context)
+                .showSnackBar(
+                  SnackBar(content: Text(strings.my_alarms_delete_failed)),
+                ),
+          ),
+        ],
         child: Scaffold(
           body: Column(
             children: [
               SafeArea(
                 bottom: false,
                 child: _NavBar(
-                  title: strings.create_alarm_title,
+                  title: context.read<CreateAlarmBloc>().state.isEdit
+                      ? strings.create_alarm_edit_title
+                      : strings.create_alarm_title,
                   cancel: strings.common_cancel,
                   onCancel: () => context.pop(),
                 ),
@@ -327,6 +347,15 @@ class _Body extends StatelessWidget {
                       ],
                     ),
                   ],
+                  if (state.isEdit) ...[
+                    SizedBox(height: 24.h),
+                    PillButton(
+                      danger: true,
+                      enabled: state.status == CreateAlarmStatus.editing,
+                      label: strings.create_alarm_delete,
+                      onPressed: () => _confirmDelete(context),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -334,6 +363,29 @@ class _Body extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// The same question as swiping the alarm away on My Alarms: one action, one rule.
+  Future<void> _confirmDelete(BuildContext context) async {
+    final strings = appLanguage(context);
+    final bloc = context.read<CreateAlarmBloc>();
+    final delete = await showAppAlert<bool>(
+      context,
+      title: strings.my_alarms_delete_title,
+      message: strings.my_alarms_delete_message,
+      actions: [
+        AppAlertAction(label: strings.common_cancel, value: false),
+        AppAlertAction(
+          label: strings.common_delete,
+          value: true,
+          destructive: true,
+        ),
+      ],
+    );
+    if (delete ?? false) {
+      HapticFeedback.mediumImpact();
+      bloc.add(const CreateAlarmDeleteRequestedEvent());
+    }
   }
 
   Future<void> _pickSound(
@@ -441,6 +493,9 @@ class _NavBar extends StatelessWidget {
 
 /// ONE orange button. Never a dead button: until there is a Reason it chooses one
 /// (and says so), then it saves.
+/// The bottom button. A new alarm: "Choose a reason" / "Add a reason" until it has
+/// one, then "Save Alarm". Editing: "Save Changes", only once something differs from
+/// what it opened with (it rises in, and goes again when the change is undone).
 class _SaveBar extends StatelessWidget {
   const _SaveBar();
 
@@ -451,11 +506,13 @@ class _SaveBar extends StatelessWidget {
       buildWhen: (a, b) =>
           a.reason != b.reason ||
           a.status != b.status ||
+          a.dirty != b.dirty ||
           a.hasPickableReason != b.hasPickableReason,
       builder: (context, state) {
         final needsReason = state.reason == null;
         final saving = state.status == CreateAlarmStatus.saving;
-        return ColoredBox(
+        final bar = ColoredBox(
+          key: const ValueKey('save'),
           color: AppColor.backgroundColor,
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -465,13 +522,15 @@ class _SaveBar extends StatelessWidget {
               MediaQuery.paddingOf(context).bottom + 6.h,
             ),
             child: PillButton(
-              enabled: !saving,
+              enabled: !saving && state.status != CreateAlarmStatus.deleting,
               label: needsReason
                   ? (state.hasPickableReason
                         ? strings.create_alarm_choose_reason
                         : strings.create_alarm_add_reason)
                   : saving
                   ? strings.common_saving
+                  : state.isEdit
+                  ? strings.create_alarm_save_changes
                   : strings.create_alarm_save,
               onPressed: needsReason
                   ? context.chooseReason
@@ -483,6 +542,27 @@ class _SaveBar extends StatelessWidget {
                     },
             ),
           ),
+        );
+        // Nothing to save, no button: the calmest way to say it is all saved.
+        final shown = state.dirty || saving || needsReason;
+        return AnimatedSwitcher(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 280),
+          switchInCurve: RiseIn.curve,
+          switchOutCurve: RiseIn.curve,
+          transitionBuilder: (child, animation) => SizeTransition(
+            sizeFactor: animation,
+            alignment: Alignment.topCenter,
+            child: FadeTransition(opacity: animation, child: child),
+          ),
+          child: shown
+              ? bar
+              : SizedBox(
+                  key: const ValueKey('none'),
+                  width: double.infinity,
+                  height: MediaQuery.paddingOf(context).bottom,
+                ),
         );
       },
     );

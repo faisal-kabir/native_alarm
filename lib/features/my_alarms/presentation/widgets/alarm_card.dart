@@ -62,14 +62,16 @@ String alarmRingsLabel(
 ///   white; a one-off has none.
 /// Switched off, the card stays solid and only its contents turn grey (the days too).
 /// [blocked] (switched on, but the system has not granted alarm access) promises no
-/// ring and marks no day; the switch keeps the person's choice.
-class AlarmCard extends StatelessWidget {
+/// ring and marks no day; the switch keeps the person's choice. A tap ([onTap]) opens
+/// it in the editor; pressed, the card shrinks to 97 % and goes #2C2C2E.
+class AlarmCard extends StatefulWidget {
   const AlarmCard({
     super.key,
     required this.alarm,
     required this.reason,
     required this.now,
     required this.onEnabledChanged,
+    required this.onTap,
     this.hero = false,
     this.blocked = false,
   });
@@ -83,17 +85,34 @@ class AlarmCard extends StatelessWidget {
   /// The time "next ring" is counted from.
   final DateTime now;
   final ValueChanged<bool> onEnabledChanged;
+  final VoidCallback onTap;
   final bool hero;
   final bool blocked;
 
   static const Duration _fade = Duration(milliseconds: 300);
 
   @override
+  State<AlarmCard> createState() => _AlarmCardState();
+}
+
+class _AlarmCardState extends State<AlarmCard> {
+  bool _down = false;
+
+  void _press(bool down) {
+    if (_down != down) setState(() => _down = down);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final alarm = widget.alarm;
+    final reason = widget.reason;
+    final now = widget.now;
+    final hero = widget.hero;
+    const fade = AlarmCard._fade;
     final strings = appLanguage(context);
     final textTheme = appTheme(context).textTheme;
     final on = alarm.enabled;
-    final blocked = on && this.blocked;
+    final blocked = on && widget.blocked;
     final next = nextRingOf(alarm, now);
     final time = AlarmTime.fromMinutes(next.hour * 60 + next.minute);
     // The alarm counts days 1 = Mon .. 7 = Sun; the names count 0 = Sun.
@@ -104,136 +123,151 @@ class AlarmCard extends StatelessWidget {
 
     return Semantics(
       container: true,
+      button: true,
       label: strings.my_alarms_alarm_semantics(
         time.label,
         repeatLabel(days, repeatWordsOf(strings)),
         name,
         blocked ? strings.my_alarms_blocked_semantics : meta,
       ),
-      child: Container(
-        padding: hero
-            ? REdgeInsets.fromLTRB(16, 20, 16, 18)
-            : REdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColor.cardColor,
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 31.h,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ExcludeSemantics(
-                      child: Row(
-                        children: [
-                          if (name.isNotEmpty) ...[
-                            ReasonEmblem(
-                              areaName: reason?.areaTitle ?? name,
-                              areaColor: reason?.area?.color,
-                              areaIcon: reason?.area?.icon,
-                              disc: true,
-                              size: 28,
-                              muted: !on,
-                            ),
-                            SizedBox(width: 9.w),
-                          ],
-                          Expanded(
-                            child: AnimatedDefaultTextStyle(
-                              duration: _fade,
-                              style: textTheme.titleMedium!.copyWith(
-                                fontSize: 15.spMin,
-                                fontWeight: Dimension.textSemiBold,
-                                letterSpacing: -0.2,
-                                color: ink,
+      onTap: widget.onTap,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => _press(true),
+        onTapUp: (_) => _press(false),
+        onTapCancel: () => _press(false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _down ? 0.97 : 1,
+          duration: const Duration(milliseconds: 350),
+          curve: const Cubic(0.2, 0.9, 0.3, 1.2),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: hero
+                ? REdgeInsets.fromLTRB(16, 20, 16, 18)
+                : REdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _down ? AppColor.surfaceSecondary : AppColor.cardColor,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 31.h,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ExcludeSemantics(
+                          child: Row(
+                            children: [
+                              if (name.isNotEmpty) ...[
+                                ReasonEmblem(
+                                  areaName: reason?.areaTitle ?? name,
+                                  areaColor: reason?.area?.color,
+                                  areaIcon: reason?.area?.icon,
+                                  disc: true,
+                                  size: 28,
+                                  muted: !on,
+                                ),
+                                SizedBox(width: 9.w),
+                              ],
+                              Expanded(
+                                child: AnimatedDefaultTextStyle(
+                                  duration: fade,
+                                  style: textTheme.titleMedium!.copyWith(
+                                    fontSize: 15.spMin,
+                                    fontWeight: Dimension.textSemiBold,
+                                    letterSpacing: -0.2,
+                                    color: ink,
+                                  ),
+                                  child: Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ),
-                              child: Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
+                      SizedBox(width: 12.w),
+                      AppSwitch(
+                        value: on,
+                        label: strings.my_alarms_switch_semantics(time.label),
+                        onChanged: (v) {
+                          HapticFeedback.selectionClick();
+                          widget.onEnabledChanged(v);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: hero ? 12.h : 8.h),
+                ExcludeSemantics(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: fade,
+                        style: textTheme.titleLarge!.copyWith(
+                          fontSize: (hero ? 56 : 44).spMin,
+                          height: 1,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: hero ? -2.2 : -1.6,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: ink,
+                        ),
+                        child: Text(time.clock),
+                      ),
+                      SizedBox(width: 8.w),
+                      AnimatedDefaultTextStyle(
+                        duration: fade,
+                        style: textTheme.titleLarge!.copyWith(
+                          fontSize: (hero ? 19 : 16).spMin,
+                          height: 1,
+                          fontWeight: Dimension.textSemiBold,
+                          letterSpacing: 0,
+                          color: hero && on
+                              ? AppColor.primary
+                              : AppColor.textSecondary,
+                        ),
+                        child: Text(time.meridiem),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: hero ? 8.h : 5.h),
+                ExcludeSemantics(
+                  child: Text(
+                    meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyLarge!.copyWith(
+                      fontSize: 15.spMin,
+                      height: 17.5 / 15,
+                      letterSpacing: -0.2,
+                      color: AppColor.textSecondary,
                     ),
                   ),
-                  SizedBox(width: 12.w),
-                  AppSwitch(
-                    value: on,
-                    label: strings.my_alarms_switch_semantics(time.label),
-                    onChanged: (v) {
-                      HapticFeedback.selectionClick();
-                      onEnabledChanged(v);
-                    },
+                ),
+                if (days.isNotEmpty) ...[
+                  SizedBox(height: 13.h),
+                  ExcludeSemantics(
+                    child: _Days(
+                      days: days,
+                      small: !hero,
+                      off: !on,
+                      next: on && !blocked ? next.weekday % 7 : null,
+                      letters: strings.day_letters.split(','),
+                    ),
                   ),
                 ],
-              ),
+              ],
             ),
-            SizedBox(height: hero ? 12.h : 8.h),
-            ExcludeSemantics(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  AnimatedDefaultTextStyle(
-                    duration: _fade,
-                    style: textTheme.titleLarge!.copyWith(
-                      fontSize: (hero ? 56 : 44).spMin,
-                      height: 1,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: hero ? -2.2 : -1.6,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      color: ink,
-                    ),
-                    child: Text(time.clock),
-                  ),
-                  SizedBox(width: 8.w),
-                  AnimatedDefaultTextStyle(
-                    duration: _fade,
-                    style: textTheme.titleLarge!.copyWith(
-                      fontSize: (hero ? 19 : 16).spMin,
-                      height: 1,
-                      fontWeight: Dimension.textSemiBold,
-                      letterSpacing: 0,
-                      color: hero && on
-                          ? AppColor.primary
-                          : AppColor.textSecondary,
-                    ),
-                    child: Text(time.meridiem),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: hero ? 8.h : 5.h),
-            ExcludeSemantics(
-              child: Text(
-                meta,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.bodyLarge!.copyWith(
-                  fontSize: 15.spMin,
-                  height: 17.5 / 15,
-                  letterSpacing: -0.2,
-                  color: AppColor.textSecondary,
-                ),
-              ),
-            ),
-            if (days.isNotEmpty) ...[
-              SizedBox(height: 13.h),
-              ExcludeSemantics(
-                child: _Days(
-                  days: days,
-                  small: !hero,
-                  off: !on,
-                  next: on && !blocked ? next.weekday % 7 : null,
-                  letters: strings.day_letters.split(','),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

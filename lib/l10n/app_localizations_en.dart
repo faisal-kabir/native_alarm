@@ -614,6 +614,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_alarm_save => 'Save Alarm';
 
   @override
+  String get create_alarm_edit_title => 'Edit Alarm';
+
+  @override
+  String get create_alarm_save_changes => 'Save Changes';
+
+  @override
+  String get create_alarm_delete => 'Delete Alarm';
+
+  @override
   String get create_alarm_save_failed => 'Couldn’t save the alarm. Try again.';
 
   @override

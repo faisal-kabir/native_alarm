@@ -218,6 +218,8 @@ class _MyAlarmsViewState extends State<_MyAlarmsView>
               now: now,
               hero: hero,
               blocked: state.accessDenied,
+              onTap: () =>
+                  context.push<bool>(RouteNames.editAlarmPath, extra: alarm),
               onEnabledChanged: (enabled) =>
                   _bloc.add(MyAlarmsAlarmToggledEvent(alarm, enabled: enabled)),
             ),

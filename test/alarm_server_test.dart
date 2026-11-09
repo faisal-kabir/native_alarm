@@ -43,6 +43,18 @@ class FakeAlarmRemote implements AlarmRemoteDataSource {
   Future<List<Map<String, dynamic>>> deleteAlarm(int id) async => [
     reasonRow(null),
   ];
+
+  @override
+  Future<({Map<String, dynamic> alarm, List<Map<String, dynamic>> freed})>
+  updateAlarm(Alarm old, Alarm alarm, DateTime now) async => (
+    alarm: {
+      'id': id,
+      ...alarmColumns(alarm, 5, serverSchedules(alarm, now).first),
+      'sub_alarms': const [],
+      'reason': {...reasonRow(id), 'id': alarm.reasonId, 'name': 'New one'},
+    },
+    freed: [reasonRow(null)],
+  );
 }
 
 void main() {
@@ -197,4 +209,39 @@ void main() {
       expect(await savedAlarmId(), isNull);
     });
   });
+
+  test(
+    'an edit moves the Reason: the old one freed, the new one linked',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final reasons = ReasonLocalDataSourceImpl(db);
+      final repository = RemoteAlarmRepositoryImpl(
+        FakeAlarmRemote(12),
+        reasons,
+      );
+      final old = weekAndWeekend.copyWith(remoteId: 12);
+      await reasons.saveRow({...FakeAlarmRemote(12).reasonRow(12)});
+      final edited = Alarm(
+        id: old.id,
+        enabled: true,
+        time: old.time,
+        repeatWeekdays: old.repeatWeekdays,
+        audioTrackId: old.audioTrackId,
+        ringtoneId: old.ringtoneId,
+        reasonId: 8,
+        dayTimes: old.dayTimes,
+        remoteId: 12,
+      );
+
+      final saved = await repository.update(old, edited, now: now);
+
+      expect(saved.getOrElse(() => throw 'failed').reasonId, 8);
+      final rows = {
+        for (final r in await db.select(db.reasonsTable).get())
+          r.id: r.toEntity().alarmId,
+      };
+      expect(rows, {7: null, 8: 12});
+    },
+  );
 }

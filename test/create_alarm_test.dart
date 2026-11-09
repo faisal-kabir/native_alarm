@@ -5,6 +5,7 @@ import 'package:eala/features/alarm_audio/domain/entities/alarm_audio.dart';
 import 'package:eala/features/create_alarm/domain/entities/alarm_draft.dart';
 import 'package:eala/features/create_alarm/domain/entities/alarm_schedule.dart';
 import 'package:eala/features/create_alarm/domain/usecases/create_alarm_usecase.dart';
+import 'package:eala/features/create_alarm/domain/usecases/update_alarm_usecase.dart';
 import 'package:eala/features/create_alarm/presentation/bloc/create_alarm_state.dart';
 import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
 import 'package:eala/features/my_alarms/domain/entities/alarm_list.dart';
@@ -267,6 +268,89 @@ void main() {
     });
   });
 
+  group('UpdateAlarmUseCase', () {
+    final now = DateTime(2026, 11, 8, 7);
+    // On the server as alarm 9, Reason 1, Mondays 6:30.
+    final saved = savedAlarm(
+      'a',
+      reasonId: 1,
+    ).copyWith(repeatWeekdays: const [1], remoteId: 9);
+    final edited = AlarmDraft(
+      time: eight,
+      days: const [1, 2],
+      reasonId: 2,
+      again: 1,
+    );
+
+    test('server first, then the device, then the ring', () async {
+      final alarms = FakeAlarmRepository()..store['a'] = saved;
+      final remote = FakeRemoteAlarmRepository();
+      final scheduler = FakeAlarmScheduler();
+      final result = await UpdateAlarmUseCase(alarms, remote, scheduler)(
+        UpdateAlarmParams(
+          alarm: saved,
+          draft: edited,
+          title: 'Training',
+          now: now,
+        ),
+      );
+      final alarm = result.getOrElse(() => throw 'not saved');
+      expect(alarm.id, 'a');
+      expect(alarm.remoteId, 9);
+      expect(alarm.reasonId, 2);
+      expect(alarm.repeatWeekdays, [1, 2]);
+      expect(alarm.ringAgain, 1);
+      expect(alarm.label, 'Training');
+      expect(remote.updates.single, (saved, alarm));
+      expect(alarms.store['a'], alarm);
+      expect(scheduler.scheduled.single, (alarm, 'Training'));
+    });
+
+    test('offline nothing changes', () async {
+      final alarms = FakeAlarmRepository()..store['a'] = saved;
+      final scheduler = FakeAlarmScheduler();
+      final result = await UpdateAlarmUseCase(
+        alarms,
+        FakeRemoteAlarmRepository()..fail = true,
+        scheduler,
+      )(UpdateAlarmParams(alarm: saved, draft: edited, title: 'x', now: now));
+      expect(result.isLeft(), isTrue);
+      expect(alarms.store['a'], saved);
+      expect(scheduler.scheduled, isEmpty);
+    });
+
+    test('refused by the device, the server and the device go back', () async {
+      final alarms = FakeAlarmRepository()..store['a'] = saved;
+      final remote = FakeRemoteAlarmRepository();
+      final result = await UpdateAlarmUseCase(
+        alarms,
+        remote,
+        FakeAlarmScheduler()..fail = true,
+      )(UpdateAlarmParams(alarm: saved, draft: edited, title: 'x', now: now));
+      expect(result.isLeft(), isTrue);
+      expect(alarms.store['a'], saved);
+      // Written, then written back.
+      expect(remote.updates, hasLength(2));
+      expect(remote.updates.last.$2, saved);
+    });
+
+    test('switched off, it is cancelled instead of set', () async {
+      final alarms = FakeAlarmRepository()..store['a'] = saved;
+      final scheduler = FakeAlarmScheduler();
+      await UpdateAlarmUseCase(alarms, FakeRemoteAlarmRepository(), scheduler)(
+        UpdateAlarmParams(
+          alarm: saved,
+          draft: edited.copyWith(enabled: false),
+          title: 'x',
+          now: now,
+        ),
+      );
+      expect(alarms.store['a']!.enabled, isFalse);
+      expect(scheduler.cancelled, ['a']);
+      expect(scheduler.scheduled, isEmpty);
+    });
+  });
+
   group('My Alarms list', () {
     // Sunday 8 Nov 2026, 7:00.
     final now = DateTime(2026, 11, 8, 7);
@@ -480,6 +564,84 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Training'), findsOneWidget);
       expect(find.text('Mornings'), findsNothing);
+    });
+
+    testWidgets('a card opens its alarm in the editor, filled in', (
+      tester,
+    ) async {
+      final remote = FakeRemoteAlarmRepository();
+      final (alarms, scheduler) = await open(
+        tester,
+        remote: remote,
+        existing: [
+          savedAlarm(
+            'a',
+            reasonId: 1,
+          ).copyWith(repeatWeekdays: const [1, 2, 3, 4, 5], remoteId: 9),
+        ],
+      );
+      await tester.tap(find.byType(AlarmCard));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Alarm'), findsOneWidget);
+      expect(find.text('Mornings'), findsOneWidget);
+      expect(find.text('Delete Alarm'), findsOneWidget);
+      // Nothing changed yet: nothing to save.
+      expect(find.text('Save Changes'), findsNothing);
+
+      Finder inEditor(String text) => find.descendant(
+        of: find.byType(CreateAlarmPage),
+        matching: find.text(text),
+      );
+      Future<void> tapInEditor(String text) async {
+        await tester.ensureVisible(inEditor(text));
+        await tester.pumpAndSettle();
+        await tester.tap(inEditor(text));
+        await tester.pumpAndSettle();
+      }
+
+      await tapInEditor('Twice');
+      expect(find.text('Save Changes'), findsOneWidget);
+      // Undone, the button goes again.
+      await tapInEditor('Off');
+      expect(find.text('Save Changes'), findsNothing);
+
+      await tapInEditor('Once');
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateAlarmPage), findsNothing);
+      final saved = alarms.store['a']!;
+      expect(saved.ringAgain, 1);
+      expect(saved.repeatWeekdays, [1, 2, 3, 4, 5]);
+      expect(saved.remoteId, 9);
+      expect(remote.updates.single.$2, saved);
+      expect(scheduler.scheduled.last.$1, saved);
+    });
+
+    testWidgets('Delete Alarm asks, then deletes it everywhere', (
+      tester,
+    ) async {
+      final remote = FakeRemoteAlarmRepository();
+      final (alarms, scheduler) = await open(
+        tester,
+        remote: remote,
+        existing: [savedAlarm('a', reasonId: 1).copyWith(remoteId: 9)],
+      );
+      await tester.tap(find.byType(AlarmCard));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Delete Alarm'));
+      await tester.tap(find.text('Delete Alarm'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this alarm?'), findsOneWidget);
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateAlarmPage), findsNothing);
+      expect(alarms.store, isEmpty);
+      expect(remote.removed, [9]);
+      expect(scheduler.cancelled, ['a']);
+      expect(find.text('Set your first alarm'), findsOneWidget);
     });
 
     testWidgets('three alarms: no add row, the meter is full', (tester) async {

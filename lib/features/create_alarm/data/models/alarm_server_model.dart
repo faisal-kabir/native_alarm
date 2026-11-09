@@ -48,13 +48,9 @@ Map<String, Object?> scheduleColumns(ServerSchedule schedule) => {
   'week_days': jsonEncode([for (final d in schedule.days) serverDayNames[d]]),
 };
 
-/// The new `alarm` row for [alarm] of [userId], holding its [first] schedule.
-Map<String, Object?> alarmColumns(
-  Alarm alarm,
-  int userId,
-  ServerSchedule first,
-) => {
-  'user_id': userId,
+/// The `alarm` columns of [alarm] holding its [first] schedule (what an edit
+/// writes).
+Map<String, Object?> alarmUpdateColumns(Alarm alarm, ServerSchedule first) => {
   ...scheduleColumns(first),
   'reason_id': alarm.reasonId,
   'sound_track_id': alarm.soundTrackId,
@@ -62,6 +58,13 @@ Map<String, Object?> alarmColumns(
   'number_of_ring': alarm.ringAgain,
   'enable': alarm.enabled,
 };
+
+/// The new `alarm` row for [alarm] of [userId], holding its [first] schedule.
+Map<String, Object?> alarmColumns(
+  Alarm alarm,
+  int userId,
+  ServerSchedule first,
+) => {'user_id': userId, ...alarmUpdateColumns(alarm, first)};
 
 /// [local] as the server's [json] ([alarmSelect]) holds it: its server id, days and
 /// times (from `alarm` and `sub_alarms`), Reason (and its name), sounds, ring again

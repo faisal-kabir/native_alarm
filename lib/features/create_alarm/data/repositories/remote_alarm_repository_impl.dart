@@ -46,6 +46,32 @@ class RemoteAlarmRepositoryImpl implements RemoteAlarmRepository {
   }
 
   @override
+  Future<Either<Failure, Alarm>> update(
+    Alarm old,
+    Alarm alarm, {
+    required DateTime now,
+  }) async {
+    final ({Map<String, dynamic> alarm, List<Map<String, dynamic>> freed})
+    written;
+    try {
+      written = await remoteDataSource.updateAlarm(old, alarm, now);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+    final reason = written.alarm['reason'];
+    await _saveReasons([
+      ...written.freed,
+      if (reason is Map<String, dynamic>) reason,
+    ]);
+    try {
+      return Right(alarmFromServer(written.alarm, alarm));
+    } on Object {
+      // Written as sent; only the answer could not be read.
+      return Right(alarm);
+    }
+  }
+
+  @override
   Future<Either<Failure, Unit>> remove(int remoteId) async {
     try {
       await _saveReasons(await remoteDataSource.deleteAlarm(remoteId));
