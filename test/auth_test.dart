@@ -5,7 +5,8 @@ import 'package:eala/features/alarm_audio/domain/usecases/refresh_alarm_audio_us
 import 'package:eala/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:eala/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:eala/features/auth/domain/entities/app_user.dart';
-import 'package:eala/features/create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
+import 'package:eala/features/alarm/domain/usecases/get_alarms_usecase.dart';
+import 'package:eala/features/create_alarm/domain/usecases/sync_system_alarms_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -87,7 +88,12 @@ void main() {
       UpdateDeviceInfoUseCase(profiles),
       GetAppInfoUseCase(FakeSettingsRepository()),
       RefreshAlarmAudioUseCase(audio),
-      RescheduleAlarmsUseCase(FakeAlarmRepository(), FakeAlarmScheduler()),
+      SyncSystemAlarmsUseCase(
+        GetAlarmsUseCase(FakeAlarmRepository()),
+        FakeAlarmRepository(),
+        FakeReasonRepository(),
+        FakeAlarmScheduler(),
+      ),
       UploadPendingAlarmsUseCase(
         FakeAlarmRepository(),
         FakeRemoteAlarmRepository(),
@@ -114,7 +120,12 @@ void main() {
       UpdateDeviceInfoUseCase(profiles),
       GetAppInfoUseCase(FakeSettingsRepository()),
       RefreshAlarmAudioUseCase(audio),
-      RescheduleAlarmsUseCase(FakeAlarmRepository(), FakeAlarmScheduler()),
+      SyncSystemAlarmsUseCase(
+        GetAlarmsUseCase(FakeAlarmRepository()),
+        FakeAlarmRepository(),
+        FakeReasonRepository(),
+        FakeAlarmScheduler(),
+      ),
       UploadPendingAlarmsUseCase(
         FakeAlarmRepository(),
         FakeRemoteAlarmRepository(),

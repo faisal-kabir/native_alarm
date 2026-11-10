@@ -4,14 +4,15 @@
 /// either platform.
 class AlarmScheduleOptions {
   const AlarmScheduleOptions({
-    this.repeatCount = 2,
-    this.repeatIntervalSec = 10,
+    this.repeatCount = 0,
+    this.repeatIntervalSec = 300,
     this.tuneAsset,
     this.tuneFile,
     this.ringDays = const {},
     this.title,
     this.subtitle,
     this.stopHintText,
+    this.signature,
   });
 
   /// Internal alarms scheduled when the user slides to stop without unlocking.
@@ -43,6 +44,10 @@ class AlarmScheduleOptions {
   /// Label inside the slider (Android only; iOS text is system-controlled).
   final String? stopHintText;
 
+  /// The alarm's fingerprint (what it was set with); native keeps it and answers it on
+  /// `syncAlarms`, so an unchanged alarm is not set again.
+  final String? signature;
+
   Map<String, dynamic> toMap() => {
     'repeatCount': repeatCount,
     'repeatIntervalSec': repeatIntervalSec,
@@ -52,5 +57,6 @@ class AlarmScheduleOptions {
     if (title != null) 'title': title,
     if (subtitle != null) 'subtitle': subtitle,
     if (stopHintText != null) 'stopHintText': stopHintText,
+    if (signature != null) 'signature': signature,
   };
 }

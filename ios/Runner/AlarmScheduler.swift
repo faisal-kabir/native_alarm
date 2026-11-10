@@ -150,12 +150,25 @@ struct AlarmConfig: Codable {
     /// A weekly alarm: weekday (1 = Mon ... 7 = Sun) -> minutes after midnight. The
     /// system rings it every week by itself. nil = rings once, at `timeMs`.
     var ringDays: [Int: Int]?
+    /// What Flutter set this alarm with (its own fingerprint): `syncAlarms` answers it,
+    /// so Flutter sets an alarm again only when something about it changed.
+    var signature: String? = nil
 
     static let maxRepeatCount = 20
     static let minIntervalSec = 5
 
     var safeRepeatCount: Int { min(max(repeatCount, 0), AlarmConfig.maxRepeatCount) }
     var safeIntervalSec: Int { max(repeatIntervalSec, AlarmConfig.minIntervalSec) }
+
+    /// "5 minutes" / "1 minute" / "30 seconds": the gap before the next ring, in words.
+    var intervalText: String {
+        let sec = safeIntervalSec
+        if sec % 60 == 0 {
+            let min = sec / 60
+            return min == 1 ? "1 minute" : "\(min) minutes"
+        }
+        return "\(sec) seconds"
+    }
 
     /// The weekly alarm's times, earliest first, each with the weekdays that ring at it.
     var weeklyTimes: [(minutes: Int, weekdays: [Int])] {
@@ -375,7 +388,7 @@ final class BackupAlarmManager {
             content.categoryIdentifier = AlarmScheduler.alarmCategoryId
             content.sound = UNNotificationSound(named: UNNotificationSoundName(config.tuneName ?? "demo.aiff"))
         } else {
-            content.title = "Alarm rings again in \(config.safeIntervalSec) seconds"
+            content.title = "Alarm rings again in \(config.intervalText)"
             content.body = "Repeat \(index) of \(config.safeRepeatCount). Unlock your phone to stop it."
         }
         content.userInfo = [
@@ -844,6 +857,47 @@ final class AlarmScheduler {
             BackupAlarmManager.shared.cancelBackupAlarms(for: alarmId)
         } else {
             cancel(alarmId: alarmId)
+        }
+    }
+
+    /// Flutter's alarms are the truth. Every alarm this side still holds that is not in
+    /// [keep] is cancelled and forgotten (a deleted alarm, an old demo), except a pending
+    /// snooze, and AlarmKit alarms nobody owns go. Answers, for each kept alarm that is
+    /// really set (every time of its week), the signature it was set with, so Flutter sets
+    /// again only an alarm that is missing or changed.
+    func sync(keep: Set<String>, completion: @escaping ([String: String]) -> Void) {
+        let prefix = "alarmflow.config."
+        let stored = UserDefaults.standard.dictionaryRepresentation().keys
+            .filter { $0.hasPrefix(prefix) }
+            .map { String($0.dropFirst(prefix.count)) }
+        for alarmId in stored where !keep.contains(alarmId) && !alarmId.hasPrefix("snooze_") {
+            cancel(alarmId: alarmId)
+            AlarmConfigStore.shared.remove(alarmId)
+            AlarmFlowLogger.shared.log("AlarmScheduler.sync: removed \(alarmId)")
+        }
+        let kept = stored.filter { keep.contains($0) }.compactMap { AlarmConfigStore.shared.load($0) }
+
+        #if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            cleanUpOrphanAlarms()
+            let held = Set(((try? AlarmManager.shared.alarms) ?? []).map(\.id))
+            var answer: [String: String] = [:]
+            for config in kept where config.mainIds.allSatisfy({ held.contains($0) }) {
+                answer[config.alarmId] = config.signature ?? ""
+            }
+            completion(answer)
+            return
+        }
+        #endif
+
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let pending = Set(requests.map(\.identifier))
+            var answer: [String: String] = [:]
+            for config in kept
+            where AlarmConfig.notificationIds(alarmId: config.alarmId).contains(where: { pending.contains($0) }) {
+                answer[config.alarmId] = config.signature ?? ""
+            }
+            DispatchQueue.main.async { completion(answer) }
         }
     }
 

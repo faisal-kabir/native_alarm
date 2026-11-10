@@ -8,6 +8,7 @@ import 'package:eala/features/create_alarm/data/models/alarm_server_model.dart';
 import 'package:eala/features/create_alarm/data/repositories/remote_alarm_repository_impl.dart';
 import 'package:eala/features/reasons/data/datasources/reason_local_data_source.dart';
 import 'package:eala/features/reasons/data/models/reasons_table.dart';
+import 'package:eala/features/create_alarm/domain/usecases/set_alarm_enabled_usecase.dart';
 import 'package:eala/features/create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,6 +44,9 @@ class FakeAlarmRemote implements AlarmRemoteDataSource {
   Future<List<Map<String, dynamic>>> deleteAlarm(int id) async => [
     reasonRow(null),
   ];
+
+  @override
+  Future<void> updateEnabled(int id, {required bool enabled}) async {}
 
   @override
   Future<({Map<String, dynamic> alarm, List<Map<String, dynamic>> freed})>
@@ -169,6 +173,34 @@ void main() {
         expect(alarms.store['alarm_1']!.remoteId, 1);
       },
     );
+
+    test('every alarm on the server gets its on / off written', () async {
+      final alarms = FakeAlarmRepository()
+        ..store['sent'] = weekAndWeekend.copyWith(
+          id: 'sent',
+          remoteId: 4,
+          enabled: false,
+        );
+      final remote = FakeRemoteAlarmRepository();
+      await UploadPendingAlarmsUseCase(alarms, remote)(
+        UploadPendingAlarmsParams(now),
+      );
+      expect(remote.enables, [(4, false)]);
+    });
+
+    test('the switch writes the server too', () async {
+      final alarms = FakeAlarmRepository();
+      final remote = FakeRemoteAlarmRepository();
+      final scheduler = FakeAlarmScheduler();
+      final saved = weekAndWeekend.copyWith(remoteId: 4);
+      alarms.store[saved.id] = saved;
+      await SetAlarmEnabledUseCase(alarms, scheduler, remote)(
+        SetAlarmEnabledParams(saved, enabled: false, now: now),
+      );
+      expect(scheduler.cancelled, [saved.id]);
+      expect(alarms.store[saved.id]!.enabled, isFalse);
+      expect(remote.enables, [(4, false)]);
+    });
 
     test('offline they wait for the next open', () async {
       final alarms = FakeAlarmRepository()..store['alarm_1'] = weekAndWeekend;

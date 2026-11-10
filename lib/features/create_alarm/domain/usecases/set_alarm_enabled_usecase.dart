@@ -7,6 +7,8 @@ import '../../../alarm/domain/entities/alarm.dart';
 import '../../../alarm/domain/repositories/alarm_repository.dart';
 import '../../../alarm/domain/repositories/alarm_scheduler.dart';
 import '../entities/alarm_schedule.dart';
+import '../repositories/remote_alarm_repository.dart';
+import 'upload_pending_alarms_usecase.dart';
 
 class SetAlarmEnabledParams {
   const SetAlarmEnabledParams(
@@ -23,13 +25,16 @@ class SetAlarmEnabledParams {
 /// An alarm's on / off switch. On: it is set to ring at its next time ([nextRingOf]:
 /// a switched-off alarm's saved time has usually passed). Off: the device stops it.
 /// The device goes first and the saved alarm follows, so the two never disagree; when
-/// the device refuses, nothing changes. Answers the alarm as saved.
+/// the device refuses, nothing changes. Then the server's `enable` follows (offline it
+/// is sent with the next open: [UploadPendingAlarmsUseCase]). Answers the alarm as
+/// saved.
 @lazySingleton
 class SetAlarmEnabledUseCase implements UseCase<Alarm, SetAlarmEnabledParams> {
   final AlarmRepository repository;
   final AlarmScheduler scheduler;
+  final RemoteAlarmRepository remote;
 
-  SetAlarmEnabledUseCase(this.repository, this.scheduler);
+  SetAlarmEnabledUseCase(this.repository, this.scheduler, this.remote);
 
   @override
   Future<Either<Failure, Alarm>> call(SetAlarmEnabledParams params) async {
@@ -49,6 +54,11 @@ class SetAlarmEnabledUseCase implements UseCase<Alarm, SetAlarmEnabledParams> {
         CacheFailure('Alarm not ${params.enabled ? 'set' : 'stopped'}: $e'),
       );
     }
-    return repository.saveAlarm(next);
+    final saved = await repository.saveAlarm(next);
+    final remoteId = next.remoteId;
+    if (saved.isRight() && remoteId != null) {
+      await remote.setEnabled(remoteId, enabled: next.enabled);
+    }
+    return saved;
   }
 }

@@ -1,6 +1,5 @@
 {
   "app_name": "Eala",
-  "alarm_list_empty": "No alarms yet. Tap + to add one.",
   "common_allow": "Allow",
   "common_not_now": "Not now",
   "common_continue": "Continue",
@@ -16,6 +15,33 @@
   "tab_reasons": "Reasons",
   "tab_settings": "Settings",
   "my_alarms_title": "My Alarms",
+  "alarm_ringing_fallback_title": "Alarm",
+  "alarm_ringing_snooze": "Snooze for {minutes} min",
+  "@alarm_ringing_snooze": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "alarm_ringing_snoozed": "Alarm snoozed for {minutes} minutes",
+  "@alarm_ringing_snoozed": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "alarm_ringing_stop": "Stop",
+  "message_load_failed": "Couldn’t load this message.",
+  "message_ringing_title": "Alarm ringing",
+  "message_ringing_body": "Play your message, or dismiss the alarm.",
+  "message_dismiss": "Dismiss",
+  "message_play": "Play message",
+  "message_status_playing": "Playing",
+  "message_status_paused": "Paused",
+  "message_status_ready": "Ready",
+  "message_tap_to_play": "Tap to play message",
   "my_alarms_your_alarms": "Your alarms",
   "my_alarms_slot_meter_label": "Up to {count}",
   "@my_alarms_slot_meter_label": {

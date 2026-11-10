@@ -19,6 +19,12 @@ abstract class RemoteAlarmRepository {
     required DateTime now,
   });
 
+  /// Writes server alarm [remoteId]'s on / off ([enabled]).
+  Future<Either<Failure, Unit>> setEnabled(
+    int remoteId, {
+    required bool enabled,
+  });
+
   /// Removes server alarm [remoteId] (and its schedules, and its Reason's link).
   Future<Either<Failure, Unit>> remove(int remoteId);
 }

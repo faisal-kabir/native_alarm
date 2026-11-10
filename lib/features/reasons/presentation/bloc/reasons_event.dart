@@ -18,3 +18,9 @@ class LoadReasonsEvent extends ReasonsEvent {
 class RefreshReasonsEvent extends ReasonsEvent {
   const RefreshReasonsEvent();
 }
+
+/// Starts following the saved alarms, for each reason's alarm mark; sent with
+/// [LoadReasonsEvent].
+class ReasonsAlarmsWatchedEvent extends ReasonsEvent {
+  const ReasonsAlarmsWatchedEvent();
+}

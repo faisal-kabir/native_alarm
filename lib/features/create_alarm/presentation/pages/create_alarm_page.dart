@@ -336,7 +336,7 @@ class _Body extends StatelessWidget {
                     ListGroup(
                       children: [
                         ListGroupRow(
-                          icon: Assets.icons.editor.alarmOff,
+                          icon: Assets.icons.alarmOff,
                           label: strings.create_alarm_blocked_title,
                           value: strings.create_alarm_blocked_action,
                           danger: true,

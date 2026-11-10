@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AlarmScheduleOptions', () {
-    test('defaults: 2 repeats every 10 seconds, no custom tune', () {
+    test('defaults: no ring again (5 minutes apart when set), no tune', () {
       final map = const AlarmScheduleOptions().toMap();
-      expect(map['repeatCount'], 2);
-      expect(map['repeatIntervalSec'], 10);
+      expect(map['repeatCount'], 0);
+      expect(map['repeatIntervalSec'], 300);
       expect(map.containsKey('tuneAsset'), isFalse);
     });
 

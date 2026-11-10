@@ -23,10 +23,10 @@ class EnsureSessionEvent extends DashboardEvent {
   const EnsureSessionEvent();
 }
 
-/// The app opened or came back to the foreground: repeating alarms that have rung
-/// are set for their next day (works offline, needs no session).
-class RescheduleAlarmsEvent extends DashboardEvent {
-  const RescheduleAlarmsEvent();
+/// The app opened or came back to the foreground: the device's alarm system is brought
+/// in step with the saved alarms (works offline, needs no session).
+class SyncSystemAlarmsEvent extends DashboardEvent {
+  const SyncSystemAlarmsEvent();
 }
 
 /// Firebase issued or refreshed the FCM token: pass it on to the server.

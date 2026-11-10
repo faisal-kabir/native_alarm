@@ -192,11 +192,12 @@ import UserNotifications
                     audioTrackId: args["audioTrackId"] as? String ?? "morning_message",
                     missionName: missionName,
                     repeatCount: (args["repeatCount"] as? NSNumber)?.intValue ?? 0,
-                    repeatIntervalSec: (args["repeatIntervalSec"] as? NSNumber)?.intValue ?? 10,
+                    repeatIntervalSec: (args["repeatIntervalSec"] as? NSNumber)?.intValue ?? 300,
                     tuneName: AlarmTuneStore.install(filePath: args["tuneFile"] as? String, alarmId: alarmId)
                         ?? installTune(assetPath: args["tuneAsset"] as? String),
                     title: (args["title"] as? String).flatMap { $0.isEmpty ? nil : $0 },
-                    ringDays: AlarmConfig.parseRingDays(args["ringDays"])
+                    ringDays: AlarmConfig.parseRingDays(args["ringDays"]),
+                    signature: args["signature"] as? String
                 )
                 self.currentAlarmId = alarmId
                 AlarmScheduler.shared.schedule(config: config, timeMs: timeMs)
@@ -214,6 +215,8 @@ import UserNotifications
             if let args = call.arguments as? [String: Any],
                let alarmId = args["alarmId"] as? String {
                 AlarmScheduler.shared.cancel(alarmId: alarmId)
+                // Gone for good: nothing (a restore, a repeat) may set it again.
+                AlarmConfigStore.shared.remove(alarmId)
                 self.sendEvent(["event": "alarmCancelled", "alarmId": alarmId])
                 result(nil)
             } else {
@@ -258,6 +261,12 @@ import UserNotifications
         case "stop", "stopCustomAudio":
             AudioPlaybackManager.shared.stop()
             result(nil)
+
+        case "syncAlarms":
+            let keep = Set((call.arguments as? [String: Any])?["keepIds"] as? [String] ?? [])
+            AlarmScheduler.shared.sync(keep: keep) { held in
+                result(held)
+            }
 
         case "getPlaybackState":
             result(self.getPlaybackState())

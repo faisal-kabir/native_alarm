@@ -17,6 +17,7 @@ import '../../../area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart
 import '../../../area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../domain/usecases/delete_reason_with_alarm_usecase.dart';
+import '../../../create_alarm/domain/usecases/sync_system_alarms_usecase.dart';
 import '../../../reasons/domain/usecases/rename_reason_usecase.dart';
 import '../../../reasons/domain/usecases/update_reason_usecase.dart';
 import '../../../reasons/domain/usecases/watch_reason_usecase.dart';
@@ -38,6 +39,7 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
   final RenameReasonUseCase renameReasonUseCase;
   final DeleteReasonWithAlarmUseCase deleteReasonUseCase;
   final WatchAlarmsUseCase watchAlarmsUseCase;
+  final SyncSystemAlarmsUseCase syncSystemAlarmsUseCase;
   final WatchAreasOfLifeUseCase watchAreasUseCase;
   final RefreshAreasOfLifeUseCase refreshAreasUseCase;
   final WatchVoicesUseCase watchVoicesUseCase;
@@ -52,6 +54,7 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
     this.renameReasonUseCase,
     this.deleteReasonUseCase,
     this.watchAlarmsUseCase,
+    this.syncSystemAlarmsUseCase,
     this.watchAreasUseCase,
     this.refreshAreasUseCase,
     this.watchVoicesUseCase,
@@ -204,6 +207,10 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
         (saved) => state.copyWith(reason: saved),
       ),
     );
+    // Its alarm rings with its name: the device's alarm follows.
+    if (result.isRight() && state.alarm != null) {
+      await syncSystemAlarmsUseCase(SyncSystemAlarmsParams(DateTime.now()));
+    }
   }
 
   /// An area's purpose ideas, asked once per area while the screen is open (the

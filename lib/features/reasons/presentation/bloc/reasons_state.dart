@@ -20,10 +20,14 @@ class ReasonsLoading extends ReasonsState {
 class ReasonsLoaded extends ReasonsState {
   final List<Reason> reasons;
 
-  const ReasonsLoaded(this.reasons);
+  /// Reason id → whether the alarm that plays it is on, for each reason an alarm on
+  /// this device plays (the row's alarm mark).
+  final Map<int, bool> alarmOn;
+
+  const ReasonsLoaded(this.reasons, {this.alarmOn = const {}});
 
   @override
-  List<Object?> get props => [reasons];
+  List<Object?> get props => [reasons, alarmOn];
 }
 
 class ReasonsFailure extends ReasonsState {

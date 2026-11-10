@@ -90,11 +90,26 @@ object AlarmScheduler {
         }
     }
 
+    /** Whether the main alarm of [alarmId] is set with AlarmManager. */
+    fun isScheduled(context: Context, alarmId: String): Boolean {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmAudioService.ACTION_TRIGGER_ALARM
+            putExtra(AlarmAudioService.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmAudioService.EXTRA_RUN_INDEX, 0)
+        }
+        val flags = PendingIntent.FLAG_NO_CREATE or
+            (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        return PendingIntent.getBroadcast(context, requestCode(alarmId, 0), intent, flags) != null
+    }
+
     /** Cancels the main alarm, every internal repeat and their notifications. */
     fun cancelAll(context: Context, alarmId: String) {
         val alarmMgr = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         for (index in 0..AlarmConfig.MAX_REPEAT_COUNT) {
-            alarmMgr.cancel(pendingIntent(context, alarmId, index))
+            val pending = pendingIntent(context, alarmId, index)
+            alarmMgr.cancel(pending)
+            // The intent itself goes too, so isScheduled no longer finds it.
+            pending.cancel()
         }
         cancelRepeatNotification(context, alarmId)
     }
@@ -103,7 +118,9 @@ object AlarmScheduler {
     fun cancelInternal(context: Context, alarmId: String) {
         val alarmMgr = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         for (index in 1..AlarmConfig.MAX_REPEAT_COUNT) {
-            alarmMgr.cancel(pendingIntent(context, alarmId, index))
+            val pending = pendingIntent(context, alarmId, index)
+            alarmMgr.cancel(pending)
+            pending.cancel()
         }
         cancelRepeatNotification(context, alarmId)
     }
@@ -123,7 +140,7 @@ object AlarmScheduler {
         )
         val notification = NotificationCompat.Builder(context, INFO_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_alarm_white)
-            .setContentTitle("Alarm rings again in ${config.safeIntervalSec} seconds")
+            .setContentTitle("Alarm rings again in ${config.intervalText}")
             .setContentText("Repeat $runIndex of ${config.safeRepeatCount}. Unlock your phone to stop it.")
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

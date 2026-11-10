@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:eala/core/database/app_database.dart';
 import 'package:eala/core/error/exceptions.dart';
+import 'package:eala/features/alarm/domain/entities/alarm.dart';
+import 'package:eala/features/alarm/domain/usecases/watch_alarms_usecase.dart';
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.dart';
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_event.dart';
 import 'package:eala/features/create_reason/presentation/bloc/reason_ready_state.dart';
@@ -21,6 +23,8 @@ import 'package:eala/features/reasons/presentation/bloc/reasons_bloc.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_event.dart';
 import 'package:eala/features/reasons/presentation/bloc/reasons_state.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'fakes/fake_alarm_repository.dart';
 
 /// A `reason` row as the server answers [reasonSelect]: area, sound and voice joined.
 Map<String, dynamic> serverRow(
@@ -389,9 +393,40 @@ void main() {
       final bloc = ReasonsBloc(
         WatchReasonsUseCase(repository),
         RefreshReasonsUseCase(repository),
+        WatchAlarmsUseCase(FakeAlarmRepository()),
       )..add(const LoadReasonsEvent());
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect((bloc.state as ReasonsLoaded).reasons.single.name, 'From server');
+      await bloc.close();
+    });
+
+    test('ReasonsBloc marks each reason an alarm plays, on or off', () async {
+      remote.rows[5] = serverRow(5, 'Played');
+      remote.rows[6] = serverRow(6, 'Free');
+      final alarms = FakeAlarmRepository();
+      final bloc = ReasonsBloc(
+        WatchReasonsUseCase(repository),
+        RefreshReasonsUseCase(repository),
+        WatchAlarmsUseCase(alarms),
+      )..add(const LoadReasonsEvent());
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect((bloc.state as ReasonsLoaded).alarmOn, isEmpty);
+
+      final alarm = Alarm(
+        id: 'a',
+        enabled: false,
+        time: DateTime(2026, 11, 10, 6, 30),
+        audioTrackId: 'm',
+        ringtoneId: 'default',
+        reasonId: 5,
+      );
+      await alarms.saveAlarm(alarm);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect((bloc.state as ReasonsLoaded).alarmOn, {5: false});
+
+      await alarms.saveAlarm(alarm.copyWith(enabled: true));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect((bloc.state as ReasonsLoaded).alarmOn, {5: true});
       await bloc.close();
     });
 

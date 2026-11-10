@@ -40,7 +40,7 @@ class SegmentedControl extends StatelessWidget {
       label: label,
       child: Container(
         height: 34.h,
-        padding: const EdgeInsets.all(2),
+        padding: REdgeInsets.all(2),
         decoration: BoxDecoration(
           color: AppColor.controlFill,
           borderRadius: BorderRadius.circular(9.r),
@@ -58,13 +58,13 @@ class SegmentedControl extends StatelessWidget {
                 heightFactor: 1,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF636366), // iOS's raised segment
+                    color: AppColor.segmentRaised,
                     borderRadius: BorderRadius.circular(7.r),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x1F000000),
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
+                        color: AppColor.shadowSoft,
+                        blurRadius: 8.r,
+                        offset: Offset(0, 3.r),
                       ),
                     ],
                   ),

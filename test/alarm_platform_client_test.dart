@@ -86,7 +86,7 @@ void main() {
       () async {
         await client.pause();
         await client.resume();
-        await client.seek(500);
+        await client.seekCustomAudio(500);
         await client.stop();
 
         final calledMethods = methodCalls.map((c) => c.method).toList();

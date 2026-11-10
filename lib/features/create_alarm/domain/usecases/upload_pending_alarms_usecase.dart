@@ -14,8 +14,9 @@ class UploadPendingAlarmsParams {
 
 /// Sends the server every alarm made offline (no [Alarm.remoteId] yet, with a
 /// Reason), run when the app opens with a session. Each one sent is saved again as the
-/// server answered it; one that fails waits for the next open. Answers how many were
-/// sent; two calls at once run only once.
+/// server answered it; one that fails waits for the next open. Every alarm already
+/// there gets its on / off written (a switch flipped offline, a one-off switched off
+/// after it rang). Answers how many were sent; two calls at once run only once.
 @lazySingleton
 class UploadPendingAlarmsUseCase
     implements UseCase<int, UploadPendingAlarmsParams> {
@@ -43,6 +44,15 @@ class UploadPendingAlarmsUseCase
           await uploaded.fold((f) async => failure ??= f, (saved) async {
             if ((await repository.saveAlarm(saved)).isRight()) sent++;
           });
+        }
+        for (final alarm in alarms) {
+          final remoteId = alarm.remoteId;
+          if (remoteId == null) continue;
+          final written = await remote.setEnabled(
+            remoteId,
+            enabled: alarm.enabled,
+          );
+          written.fold((f) => failure ??= f, (_) {});
         }
         final first = failure;
         return first == null ? Right(sent) : Left(first);

@@ -10,7 +10,7 @@ import '../../../../core/notification/fcm_token.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../../alarm_audio/domain/usecases/refresh_alarm_audio_usecase.dart';
 import '../../../auth/domain/entities/device_info.dart';
-import '../../../create_alarm/domain/usecases/reschedule_alarms_usecase.dart';
+import '../../../create_alarm/domain/usecases/sync_system_alarms_usecase.dart';
 import '../../../create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import '../../../auth/domain/usecases/ensure_signed_in_usecase.dart';
 import '../../../auth/domain/usecases/sync_user_profile_usecase.dart';
@@ -22,9 +22,9 @@ import 'dashboard_state.dart';
 /// The mother screen's own work: which tab is showing (and logging it to Analytics),
 /// keeping the Supabase session and the user's server row alive while the app runs,
 /// and bringing the alarm sounds and sound tracks (rows and files, needed to make
-/// alarms offline) up to date in the background every time the app opens, when
-/// repeating alarms that have rung are set for their next day too, and alarms made
-/// offline are sent to the server. The tabs' data
+/// alarms offline) up to date in the background every time the app opens, keeping the
+/// device's alarm system in step with the saved alarms (and again once the sounds are
+/// in), and sending the server alarms made offline. The tabs' data
 /// lives in their features (My Alarms, Reasons, Settings).
 @injectable
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
@@ -37,7 +37,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final UpdateDeviceInfoUseCase updateDeviceInfoUseCase;
   final GetAppInfoUseCase getAppInfoUseCase;
   final RefreshAlarmAudioUseCase refreshAlarmAudioUseCase;
-  final RescheduleAlarmsUseCase rescheduleAlarmsUseCase;
+  final SyncSystemAlarmsUseCase syncSystemAlarmsUseCase;
   final UploadPendingAlarmsUseCase uploadPendingAlarmsUseCase;
 
   StreamSubscription<String>? _tokenSubscription;
@@ -49,7 +49,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     this.updateDeviceInfoUseCase,
     this.getAppInfoUseCase,
     this.refreshAlarmAudioUseCase,
-    this.rescheduleAlarmsUseCase,
+    this.syncSystemAlarmsUseCase,
     this.uploadPendingAlarmsUseCase,
   ) : super(const DashboardState()) {
     on<DashboardTabChangedEvent>((event, emit) {
@@ -57,15 +57,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       emit(DashboardState(selectedIndex: event.index));
     });
     on<EnsureSessionEvent>(_onEnsureSession);
-    on<RescheduleAlarmsEvent>((event, emit) async {
-      final result = await rescheduleAlarmsUseCase(
-        RescheduleAlarmsParams(DateTime.now()),
-      );
-      result.fold(
-        (failure) => debugPrint('Alarms not rescheduled: ${failure.message}'),
-        (moved) => debugPrint('Alarms set for their next day: $moved'),
-      );
-    });
+    on<SyncSystemAlarmsEvent>((event, emit) => _syncSystemAlarms());
     on<FcmTokenChangedEvent>((event, emit) => _updateDeviceInfo());
 
     // The token usually arrives after the session is ready, and Firebase refreshes it
@@ -109,9 +101,22 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           debugPrint('Alarm sounds not all updated: ${failure.message}'),
       (_) => debugPrint('Alarm sounds up to date'),
     );
+    // A sound file downloaded just now is given to the alarms that ring it.
+    await _syncSystemAlarms();
     (await pending).fold(
       (failure) => debugPrint('Alarms not all sent: ${failure.message}'),
       (sent) => debugPrint('Alarms sent to the server: $sent'),
+    );
+  }
+
+  /// Brings the device's alarm system in step with the saved alarms.
+  Future<void> _syncSystemAlarms() async {
+    final result = await syncSystemAlarmsUseCase(
+      SyncSystemAlarmsParams(DateTime.now()),
+    );
+    result.fold(
+      (failure) => debugPrint('System alarms not synced: ${failure.message}'),
+      (_) => debugPrint('System alarms in step'),
     );
   }
 

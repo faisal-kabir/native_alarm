@@ -11,6 +11,7 @@ import '../../../alarm/presentation/widgets/alarm_event_listener.dart';
 import '../../../my_alarms/presentation/pages/my_alarms_page.dart';
 import '../../../reasons/presentation/pages/reasons_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
+import '../../../splash/presentation/widgets/eala_splash.dart';
 import '../bloc/dashboard_bloc.dart';
 import '../bloc/dashboard_event.dart';
 import '../bloc/dashboard_state.dart';
@@ -28,7 +29,7 @@ class DashboardPage extends StatelessWidget {
       create: (BuildContext context) => instance<DashboardBloc>()
         ..add(const DashboardTabChangedEvent(0))
         ..add(const EnsureSessionEvent())
-        ..add(const RescheduleAlarmsEvent()),
+        ..add(const SyncSystemAlarmsEvent()),
       child: const _DashboardView(),
     );
   }
@@ -65,7 +66,7 @@ class _DashboardViewState extends State<_DashboardView>
     if (state == AppLifecycleState.resumed) {
       context.read<DashboardBloc>()
         ..add(const EnsureSessionEvent())
-        ..add(const RescheduleAlarmsEvent());
+        ..add(const SyncSystemAlarmsEvent());
     }
   }
 
@@ -89,41 +90,44 @@ class _DashboardViewState extends State<_DashboardView>
     final strings = appLanguage(context);
     // Wraps the home screen so alarm unlocks open the message page from any tab.
     return AlarmEventListener(
-      // The Material Scaffold is where the tabs' snackbars appear; GlassScaffold gives
-      // the tab bar's liquid glass a layer to refract the pages on.
-      child: Scaffold(
-        backgroundColor: AppColor.backgroundColor,
-        body: GlassScaffold(
+      // On a cold start the splash plays over the home screen while it loads.
+      child: SplashGate(
+        // The Material Scaffold is where the tabs' snackbars appear; GlassScaffold
+        // gives the tab bar's liquid glass a layer to refract the pages on.
+        child: Scaffold(
           backgroundColor: AppColor.backgroundColor,
-          bottomBar: BlocBuilder<DashboardBloc, DashboardState>(
-            builder: (context, state) => AppTabBar(
-              selectedIndex: state.selectedIndex,
-              onSelected: _onTabTapped,
-              items: [
-                AppTabItem(
-                  label: strings.tab_alarms,
-                  icon: Assets.icons.alarm,
-                  activeIcon: Assets.icons.tab.alarmOn,
-                ),
-                AppTabItem(
-                  label: strings.tab_reasons,
-                  icon: Assets.icons.tab.reasons,
-                  activeIcon: Assets.icons.tab.reasonsOn,
-                ),
-                AppTabItem(
-                  label: strings.tab_settings,
-                  icon: Assets.icons.tab.settings,
-                  activeIcon: Assets.icons.tab.settingsOn,
-                ),
-              ],
+          body: GlassScaffold(
+            backgroundColor: AppColor.backgroundColor,
+            bottomBar: BlocBuilder<DashboardBloc, DashboardState>(
+              builder: (context, state) => AppTabBar(
+                selectedIndex: state.selectedIndex,
+                onSelected: _onTabTapped,
+                items: [
+                  AppTabItem(
+                    label: strings.tab_alarms,
+                    icon: Assets.icons.alarm,
+                    activeIcon: Assets.icons.tab.alarmOn,
+                  ),
+                  AppTabItem(
+                    label: strings.tab_reasons,
+                    icon: Assets.icons.tab.reasons,
+                    activeIcon: Assets.icons.tab.reasonsOn,
+                  ),
+                  AppTabItem(
+                    label: strings.tab_settings,
+                    icon: Assets.icons.tab.settings,
+                    activeIcon: Assets.icons.tab.settingsOn,
+                  ),
+                ],
+              ),
             ),
-          ),
-          body: PageView(
-            controller: _pageController,
-            onPageChanged: (index) => context.read<DashboardBloc>().add(
-              DashboardTabChangedEvent(index),
+            body: PageView(
+              controller: _pageController,
+              onPageChanged: (index) => context.read<DashboardBloc>().add(
+                DashboardTabChangedEvent(index),
+              ),
+              children: _pages,
             ),
-            children: _pages,
           ),
         ),
       ),

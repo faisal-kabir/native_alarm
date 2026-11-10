@@ -1,30 +1,37 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/platform/alarm_platform_client.dart';
+import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_color.dart';
+import '../../../../core/theme/dimension.dart';
+import '../../../../core/widgets/app_svg_icon.dart';
+import '../../../../core/widgets/back_chevron.dart';
+import '../../../../gen/assets.gen.dart';
+import '../../../../main.dart';
 import '../../data/audio_track_repository.dart';
 import '../../domain/entities/audio_track.dart';
 import '../../domain/entities/transcript.dart';
 import '../../domain/entities/transcript_word.dart';
-import '../../../../core/router/route_names.dart';
 
-import 'package:go_router/go_router.dart';
-
+/// The message after an alarm: the words light up one by one as the native player
+/// speaks them (tap a word, or drag the bar, to jump there). The player runs natively,
+/// so it keeps playing with the screen locked; this page only shows where it is.
+///
+/// The native side sends the position every 100 ms while playing, so the page reads
+/// the player's state once on open and on resume, and otherwise only listens. Each
+/// tick moves the bar; the transcript redraws only when the spoken word changes.
 class SynchronizedTranscriptPage extends StatefulWidget {
   final AudioTrack? initialTrack;
   final AlarmPlatformClient platformClient;
-  final String? missionName;
-
-  /// Identity of the alarm whose message this page shows.
-  final String? alarmId;
 
   const SynchronizedTranscriptPage({
     super.key,
     this.initialTrack,
     required this.platformClient,
-    this.missionName,
-    this.alarmId,
   });
 
   /// Number of message pages currently on the navigator stack. Every navigation source
@@ -37,182 +44,54 @@ class SynchronizedTranscriptPage extends StatefulWidget {
       _SynchronizedTranscriptPageState();
 }
 
+/// What the native player is doing.
+enum _Playback { idle, ringing, playing, paused }
+
+_Playback _playbackOf(String? state) => switch (state) {
+  'ringing' => _Playback.ringing,
+  'customAudioPlaying' => _Playback.playing,
+  'customAudioPaused' => _Playback.paused,
+  _ => _Playback.idle,
+};
+
 class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
     with WidgetsBindingObserver {
-  late AudioTrack _track;
+  late final AudioTrack _track =
+      widget.initialTrack ?? AudioTrackRepository.predefinedTracks.first;
   Transcript? _transcript;
-  bool _isLoading = true;
-  String _errorMessage = '';
+  bool _loadFailed = false;
+  _Playback _playback = _Playback.idle;
+  int _durationMs = 0;
 
-  int _currentPositionMs = 0;
-  int _durationMs = 3556;
-  String _playbackState =
-      'idle'; // 'idle', 'ringing', 'customAudioPlaying', 'customAudioPaused'
-  StreamSubscription? _eventSubscription;
-  Timer? _pollTimer;
-  final ScrollController _scrollController = ScrollController();
+  /// Where the player is (ms), and the word being spoken (-1 for none).
+  final ValueNotifier<int> _position = ValueNotifier(0);
+  final ValueNotifier<int> _activeWord = ValueNotifier(-1);
+
+  StreamSubscription<Map<String, dynamic>>? _events;
+  final ScrollController _scroll = ScrollController();
   final Map<int, GlobalKey> _wordKeys = {};
+
+  AlarmPlatformClient get _player => widget.platformClient;
 
   @override
   void initState() {
     super.initState();
     SynchronizedTranscriptPage.openCount++;
     WidgetsBinding.instance.addObserver(this);
-    _track = widget.initialTrack ?? AudioTrackRepository.predefinedTracks.first;
     _loadTranscript();
-    _pollPlaybackState();
-    _startListeningEvents();
-    _startPolling();
+    _readPlayer();
+    _listen();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _pollPlaybackState();
-      _startListeningEvents();
-      _startPolling();
+      _readPlayer();
+      _listen();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
-      _stopListeningEvents();
-      _stopPolling();
-    }
-  }
-
-  void _startPolling() {
-    _stopPolling();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
-      if (mounted) {
-        _pollPlaybackState();
-      }
-    });
-  }
-
-  void _stopPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
-  }
-
-  Future<void> _loadTranscript() async {
-    try {
-      final transcript = await AudioTrackRepository.loadTranscript(
-        _track.transcriptPath,
-      );
-      setState(() {
-        _transcript = transcript;
-        _isLoading = false;
-        if (transcript.words.isNotEmpty) {
-          _durationMs = transcript.words.last.endMs;
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load transcript: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _pollPlaybackState() async {
-    try {
-      final state = await widget.platformClient.getPlaybackState();
-      if (mounted) {
-        setState(() {
-          _playbackState = state['state'] as String? ?? 'idle';
-          _currentPositionMs = (state['positionMs'] as num?)?.toInt() ?? 0;
-          final dur = (state['durationMs'] as num?)?.toInt() ?? 0;
-          if (dur > 0) _durationMs = dur;
-        });
-      }
-    } catch (_) {}
-  }
-
-  void _startListeningEvents() {
-    if (_eventSubscription != null) return;
-    _eventSubscription = widget.platformClient.events.listen((event) {
-      if (!mounted) return;
-      final type = event['event'] as String?;
-      if (type == 'positionUpdate') {
-        final pos =
-            (event['positionMs'] as num?)?.toInt() ?? _currentPositionMs;
-        final dur = (event['durationMs'] as num?)?.toInt() ?? _durationMs;
-        setState(() {
-          _currentPositionMs = pos;
-          if (dur > 0) _durationMs = dur;
-          _playbackState = 'customAudioPlaying';
-        });
-        _scrollToActiveWord();
-      } else if (type == 'customAudioStarted') {
-        final dur = (event['durationMs'] as num?)?.toInt() ?? _durationMs;
-        setState(() {
-          _playbackState = 'customAudioPlaying';
-          _currentPositionMs = 0;
-          if (dur > 0) _durationMs = dur;
-        });
-      } else if (type == 'customAudioPaused') {
-        setState(() {
-          _playbackState = 'customAudioPaused';
-        });
-      } else if (type == 'customAudioResumed') {
-        setState(() {
-          _playbackState = 'customAudioPlaying';
-        });
-      } else if (type == 'alarmDismissed' ||
-          type == 'customAudioStopped' ||
-          type == 'customAudioCompleted') {
-        setState(() {
-          _playbackState = 'idle';
-          _currentPositionMs = 0;
-        });
-      } else if (type == 'alarmRinging') {
-        setState(() {
-          _playbackState = 'ringing';
-        });
-      }
-    });
-  }
-
-  void _stopListeningEvents() {
-    _eventSubscription?.cancel();
-    _eventSubscription = null;
-  }
-
-  int _findActiveWordIndex(List<TranscriptWord> words, int posMs) {
-    if (words.isEmpty) return -1;
-    // Binary search for word containing posMs
-    int low = 0;
-    int high = words.length - 1;
-    while (low <= high) {
-      final mid = (low + high) ~/ 2;
-      final w = words[mid];
-      if (posMs >= w.startMs && posMs <= w.endMs) {
-        return mid;
-      } else if (posMs < w.startMs) {
-        high = mid - 1;
-      } else {
-        low = mid + 1;
-      }
-    }
-    // If between words or near end, find closest prior word
-    if (high >= 0 && high < words.length && posMs >= words[high].startMs) {
-      return high;
-    }
-    return -1;
-  }
-
-  void _scrollToActiveWord() {
-    final words = _transcript?.words;
-    if (words == null || words.isEmpty) return;
-    final activeIndex = _findActiveWordIndex(words, _currentPositionMs);
-    if (activeIndex != -1 && _wordKeys.containsKey(activeIndex)) {
-      final keyContext = _wordKeys[activeIndex]?.currentContext;
-      if (keyContext != null) {
-        Scrollable.ensureVisible(
-          keyContext,
-          duration: const Duration(milliseconds: 150),
-          alignment: 0.5,
-          curve: Curves.easeInOut,
-        );
-      }
+      _events?.cancel();
+      _events = null;
     }
   }
 
@@ -220,530 +99,611 @@ class _SynchronizedTranscriptPageState extends State<SynchronizedTranscriptPage>
   void dispose() {
     SynchronizedTranscriptPage.openCount--;
     WidgetsBinding.instance.removeObserver(this);
-    _stopPolling();
-    _stopListeningEvents();
+    _events?.cancel();
     // Leaving the message page ends the message, so nothing keeps playing in the
     // background and re-opens this page.
-    if (_playbackState == 'customAudioPlaying' ||
-        _playbackState == 'customAudioPaused') {
-      widget.platformClient.stopCustomAudio();
+    if (_playback == _Playback.playing || _playback == _Playback.paused) {
+      _player.stopCustomAudio();
     }
-    _scrollController.dispose();
+    _position.dispose();
+    _activeWord.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTranscript() async {
+    try {
+      final transcript = await AudioTrackRepository.loadTranscript(
+        _track.transcriptPath,
+      );
+      if (!mounted) return;
+      setState(() {
+        _transcript = transcript;
+        if (_durationMs == 0 && transcript.words.isNotEmpty) {
+          _durationMs = transcript.words.last.endMs;
+        }
+      });
+      _moveTo(_position.value);
+    } on Object {
+      if (mounted) setState(() => _loadFailed = true);
+    }
+  }
+
+  /// The player's state now (on open and on resume; events keep it current after).
+  Future<void> _readPlayer() async {
+    final Map<String, dynamic> state;
+    try {
+      state = await _player.getPlaybackState();
+    } on Object {
+      return;
+    }
+    if (!mounted) return;
+    _update(
+      _playbackOf(state['state'] as String?),
+      position: (state['positionMs'] as num?)?.toInt() ?? 0,
+      duration: (state['durationMs'] as num?)?.toInt(),
+    );
+  }
+
+  void _listen() {
+    _events ??= _player.events.listen((event) {
+      if (!mounted) return;
+      final position = (event['positionMs'] as num?)?.toInt();
+      final duration = (event['durationMs'] as num?)?.toInt();
+      switch (event['event'] as String?) {
+        case 'positionUpdate':
+          _update(_Playback.playing, position: position, duration: duration);
+        case 'customAudioStarted':
+          _update(_Playback.playing, position: 0, duration: duration);
+        case 'customAudioPaused':
+          _update(_Playback.paused, position: position);
+        case 'customAudioResumed':
+          _update(_Playback.playing);
+        case 'alarmDismissed' || 'customAudioStopped' || 'customAudioCompleted':
+          _update(_Playback.idle, position: 0);
+        case 'alarmRinging':
+          _update(_Playback.ringing);
+      }
+    });
+  }
+
+  /// Redraws the page only when the playback or the length changed; a new position
+  /// moves just the bar (and the transcript when the word changes).
+  void _update(_Playback playback, {int? position, int? duration}) {
+    final length = duration != null && duration > 0 ? duration : _durationMs;
+    if (playback != _playback || length != _durationMs) {
+      setState(() {
+        _playback = playback;
+        _durationMs = length;
+      });
+    }
+    if (position != null) _moveTo(position);
+  }
+
+  void _moveTo(int positionMs) {
+    _position.value = positionMs;
+    final index = _wordAt(_transcript?.words ?? const [], positionMs);
+    if (index == _activeWord.value) return;
+    _activeWord.value = index;
+    final word = _wordKeys[index]?.currentContext;
+    if (word != null) {
+      Scrollable.ensureVisible(
+        word,
+        duration: const Duration(milliseconds: 150),
+        alignment: 0.5,
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  /// The word spoken at [posMs] (the last one started when between words), or -1.
+  int _wordAt(List<TranscriptWord> words, int posMs) {
+    var low = 0;
+    var high = words.length - 1;
+    while (low <= high) {
+      final mid = (low + high) ~/ 2;
+      final w = words[mid];
+      if (posMs >= w.startMs && posMs <= w.endMs) return mid;
+      if (posMs < w.startMs) {
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+    return high >= 0 && posMs >= words[high].startMs ? high : -1;
+  }
+
+  void _seek(int ms) {
+    _player.seekCustomAudio(ms);
+    // While paused no position comes back, so the page moves at once.
+    _moveTo(ms);
+  }
+
+  void _playOrPause() {
+    switch (_playback) {
+      case _Playback.playing:
+        _player.pauseCustomAudio();
+      case _Playback.paused:
+        _player.resumeCustomAudio();
+      case _Playback.idle || _Playback.ringing:
+        _player.startCustomAudio(_track.id);
+    }
+  }
+
+  void _replay() {
+    _seek(0);
+    _player.startCustomAudio(_track.id);
+  }
+
+  /// Back to where it was opened from; never a second home page (each one listens to
+  /// alarm events and would navigate again).
+  void _back() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      GoRouter.of(context).go(RouteNames.dashboardPath);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isRinging = _playbackState == 'ringing';
-    final isPlaying = _playbackState == 'customAudioPlaying';
-    final words = _transcript?.words ?? [];
-    final activeIndex = _findActiveWordIndex(words, _currentPositionMs);
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF13131A),
-      appBar: AppBar(
-        title: Text(widget.missionName ?? _track.title),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              // Back to the existing home route; never stack a second home page
-              // (each instance listens to alarm events and would navigate again).
-              GoRouter.of(context).go(RouteNames.dashboardPath);
-            }
-          },
+    final strings = appLanguage(context);
+    final textTheme = appTheme(context).textTheme;
+    final transcript = _transcript;
+    final Widget body;
+    if (_loadFailed) {
+      body = Center(
+        child: Text(
+          strings.message_load_failed,
+          style: textTheme.bodyLarge!.copyWith(color: AppColor.danger),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: _showInfoDialog,
+      );
+    } else if (transcript == null) {
+      body = const Center(child: CircularProgressIndicator());
+    } else {
+      body = Column(
+        children: [
+          if (_playback == _Playback.ringing)
+            _RingingBanner(
+              onDismiss: _player.dismissAlarm,
+              onPlay: () => _player.stopAlarm(audioTrackId: _track.id),
+            ),
+          _StatusPill(playback: _playback),
+          if (_playback == _Playback.idle || _playback == _Playback.paused)
+            _PlayPrompt(onTap: _playOrPause),
+          Expanded(
+            child: _TranscriptCard(
+              words: transcript.words,
+              activeWord: _activeWord,
+              wordKeys: _wordKeys,
+              scroll: _scroll,
+              onWordTap: _seek,
+            ),
+          ),
+          _ProgressBar(
+            position: _position,
+            durationMs: _durationMs,
+            onSeek: _seek,
+          ),
+          _Controls(
+            playing: _playback == _Playback.playing,
+            onReplay: _replay,
+            onPlayPause: _playOrPause,
+            onStop: _player.dismissAlarm,
+          ),
+        ],
+      );
+    }
+    return Scaffold(
+      backgroundColor: AppColor.backgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            SizedBox(
+              height: 50.h,
+              child: Row(
+                children: [
+                  Semantics(
+                    button: true,
+                    label: strings.common_back,
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _back,
+                      child: SizedBox.square(
+                        dimension: 48.r,
+                        child: Center(
+                          child: BackChevron(size: 22.r, color: AppColor.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      _track.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleMedium!.copyWith(
+                        fontSize: 17.spMin,
+                        fontWeight: Dimension.textSemiBold,
+                        color: AppColor.titleColor,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 48.r),
+                ],
+              ),
+            ),
+            Expanded(child: body),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown while the alarm still rings: dismiss it, or stop it and play the message.
+class _RingingBanner extends StatelessWidget {
+  const _RingingBanner({required this.onDismiss, required this.onPlay});
+
+  final VoidCallback onDismiss;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    final textTheme = appTheme(context).textTheme;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10.r),
+    );
+    return Container(
+      width: double.infinity,
+      margin: REdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: REdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColor.danger,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppSvgIcon(Assets.icons.alarm, size: 26.r, color: AppColor.white),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Text(
+                  strings.message_ringing_title,
+                  style: textTheme.titleMedium!.copyWith(
+                    fontSize: 16.spMin,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            strings.message_ringing_body,
+            style: textTheme.bodyMedium!.copyWith(
+              fontSize: 13.spMin,
+              color: AppColor.white.withValues(alpha: 0.8),
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColor.white,
+                  side: BorderSide(
+                    color: AppColor.white.withValues(alpha: 0.55),
+                  ),
+                  shape: shape,
+                ),
+                onPressed: onDismiss,
+                child: Text(strings.message_dismiss),
+              ),
+              SizedBox(width: 8.w),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColor.white,
+                  foregroundColor: AppColor.danger,
+                  shape: shape,
+                ),
+                onPressed: onPlay,
+                child: Text(
+                  strings.message_play,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage.isNotEmpty
-          ? Center(
-              child: Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.red),
-              ),
-            )
-          : Column(
-              children: [
-                // Alarm Ringing Banner
-                if (isRinging)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade900,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.red.withValues(alpha: 0.5),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.alarm_on, color: Colors.white, size: 28),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Alarm Ringing!',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Choose to play the motivational message or dismiss the alarm.',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white54),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () =>
-                                  widget.platformClient.dismissAlarm(),
-                              child: const Text('DISMISS'),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.red.shade900,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () => widget.platformClient.stopAlarm(
-                                audioTrackId: _track.id,
-                              ),
-                              child: const Text(
-                                'PLAY AUDIO',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                // Status Pill
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isPlaying
-                        ? Colors.green.withValues(alpha: 0.2)
-                        : isRinging
-                        ? Colors.red.withValues(alpha: 0.2)
-                        : Colors.purple.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isPlaying
-                          ? Colors.greenAccent
-                          : isRinging
-                          ? Colors.redAccent
-                          : Colors.purpleAccent.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPlaying
-                            ? Icons.graphic_eq
-                            : isRinging
-                            ? Icons.notifications_active
-                            : Icons.music_note,
-                        size: 16,
-                        color: isPlaying
-                            ? Colors.greenAccent
-                            : Colors.purpleAccent,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isPlaying
-                            ? 'Playing in background'
-                            : isRinging
-                            ? 'Alarm Ringing'
-                            : _playbackState == 'customAudioPaused'
-                            ? 'Paused'
-                            : 'Ready',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isPlaying
-                              ? Colors.greenAccent
-                              : Colors.purpleAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Clear error / retry state if native playback is not running (Step 3.4)
-                if (!isPlaying && !isRinging)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 4,
-                    ),
-                    child: InkWell(
-                      onTap: () {
-                        widget.platformClient.startCustomAudio(_track.id);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF7C4DFF)),
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.play_circle_fill,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Tap to play message',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Transcript Card with Word-by-Word highlighting
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E2C),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white10),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 12,
-                        alignment: WrapAlignment.center,
-                        children: List.generate(words.length, (index) {
-                          final word = words[index];
-                          final isActive = index == activeIndex;
-                          final isPast =
-                              activeIndex != -1 && index < activeIndex;
-                          final key = _wordKeys.putIfAbsent(
-                            index,
-                            () => GlobalKey(),
-                          );
-
-                          return GestureDetector(
-                            key: key,
-                            onTap: () {
-                              // Seek directly to word start time
-                              widget.platformClient.seekCustomAudio(
-                                word.startMs,
-                              );
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? const Color(0xFF7C4DFF)
-                                    : isPast
-                                    ? Colors.white.withValues(alpha: 0.06)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: isActive
-                                    ? [
-                                        BoxShadow(
-                                          color: const Color(0xFF7C4DFF)
-                                              .withValues(alpha: 0.6),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Text(
-                                word.text,
-                                style: TextStyle(
-                                  fontSize: isActive ? 22 : 20,
-                                  fontWeight: isActive
-                                      ? FontWeight.bold
-                                      : isPast
-                                      ? FontWeight.w500
-                                      : FontWeight.w400,
-                                  color: isActive
-                                      ? Colors.white
-                                      : isPast
-                                      ? Colors.white70
-                                      : Colors.white38,
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Audio Progress Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: const Color(0xFF7C4DFF),
-                          inactiveTrackColor: Colors.white12,
-                          thumbColor: Colors.white,
-                          trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(
-                            enabledThumbRadius: 6,
-                          ),
-                        ),
-                        child: Slider(
-                          value: _currentPositionMs
-                              .clamp(0, _durationMs)
-                              .toDouble(),
-                          min: 0,
-                          max: _durationMs > 0 ? _durationMs.toDouble() : 1.0,
-                          onChanged: (val) {
-                            widget.platformClient.seekCustomAudio(val.toInt());
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _formatMs(_currentPositionMs),
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              _formatMs(_durationMs),
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Controls Row
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Replay button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.replay,
-                          color: Colors.white70,
-                          size: 28,
-                        ),
-                        onPressed: () {
-                          widget.platformClient.seekCustomAudio(0);
-                          widget.platformClient.startCustomAudio(_track.id);
-                        },
-                      ),
-
-                      // Play / Pause main button
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF7C4DFF), Color(0xFF651FFF)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF7C4DFF)
-                                  .withValues(alpha: 0.5),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          iconSize: 42,
-                          icon: Icon(
-                            isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
-                          ),
-                          onPressed: () {
-                            if (isPlaying) {
-                              widget.platformClient.pauseCustomAudio();
-                            } else if (_playbackState == 'customAudioPaused') {
-                              widget.platformClient.resumeCustomAudio();
-                            } else {
-                              widget.platformClient.startCustomAudio(_track.id);
-                            }
-                          },
-                        ),
-                      ),
-
-                      // Stop button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.stop,
-                          color: Colors.white70,
-                          size: 28,
-                        ),
-                        onPressed: () => widget.platformClient.dismissAlarm(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Demo Alarm Trigger Bar
-                Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: 24,
-                    left: 24,
-                    right: 24,
-                  ),
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: Colors.white24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    icon: const Icon(Icons.alarm_add, size: 20),
-                    label: const Text('Test Alarm Trigger in 5 Seconds'),
-                    onPressed: () {
-                      final triggerTime = DateTime.now().add(
-                        const Duration(seconds: 5),
-                      );
-                      widget.platformClient.scheduleAlarm({
-                        'alarmId':
-                            'demo_alarm_${DateTime.now().millisecondsSinceEpoch}',
-                        'timeMs': triggerTime.millisecondsSinceEpoch,
-                        'audioTrackId': _track.id,
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Alarm scheduled for 5 seconds from now. Lock phone to test background playback!',
-                          ),
-                          backgroundColor: Color(0xFF7C4DFF),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
     );
   }
+}
 
-  String _formatMs(int ms) {
-    final totalSeconds = ms ~/ 1000;
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
+/// What the player is doing, as a small pill.
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.playback});
+
+  final _Playback playback;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    final (label, color) = switch (playback) {
+      _Playback.playing => (strings.message_status_playing, AppColor.success),
+      _Playback.ringing => (strings.message_ringing_title, AppColor.danger),
+      _Playback.paused => (strings.message_status_paused, AppColor.primary),
+      _Playback.idle => (strings.message_status_ready, AppColor.primary),
+    };
+    return Container(
+      margin: REdgeInsets.symmetric(vertical: 8),
+      padding: REdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        label,
+        style: appTheme(context).textTheme.labelMedium!.copyWith(
+          fontSize: 12.spMin,
+          fontWeight: Dimension.textSemiBold,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+/// "Tap to play message", while nothing plays.
+class _PlayPrompt extends StatelessWidget {
+  const _PlayPrompt({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(12.r);
+    return Padding(
+      padding: REdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: Container(
+          padding: REdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColor.primary.withValues(alpha: 0.2),
+            borderRadius: radius,
+            border: Border.all(color: AppColor.primary),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AppSvgIcon(
+                Assets.icons.voice.play,
+                size: 20.r,
+                color: AppColor.white,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                appLanguage(context).message_tap_to_play,
+                style: appTheme(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 14.spMin,
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The message's words; the spoken one filled, the ones before it brighter than the
+/// ones still to come. Redraws only when [activeWord] changes.
+class _TranscriptCard extends StatelessWidget {
+  const _TranscriptCard({
+    required this.words,
+    required this.activeWord,
+    required this.wordKeys,
+    required this.scroll,
+    required this.onWordTap,
+  });
+
+  final List<TranscriptWord> words;
+  final ValueNotifier<int> activeWord;
+  final Map<int, GlobalKey> wordKeys;
+  final ScrollController scroll;
+  final ValueChanged<int> onWordTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = appTheme(context).textTheme.bodyLarge!
+        .copyWith(fontSize: 20.spMin);
+    return Container(
+      margin: REdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: REdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColor.cardColor,
+        borderRadius: BorderRadius.circular(24.r),
+      ),
+      child: SingleChildScrollView(
+        controller: scroll,
+        child: ValueListenableBuilder<int>(
+          valueListenable: activeWord,
+          builder: (context, active, _) => Wrap(
+            spacing: 8.w,
+            runSpacing: 12.h,
+            alignment: WrapAlignment.center,
+            children: [
+              for (var i = 0; i < words.length; i++)
+                GestureDetector(
+                  key: wordKeys.putIfAbsent(i, GlobalKey.new),
+                  onTap: () => onWordTap(words[i].startMs),
+                  // Only the colours change, so the words never move.
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: REdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: i == active
+                          ? AppColor.primary
+                          : AppColor.primary.withValues(alpha: 0),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      words[i].text,
+                      style: style.copyWith(
+                        color: i == active
+                            ? AppColor.onPrimary
+                            : active != -1 && i < active
+                            ? AppColor.textColor
+                            : AppColor.textMuted,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The position bar and its times. Dragging moves only the bar; the player seeks
+/// once, where the drag ends.
+class _ProgressBar extends StatefulWidget {
+  const _ProgressBar({
+    required this.position,
+    required this.durationMs,
+    required this.onSeek,
+  });
+
+  final ValueNotifier<int> position;
+  final int durationMs;
+  final ValueChanged<int> onSeek;
+
+  @override
+  State<_ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<_ProgressBar> {
+  double? _dragging;
+
+  static String _time(int ms) {
+    final seconds = ms ~/ 1000;
     final tenths = (ms % 1000) ~/ 100;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}.$tenths';
+    return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}.$tenths';
   }
 
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E2C),
-        title: const Text(
-          'Word-by-Word Synchronized Audio',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'This feature plays custom audio in a native foreground service (Android) / background audio session (iOS) so it continues playing even when the screen is locked.\n\nWhen you open the app, this page matches the exact playback timestamp from the native player to the transcript words using binary search.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Got it'),
+  @override
+  Widget build(BuildContext context) {
+    final max = widget.durationMs > 0 ? widget.durationMs.toDouble() : 1.0;
+    final timeStyle = appTheme(context).textTheme.labelMedium!
+        .copyWith(fontSize: 12.spMin, color: AppColor.textTertiary);
+    return Padding(
+      padding: REdgeInsets.symmetric(horizontal: 24),
+      child: ValueListenableBuilder<int>(
+        valueListenable: widget.position,
+        builder: (context, position, _) {
+          final value = _dragging ?? position.clamp(0, max).toDouble();
+          return Column(
+            children: [
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: AppColor.primary,
+                  inactiveTrackColor: AppColor.progressTrack,
+                  thumbColor: AppColor.white,
+                  trackHeight: 4.h,
+                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6.r),
+                ),
+                child: Slider(
+                  value: value,
+                  max: max,
+                  onChanged: (v) => setState(() => _dragging = v),
+                  onChangeEnd: (v) {
+                    setState(() => _dragging = null);
+                    widget.onSeek(v.toInt());
+                  },
+                ),
+              ),
+              Padding(
+                padding: REdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(_time(value.toInt()), style: timeStyle),
+                    Text(_time(widget.durationMs), style: timeStyle),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Replay, play / pause and stop.
+class _Controls extends StatelessWidget {
+  const _Controls({
+    required this.playing,
+    required this.onReplay,
+    required this.onPlayPause,
+    required this.onStop,
+  });
+
+  final bool playing;
+  final VoidCallback onReplay;
+  final VoidCallback onPlayPause;
+  final VoidCallback onStop;
+
+  @override
+  Widget build(BuildContext context) {
+    final side = AppColor.textSecondary;
+    return Padding(
+      padding: REdgeInsets.fromLTRB(24, 28, 24, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          IconButton(
+            onPressed: onReplay,
+            icon: AppSvgIcon(
+              Assets.icons.voice.replay,
+              size: 28.r,
+              color: side,
+            ),
+          ),
+          GestureDetector(
+            onTap: onPlayPause,
+            child: Container(
+              width: 72.r,
+              height: 72.r,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColor.primary,
+              ),
+              child: AppSvgIcon(
+                playing ? Assets.icons.voice.pause : Assets.icons.voice.play,
+                size: 36.r,
+                color: AppColor.onPrimary,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onStop,
+            icon: AppSvgIcon(Assets.icons.voice.stop, size: 28.r, color: side),
           ),
         ],
       ),

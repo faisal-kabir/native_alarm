@@ -18,7 +18,7 @@ data class AlarmConfig(
     val subtitle: String? = null,
     val stopHintText: String = "slide to stop",
     val repeatCount: Int = 0,
-    val repeatIntervalSec: Int = 10,
+    val repeatIntervalSec: Int = 300,
     val tuneAsset: String? = null,
     /** The alarm's own copy of its sound (see [AlarmTuneStore]); wins over [tuneAsset]. */
     val tuneFile: String? = null,
@@ -26,9 +26,21 @@ data class AlarmConfig(
     val ringDays: Map<Int, Int>? = null,
     /** When the main alarm rings (a one-off alarm is set again from it after a reboot); null = not set. */
     val ringTimeMs: Long? = null,
+    /** What Flutter set this alarm with (its own fingerprint): `syncAlarms` answers it, so
+     * Flutter sets an alarm again only when something about it changed. */
+    val signature: String? = null,
 ) {
     val safeRepeatCount: Int get() = repeatCount.coerceIn(0, MAX_REPEAT_COUNT)
     val safeIntervalSec: Int get() = repeatIntervalSec.coerceAtLeast(MIN_INTERVAL_SEC)
+
+    /** "5 minutes" / "1 minute" / "30 seconds": the gap before the next ring, in words. */
+    val intervalText: String
+        get() {
+            val sec = safeIntervalSec
+            if (sec % 60 != 0) return "$sec seconds"
+            val min = sec / 60
+            return if (min == 1) "1 minute" else "$min minutes"
+        }
 
     fun toJson(): String = JSONObject().apply {
         put("alarmId", alarmId)
@@ -43,6 +55,7 @@ data class AlarmConfig(
         put("tuneFile", tuneFile)
         put("ringDays", ringDays?.let { days -> JSONObject().apply { days.forEach { (d, m) -> put(d.toString(), m) } } })
         put("ringTimeMs", ringTimeMs)
+        put("signature", signature)
     }.toString()
 
     /** The weekly alarm's next ring strictly after [nowMs], or null for a one-off alarm. */
@@ -80,13 +93,14 @@ data class AlarmConfig(
                 subtitle = if (o.isNull("subtitle")) null else o.optString("subtitle"),
                 stopHintText = o.optString("stopHintText", "slide to stop"),
                 repeatCount = o.optInt("repeatCount", 0),
-                repeatIntervalSec = o.optInt("repeatIntervalSec", 10),
+                repeatIntervalSec = o.optInt("repeatIntervalSec", 300),
                 tuneAsset = if (o.isNull("tuneAsset")) null else o.optString("tuneAsset"),
                 tuneFile = if (o.isNull("tuneFile")) null else o.optString("tuneFile"),
                 ringDays = o.optJSONObject("ringDays")?.let { days ->
                     days.keys().asSequence().associate { it.toInt() to days.getInt(it) }
                 },
                 ringTimeMs = if (o.isNull("ringTimeMs")) null else o.optLong("ringTimeMs"),
+                signature = if (o.isNull("signature")) null else o.optString("signature"),
             )
         } catch (_: Exception) {
             null

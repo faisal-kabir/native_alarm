@@ -208,13 +208,17 @@ class MainActivity : FlutterActivity() {
                         stopHintText = call.argument<String>("stopHintText")?.takeIf { it.isNotEmpty() }
                             ?: "slide to stop",
                         repeatCount = call.argument<Number>("repeatCount")?.toInt() ?: 0,
-                        repeatIntervalSec = call.argument<Number>("repeatIntervalSec")?.toInt() ?: 10,
+                        repeatIntervalSec = call.argument<Number>("repeatIntervalSec")?.toInt() ?: 300,
                         tuneAsset = call.argument<String>("tuneAsset")?.takeIf { it.isNotEmpty() },
                         tuneFile = AlarmTuneStore.install(this, call.argument<String>("tuneFile"), alarmId),
                         ringDays = AlarmConfig.parseRingDays(call.argument<Any>("ringDays")),
+                        signature = call.argument<String>("signature"),
                     )
                     scheduleAlarm(config, timeMs)
                     result.success(null)
+                }
+                "syncAlarms" -> {
+                    result.success(syncAlarms(call.argument<List<String>>("keepIds")?.toSet() ?: emptySet()))
                 }
                 "cancelAlarm" -> {
                     val alarmId = call.argument<String>("alarmId") ?: "default"
@@ -291,6 +295,24 @@ class MainActivity : FlutterActivity() {
     private fun scheduleAlarm(config: AlarmConfig, timeMs: Long) {
         AlarmScheduler.schedule(this, config, timeMs)
         AlarmPlugin.sendEvent(mapOf("event" to "alarmScheduled", "alarmId" to config.alarmId, "timeMs" to timeMs))
+    }
+
+    /**
+     * Flutter's alarms are the truth: every stored alarm not in [keep] is cancelled and
+     * forgotten (a deleted alarm, an old demo), except a pending snooze. Answers, for each
+     * kept alarm that is really set, the signature it was set with, so Flutter sets again
+     * only an alarm that is missing or changed. Same rule as iOS.
+     */
+    private fun syncAlarms(keep: Set<String>): Map<String, String> {
+        val held = mutableMapOf<String, String>()
+        for (config in AlarmConfigStore.all(this)) {
+            if (config.alarmId !in keep) {
+                if (!config.alarmId.startsWith("snooze_")) cancelAlarm(config.alarmId)
+            } else if (AlarmScheduler.isScheduled(this, config.alarmId)) {
+                held[config.alarmId] = config.signature ?: ""
+            }
+        }
+        return held
     }
 
     private fun cancelAlarm(alarmId: String) {

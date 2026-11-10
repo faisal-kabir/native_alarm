@@ -6,7 +6,7 @@ Run every row on a real device with the phone **locked**.
 | # | Scenario | Expected |
 |---|----------|----------|
 | 1 | Alarm fires, user slides to stop and **unlocks** | Alarm stops. No internal alarm is scheduled/rings. Message page opens with the alarm's `alarmId`. |
-| 2 | Slide to stop, **cancel** unlock | Alarm stops. Notification "rings again in 10 seconds". Alarm rings again ~10s later. |
+| 2 | Slide to stop, **cancel** unlock | Alarm stops. Notification "rings again in 5 minutes". Alarm rings again ~5 min later (as many times as the alarm's Ring again / `number_of_ring`). |
 | 3 | Row 2, then slide + **unlock** on the repeat | Alarm stops, remaining internal alarms + notifications are cancelled, message page opens. Nothing rings afterwards. |
 | 4 | Slide without unlock every time | Rings `1 + repeatCount` times in total, then stops for good. |
 | 5 | `repeatCount = 0`, slide without unlock | Alarm stops. No notification, no further ring. |

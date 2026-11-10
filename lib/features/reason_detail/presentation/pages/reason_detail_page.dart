@@ -10,7 +10,7 @@ import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_color.dart';
 import '../../../../core/utils/load_status.dart';
 import '../../../../core/widgets/app_alert.dart';
-import '../../../../core/widgets/app_svg_icon.dart';
+import '../../../../core/widgets/back_chevron.dart';
 import '../../../../core/widgets/cached_svg_icon.dart';
 import '../../../../core/widgets/choice_sheet.dart';
 import '../../../../core/widgets/hinted_scroll_view.dart';
@@ -381,15 +381,7 @@ class _NavBar extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // The forward chevron turned round.
-                        RotatedBox(
-                          quarterTurns: 2,
-                          child: AppSvgIcon(
-                            Assets.icons.page.chevron,
-                            size: 21.r,
-                            color: AppColor.primary,
-                          ),
-                        ),
+                        BackChevron(size: 21.r, color: AppColor.primary),
                         SizedBox(width: 3.w),
                         Text(
                           strings.tab_reasons,

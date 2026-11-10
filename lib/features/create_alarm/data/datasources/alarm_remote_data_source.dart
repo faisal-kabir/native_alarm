@@ -31,6 +31,10 @@ abstract class AlarmRemoteDataSource {
   /// [ServerException].
   Future<({Map<String, dynamic> alarm, List<Map<String, dynamic>> freed})>
   updateAlarm(Alarm old, Alarm alarm, DateTime now);
+
+  /// Writes alarm [id]'s `enable`. Throws [ServerException] when the server keeps the
+  /// old value.
+  Future<void> updateEnabled(int id, {required bool enabled});
 }
 
 @LazySingleton(as: AlarmRemoteDataSource)
@@ -100,6 +104,24 @@ class AlarmRemoteDataSourceImpl implements AlarmRemoteDataSource {
       } catch (_) {}
       throw e is ServerException ? e : ServerException(e.toString());
     }
+  }
+
+  @override
+  Future<void> updateEnabled(int id, {required bool enabled}) async {
+    List<Map<String, dynamic>> updated;
+    try {
+      updated = await client
+          .from('alarm')
+          .update({
+            'enable': enabled,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', id)
+          .select('id');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+    if (updated.isEmpty) throw const ServerException('Alarm not updated');
   }
 
   /// Writes [to] over alarm [id], which held [from]; answers the Reasons it freed.

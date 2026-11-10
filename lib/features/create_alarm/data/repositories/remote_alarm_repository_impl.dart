@@ -72,6 +72,19 @@ class RemoteAlarmRepositoryImpl implements RemoteAlarmRepository {
   }
 
   @override
+  Future<Either<Failure, Unit>> setEnabled(
+    int remoteId, {
+    required bool enabled,
+  }) async {
+    try {
+      await remoteDataSource.updateEnabled(remoteId, enabled: enabled);
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, Unit>> remove(int remoteId) async {
     try {
       await _saveReasons(await remoteDataSource.deleteAlarm(remoteId));

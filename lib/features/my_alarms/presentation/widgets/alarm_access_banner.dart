@@ -48,7 +48,7 @@ class AlarmAccessBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(11.r),
                   ),
                   child: AppSvgIcon(
-                    Assets.icons.editor.alarmOff,
+                    Assets.icons.alarmOff,
                     size: 18.r,
                     color: AppColor.danger,
                   ),

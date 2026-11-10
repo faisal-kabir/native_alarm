@@ -4,19 +4,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import 'package:injectable/injectable.dart';
 
-/// Represents the possible native states of an alarm or playback.
-enum AlarmState {
-  idle,
-  scheduled,
-  ringing,
-  alarmDismissed,
-  customAudioPlaying,
-  customAudioPaused,
-  customAudioStopped,
-  completed,
-  error,
-}
-
 /// A thin wrapper around platform channels to communicate with native code.
 @lazySingleton
 class AlarmPlatformClient {
@@ -46,6 +33,16 @@ class AlarmPlatformClient {
 
   Future<void> cancelAlarm(String alarmId) async {
     await _methodChannel.invokeMethod('cancelAlarm', {'alarmId': alarmId});
+  }
+
+  /// Native forgets (and cancels) every alarm it holds that is not in [keepIds], and
+  /// answers, for each kept alarm really set, the `signature` it was set with.
+  Future<Map<String, String>> syncAlarms(List<String> keepIds) async {
+    final held = await _methodChannel.invokeMapMethod<String, String>(
+      'syncAlarms',
+      {'keepIds': keepIds},
+    );
+    return held ?? const {};
   }
 
   Future<void> dismissAlarm() async {
@@ -115,7 +112,6 @@ class AlarmPlatformClient {
   // Direct aliases conforming to requirement 5
   Future<void> pause() => pauseCustomAudio();
   Future<void> resume() => resumeCustomAudio();
-  Future<void> seek(int positionMs) => seekCustomAudio(positionMs);
   Future<void> stop() => stopCustomAudio();
 
   Future<Map<String, dynamic>> getPlaybackState() async {

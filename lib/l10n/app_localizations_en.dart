@@ -13,9 +13,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get app_name => 'Eala';
 
   @override
-  String get alarm_list_empty => 'No alarms yet. Tap + to add one.';
-
-  @override
   String get common_allow => 'Allow';
 
   @override
@@ -63,6 +60,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get my_alarms_title => 'My Alarms';
+
+  @override
+  String get alarm_ringing_fallback_title => 'Alarm';
+
+  @override
+  String alarm_ringing_snooze(int minutes) {
+    return 'Snooze for $minutes min';
+  }
+
+  @override
+  String alarm_ringing_snoozed(int minutes) {
+    return 'Alarm snoozed for $minutes minutes';
+  }
+
+  @override
+  String get alarm_ringing_stop => 'Stop';
+
+  @override
+  String get message_load_failed => 'Couldn’t load this message.';
+
+  @override
+  String get message_ringing_title => 'Alarm ringing';
+
+  @override
+  String get message_ringing_body => 'Play your message, or dismiss the alarm.';
+
+  @override
+  String get message_dismiss => 'Dismiss';
+
+  @override
+  String get message_play => 'Play message';
+
+  @override
+  String get message_status_playing => 'Playing';
+
+  @override
+  String get message_status_paused => 'Paused';
+
+  @override
+  String get message_status_ready => 'Ready';
+
+  @override
+  String get message_tap_to_play => 'Tap to play message';
 
   @override
   String get my_alarms_your_alarms => 'Your alarms';

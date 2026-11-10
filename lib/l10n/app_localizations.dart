@@ -100,12 +100,6 @@ abstract class AppLocalizations {
   /// **'Eala'**
   String get app_name;
 
-  /// No description provided for @alarm_list_empty.
-  ///
-  /// In en, this message translates to:
-  /// **'No alarms yet. Tap + to add one.'**
-  String get alarm_list_empty;
-
   /// No description provided for @common_allow.
   ///
   /// In en, this message translates to:
@@ -195,6 +189,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My Alarms'**
   String get my_alarms_title;
+
+  /// No description provided for @alarm_ringing_fallback_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm'**
+  String get alarm_ringing_fallback_title;
+
+  /// No description provided for @alarm_ringing_snooze.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze for {minutes} min'**
+  String alarm_ringing_snooze(int minutes);
+
+  /// No description provided for @alarm_ringing_snoozed.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm snoozed for {minutes} minutes'**
+  String alarm_ringing_snoozed(int minutes);
+
+  /// No description provided for @alarm_ringing_stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get alarm_ringing_stop;
+
+  /// No description provided for @message_load_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t load this message.'**
+  String get message_load_failed;
+
+  /// No description provided for @message_ringing_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm ringing'**
+  String get message_ringing_title;
+
+  /// No description provided for @message_ringing_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Play your message, or dismiss the alarm.'**
+  String get message_ringing_body;
+
+  /// No description provided for @message_dismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get message_dismiss;
+
+  /// No description provided for @message_play.
+  ///
+  /// In en, this message translates to:
+  /// **'Play message'**
+  String get message_play;
+
+  /// No description provided for @message_status_playing.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing'**
+  String get message_status_playing;
+
+  /// No description provided for @message_status_paused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get message_status_paused;
+
+  /// No description provided for @message_status_ready.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get message_status_ready;
+
+  /// No description provided for @message_tap_to_play.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to play message'**
+  String get message_tap_to_play;
 
   /// No description provided for @my_alarms_your_alarms.
   ///

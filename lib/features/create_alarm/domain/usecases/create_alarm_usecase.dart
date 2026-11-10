@@ -47,9 +47,6 @@ class CreateAlarmUseCase implements UseCase<Alarm, CreateAlarmParams> {
 
   CreateAlarmUseCase(this.repository, this.remote, this.scheduler);
 
-  /// The message played once it is stopped (the native layer's own track).
-  static const String messageTrack = 'morning_message';
-
   @override
   Future<Either<Failure, Alarm>> call(CreateAlarmParams params) async =>
       (await repository.getAlarms()).fold(
@@ -65,7 +62,7 @@ class CreateAlarmUseCase implements UseCase<Alarm, CreateAlarmParams> {
       id: 'alarm_${params.now.microsecondsSinceEpoch}',
       title: params.title,
       now: params.now,
-      audioTrackId: messageTrack,
+      audioTrackId: AlarmScheduler.messageTrack,
     );
 
     final alarm = (await remote.upload(

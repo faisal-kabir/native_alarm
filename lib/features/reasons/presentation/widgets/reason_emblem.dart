@@ -119,7 +119,7 @@ class _AlarmBadgeMark extends StatelessWidget {
         border: Border.all(color: AppColor.backgroundColor, width: 2.5.r),
       ),
       child: AppSvgIcon(
-        on ? Assets.icons.alarm : Assets.icons.page.alarmOffBadge,
+        on ? Assets.icons.alarm : Assets.icons.alarmOff,
         size: 15.r,
         color: on ? AppColor.onPrimary : AppColor.textSecondary,
       ),

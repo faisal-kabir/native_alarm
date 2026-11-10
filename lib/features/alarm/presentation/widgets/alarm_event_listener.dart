@@ -69,7 +69,7 @@ class _AlarmEventListenerState extends State<AlarmEventListener>
         (type == 'customAudioStarted' && (eventAlarmId?.isNotEmpty ?? false))) {
       // Only alarm-originated starts open the page (they carry an alarmId);
       // replaying inside the message page must not push it again.
-      _navigateToTranscript(alarmId: eventAlarmId);
+      _navigateToTranscript();
     }
   }
 
@@ -87,12 +87,7 @@ class _AlarmEventListenerState extends State<AlarmEventListener>
       final launchData = await _platformClient.consumeAlarmLaunch();
       final launched = launchData['launchedFromAlarm'] as bool? ?? false;
       if (launched) {
-        if (!SynchronizedTranscriptPage.isOpen) {
-          final launchAlarmId = launchData['alarmId'] as String?;
-          _navigateToTranscript(
-            alarmId: (launchAlarmId?.isEmpty ?? true) ? null : launchAlarmId,
-          );
-        }
+        if (!SynchronizedTranscriptPage.isOpen) _navigateToTranscript();
         return;
       }
     } catch (_) {}
@@ -160,7 +155,7 @@ class _AlarmEventListenerState extends State<AlarmEventListener>
     }
   }
 
-  Future<void> _navigateToTranscript({String? alarmId}) async {
+  Future<void> _navigateToTranscript() async {
     if (!mounted ||
         SynchronizedTranscriptPage.isOpen ||
         _isTranscriptPageOpen) {
@@ -178,7 +173,6 @@ class _AlarmEventListenerState extends State<AlarmEventListener>
         builder: (_) => SynchronizedTranscriptPage(
           platformClient: _platformClient,
           initialTrack: AudioTrackRepository.predefinedTracks.first,
-          alarmId: alarmId,
         ),
       ),
     );

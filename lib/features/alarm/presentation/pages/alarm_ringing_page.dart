@@ -2,15 +2,27 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_constant.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/platform/alarm_platform_client.dart';
+import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_color.dart';
+import '../../../../core/theme/dimension.dart';
+import '../../../../main.dart';
 import '../../data/audio_track_repository.dart';
 import '../../domain/entities/audio_track.dart';
+import '../../domain/repositories/alarm_scheduler.dart';
 import 'synchronized_transcript_page.dart';
-import '../../../../core/router/route_names.dart';
 
-import 'package:go_router/go_router.dart';
-
+/// iOS only: the app's own ringing screen, shown when the app is opened while an alarm
+/// rings (Android shows its native alarm screen). The clock and date, the alarm's
+/// text, "Snooze" (rings again in [AppConstant.snoozeMinutes], through the one alarm
+/// helper) and "Stop" (stops the ring and plays the message). Leaves for the message
+/// page when the message starts, and goes home when the alarm is dismissed.
 class AlarmRingingPage extends StatefulWidget {
   final AlarmPlatformClient platformClient;
   final String? alarmId;
@@ -30,49 +42,57 @@ class AlarmRingingPage extends StatefulWidget {
 }
 
 class _AlarmRingingPageState extends State<AlarmRingingPage> {
-  late DateTime _currentTime;
-  Timer? _clockTimer;
-  StreamSubscription? _eventSubscription;
+  late DateTime _now = DateTime.now();
+  late final Timer _clock;
+  StreamSubscription<Map<String, dynamic>>? _events;
+  bool _isNavigating = false;
+
+  AudioTrack get _track =>
+      widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first;
 
   @override
   void initState() {
     super.initState();
-    _currentTime = DateTime.now();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {
-          _currentTime = DateTime.now();
-        });
-      }
+    // The clock shows minutes: a redraw when the minute changes is enough.
+    _clock = Timer.periodic(const Duration(seconds: 1), (_) {
+      final now = DateTime.now();
+      if (mounted && now.minute != _now.minute) setState(() => _now = now);
     });
 
-    // Check if custom audio is already playing on mount
+    // The message may already be playing.
     widget.platformClient.getPlaybackState().then((state) {
-      if (!mounted) return;
-      if (state['state'] == 'customAudioPlaying') {
+      if (mounted && state['state'] == 'customAudioPlaying') {
         _navigateToTranscript();
       }
     });
 
-    _eventSubscription = widget.platformClient.events.listen((event) {
+    _events = widget.platformClient.events.listen((event) {
       final type = event['event'] as String?;
       if (type == 'customAudioStarted' || type == 'openTranscript') {
         _navigateToTranscript();
       } else if (type == 'alarmDismissed') {
-        if (mounted) {
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          } else {
-            // Back to the existing home route; never stack a second home page
-            // (each instance listens to alarm events and would navigate again).
-            GoRouter.of(context).go(RouteNames.dashboardPath);
-          }
-        }
+        _leave();
       }
     });
   }
 
-  bool _isNavigating = false;
+  @override
+  void dispose() {
+    _clock.cancel();
+    _events?.cancel();
+    super.dispose();
+  }
+
+  /// Back to where it was opened from; never a second home page (each one listens to
+  /// alarm events and would navigate again).
+  void _leave() {
+    if (!mounted) return;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      GoRouter.of(context).go(RouteNames.dashboardPath);
+    }
+  }
 
   void _navigateToTranscript() {
     if (!mounted || _isNavigating || SynchronizedTranscriptPage.isOpen) return;
@@ -82,210 +102,172 @@ class _AlarmRingingPageState extends State<AlarmRingingPage> {
         settings: const RouteSettings(name: '/transcript'),
         builder: (_) => SynchronizedTranscriptPage(
           platformClient: widget.platformClient,
-          initialTrack:
-              widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first,
+          initialTrack: _track,
         ),
       ),
     );
   }
 
-  void _onStopPressed() {
-    // 1. Stop ringtone and immediately play custom audio
-    final track =
-        widget.audioTrack ?? AudioTrackRepository.predefinedTracks.first;
-    widget.platformClient.stopAlarm(audioTrackId: track.id);
+  /// Stops the ring and plays the message at once.
+  void _onStop() {
+    widget.platformClient.stopAlarm(audioTrackId: _track.id);
     _navigateToTranscript();
   }
 
-  void _onSnoozePressed() {
-    final snoozeTime = DateTime.now().add(const Duration(minutes: 5));
-    widget.platformClient.scheduleAlarm({
-      'alarmId': 'snooze_${DateTime.now().millisecondsSinceEpoch}',
-      'timeMs': snoozeTime.millisecondsSinceEpoch,
-      'audioTrackId': widget.audioTrack?.id ?? 'morning_message',
-      'repeatCount': 0,
-    });
+  void _onSnooze() {
+    final strings = appLanguage(context);
+    const minutes = AppConstant.snoozeMinutes;
+    instance<AlarmScheduler>().snooze(
+      widget.alarmId ?? 'ringing',
+      at: DateTime.now().add(const Duration(minutes: minutes)),
+      title: widget.label ?? '',
+    );
     widget.platformClient.dismissAlarm();
-    if (mounted) {
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        // Back to the existing home route; never stack a second home page
-        // (each instance listens to alarm events and would navigate again).
-        GoRouter.of(context).go(RouteNames.dashboardPath);
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Alarm snoozed for 5 minutes'),
-          backgroundColor: Color(0xFF1FB247),
-        ),
-      );
-    }
-  }
-
-  String _formatClock(DateTime dt) {
-    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  String _formatDate(DateTime dt) {
-    const weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final weekday = weekdays[dt.weekday - 1];
-    final month = months[dt.month - 1];
-    return '$weekday, $month ${dt.day}';
-  }
-
-  @override
-  void dispose() {
-    _clockTimer?.cancel();
-    _eventSubscription?.cancel();
-    super.dispose();
+    final messenger = ScaffoldMessenger.of(context);
+    _leave();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(strings.alarm_ringing_snoozed(minutes)),
+        backgroundColor: AppColor.snooze,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    final textTheme = appTheme(context).textTheme;
+    final locale = Localizations.localeOf(context).toString();
+    final hour = _now.hour % 12 == 0 ? 12 : _now.hour % 12;
+    final clock = '$hour:${_now.minute.toString().padLeft(2, '0')}';
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
+        body: DecoratedBox(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color(0xFF2869D9),
-                Color(0xFF5D94E6),
-                Color(0xFF90B9ED),
-                Color(0xFFBDD7F5),
+                AppColor.ringingSkyTop,
+                AppColor.ringingSkyUpper,
+                AppColor.ringingSkyLower,
+                AppColor.ringingSkyBottom,
               ],
             ),
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 60),
-
-                // Digital Clock
-                Text(
-                  _formatClock(_currentTime),
-                  style: const TextStyle(
-                    fontSize: 78,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white,
-                    letterSpacing: -1.5,
-                    height: 1.0,
+          child: SizedBox.expand(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  SizedBox(height: 60.h),
+                  Text(
+                    clock,
+                    style: textTheme.headlineLarge!.copyWith(
+                      fontSize: 78.spMin,
+                      height: 1,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: -1.5,
+                      color: AppColor.white,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Date
-                Text(
-                  _formatDate(_currentTime),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withValues(alpha: 0.85),
-                    letterSpacing: 0.2,
+                  SizedBox(height: 12.h),
+                  Text(
+                    DateFormat('EEEE, MMMM d', locale).format(_now),
+                    style: textTheme.bodyLarge!.copyWith(
+                      fontSize: 18.spMin,
+                      letterSpacing: 0.2,
+                      color: AppColor.white.withValues(alpha: 0.85),
+                    ),
                   ),
-                ),
-
-                const Spacer(flex: 2),
-
-                // Alarm Title
-                Text(
-                  widget.label ?? 'Alarm',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
+                  const Spacer(flex: 2),
+                  Text(
+                    widget.label ?? strings.alarm_ringing_fallback_title,
+                    textAlign: TextAlign.center,
+                    style: textTheme.headlineMedium!.copyWith(
+                      fontSize: 32.spMin,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                      color: AppColor.white,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Snooze Button (Green pill matching screenshot)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 48),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1FB247),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: const StadiumBorder(),
+                  SizedBox(height: 24.h),
+                  Padding(
+                    padding: REdgeInsets.symmetric(horizontal: 48),
+                    child: _Pill(
+                      label: strings.alarm_ringing_snooze(
+                        AppConstant.snoozeMinutes,
                       ),
-                      onPressed: _onSnoozePressed,
-                      child: const Text(
-                        'Snooze for 5 min',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
+                      fill: AppColor.snooze,
+                      ink: AppColor.white,
+                      height: 54,
+                      onTap: _onSnooze,
+                    ),
+                  ),
+                  const Spacer(flex: 3),
+                  Padding(
+                    padding: REdgeInsets.only(bottom: 48),
+                    child: SizedBox(
+                      width: 170.w,
+                      child: _Pill(
+                        label: strings.alarm_ringing_stop,
+                        fill: AppColor.white,
+                        ink: AppColor.stopInk,
+                        height: 56,
+                        raised: true,
+                        onTap: _onStop,
                       ),
                     ),
                   ),
-                ),
-
-                const Spacer(flex: 3),
-
-                // Stop Button (White pill matching screenshot)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 48),
-                  child: SizedBox(
-                    width: 170,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF1E1E1E),
-                        elevation: 3,
-                        shadowColor: Colors.black.withValues(alpha: 0.25),
-                        shape: const StadiumBorder(),
-                      ),
-                      onPressed: _onStopPressed,
-                      child: const Text(
-                        'Stop',
-                        style: TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A full-width pill button of the ringing screen ([height] before scaling).
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.fill,
+    required this.ink,
+    required this.height,
+    required this.onTap,
+    this.raised = false,
+  });
+
+  final String label;
+  final Color fill;
+  final Color ink;
+  final double height;
+  final bool raised;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: height.h,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: fill,
+          foregroundColor: ink,
+          elevation: raised ? 3 : 0,
+          shadowColor: AppColor.scrim,
+          shape: const StadiumBorder(),
+        ),
+        onPressed: onTap,
+        child: Text(
+          label,
+          style: appTheme(context).textTheme.titleMedium!.copyWith(
+            fontSize: 18.spMin,
+            fontWeight: Dimension.textSemiBold,
+            letterSpacing: 0.2,
+            color: ink,
           ),
         ),
       ),

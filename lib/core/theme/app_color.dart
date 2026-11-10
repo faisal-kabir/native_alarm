@@ -59,6 +59,22 @@ abstract final class AppColor {
   static const Color horizonMid = Color(0xFFE7B563);
   static const Color horizonDark = Color(0xFFC96B4B);
 
+  /// The ringing screen (iOS): its sky, top to bottom, the Snooze pill and the ink of
+  /// the white Stop pill.
+  static const Color ringingSkyTop = Color(0xFF2869D9);
+  static const Color ringingSkyUpper = Color(0xFF5D94E6);
+  static const Color ringingSkyLower = Color(0xFF90B9ED);
+  static const Color ringingSkyBottom = Color(0xFFBDD7F5);
+  static const Color snooze = Color(0xFF1FB247);
+  static const Color stopInk = Color(0xFF1E1E1E);
+
+  /// A sheet's backdrop (and its shadow) and a soft drop shadow under raised controls.
+  static const Color scrim = Color(0x80000000);
+  static const Color shadowSoft = Color(0x1F000000);
+
+  /// iOS's raised segment in a segmented control.
+  static const Color segmentRaised = Color(0xFF636366);
+
   static const Color white = Color(0xFFFFFFFF);
   static const Color transparent = Colors.transparent;
 

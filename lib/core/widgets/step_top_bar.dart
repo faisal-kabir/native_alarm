@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../gen/assets.gen.dart';
 import '../../main.dart';
 import '../theme/app_color.dart';
-import 'app_svg_icon.dart';
+import 'back_chevron.dart';
 import 'rise_in.dart';
 
 /// The top bar of a multi-step flow, 44 tall: a back button, then a thin progress line.
@@ -38,15 +37,7 @@ class StepTopBar extends StatelessWidget {
                     width: 40.r,
                     height: 40.r,
                     child: Center(
-                      // The forward chevron turned around.
-                      child: RotatedBox(
-                        quarterTurns: 2,
-                        child: AppSvgIcon(
-                          Assets.icons.page.chevron,
-                          size: 22.r,
-                          color: AppColor.white,
-                        ),
-                      ),
+                      child: BackChevron(size: 22.r, color: AppColor.white),
                     ),
                   ),
                 ),

@@ -12,6 +12,7 @@ import '../../domain/entities/reason.dart';
 import '../bloc/reasons_bloc.dart';
 import '../bloc/reasons_event.dart';
 import '../bloc/reasons_state.dart';
+import '../widgets/reason_emblem.dart';
 import '../widgets/reason_row.dart';
 
 /// The "Reasons" tab of the Dashboard.
@@ -81,9 +82,14 @@ class _ReasonsViewState extends State<_ReasonsView>
     }
   }
 
-  Widget _row(Reason reason, bool onTop) {
+  Widget _row(Reason reason, bool? alarmOn, bool onTop) {
     final row = ReasonRow(
       reason: reason,
+      badge: switch (alarmOn) {
+        null => ReasonAlarmBadge.none,
+        true => ReasonAlarmBadge.on,
+        false => ReasonAlarmBadge.off,
+      },
       onTap: () => context.push(RouteNames.reasonDetailPath, extra: reason),
     );
     if (!_fresh.contains(reason.id)) {
@@ -130,7 +136,7 @@ class _ReasonsViewState extends State<_ReasonsView>
               ),
               SizedBox(height: 24.h),
               for (final reason in reasons) ...[
-                _row(reason, onTop),
+                _row(reason, loaded?.alarmOn[reason.id], onTop),
                 SizedBox(height: 10.h),
               ],
               if (loaded != null)

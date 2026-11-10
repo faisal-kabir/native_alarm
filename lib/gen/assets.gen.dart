@@ -28,6 +28,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/alarm.svg
   SvgGenImage get alarm => const SvgGenImage('assets/icons/alarm.svg');
 
+  /// File path: assets/icons/alarm_off.svg
+  SvgGenImage get alarmOff => const SvgGenImage('assets/icons/alarm_off.svg');
+
   /// File path: assets/icons/check.svg
   SvgGenImage get check => const SvgGenImage('assets/icons/check.svg');
 
@@ -59,7 +62,7 @@ class $AssetsIconsGen {
   $AssetsIconsVoiceGen get voice => const $AssetsIconsVoiceGen();
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarm, check, info, pencil, quote];
+  List<SvgGenImage> get values => [alarm, alarmOff, check, info, pencil, quote];
 }
 
 class $AssetsTranscriptsGen {
@@ -94,10 +97,6 @@ class $AssetsIconsDetailGen {
 class $AssetsIconsEditorGen {
   const $AssetsIconsEditorGen();
 
-  /// File path: assets/icons/editor/alarm_off.svg
-  SvgGenImage get alarmOff =>
-      const SvgGenImage('assets/icons/editor/alarm_off.svg');
-
   /// File path: assets/icons/editor/ambient.svg
   SvgGenImage get ambient =>
       const SvgGenImage('assets/icons/editor/ambient.svg');
@@ -107,15 +106,11 @@ class $AssetsIconsEditorGen {
       const SvgGenImage('assets/icons/editor/bell_ring.svg');
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarmOff, ambient, bellRing];
+  List<SvgGenImage> get values => [ambient, bellRing];
 }
 
 class $AssetsIconsPageGen {
   const $AssetsIconsPageGen();
-
-  /// File path: assets/icons/page/alarm_off_badge.svg
-  SvgGenImage get alarmOffBadge =>
-      const SvgGenImage('assets/icons/page/alarm_off_badge.svg');
 
   /// File path: assets/icons/page/chevron.svg
   SvgGenImage get chevron => const SvgGenImage('assets/icons/page/chevron.svg');
@@ -124,7 +119,7 @@ class $AssetsIconsPageGen {
   SvgGenImage get plus => const SvgGenImage('assets/icons/page/plus.svg');
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarmOffBadge, chevron, plus];
+  List<SvgGenImage> get values => [chevron, plus];
 }
 
 class $AssetsIconsSettingsGen {
@@ -216,14 +211,20 @@ class $AssetsIconsVoiceGen {
   /// File path: assets/icons/voice/mic.svg
   SvgGenImage get mic => const SvgGenImage('assets/icons/voice/mic.svg');
 
+  /// File path: assets/icons/voice/pause.svg
+  SvgGenImage get pause => const SvgGenImage('assets/icons/voice/pause.svg');
+
   /// File path: assets/icons/voice/play.svg
   SvgGenImage get play => const SvgGenImage('assets/icons/voice/play.svg');
+
+  /// File path: assets/icons/voice/replay.svg
+  SvgGenImage get replay => const SvgGenImage('assets/icons/voice/replay.svg');
 
   /// File path: assets/icons/voice/stop.svg
   SvgGenImage get stop => const SvgGenImage('assets/icons/voice/stop.svg');
 
   /// List of all assets
-  List<SvgGenImage> get values => [close, mic, play, stop];
+  List<SvgGenImage> get values => [close, mic, pause, play, replay, stop];
 }
 
 class Assets {

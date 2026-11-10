@@ -52,8 +52,6 @@ abstract final class _Sheet {
     damping: 40,
   );
   static const maxHeightFactor = 0.88;
-  static const scrim = Color(0x80000000);
-  static const grabber = Color(0x4DEBEBF5);
 }
 
 class _SheetRoute<T> extends PopupRoute<T> {
@@ -187,7 +185,7 @@ class _SheetHostState extends State<_SheetHost> with TickerProviderStateMixin {
               onTap: _close,
               child: FadeTransition(
                 opacity: _scrimOpacity,
-                child: const ColoredBox(color: _Sheet.scrim),
+                child: const ColoredBox(color: AppColor.scrim),
               ),
             ),
           ),
@@ -213,11 +211,11 @@ class _SheetHostState extends State<_SheetHost> with TickerProviderStateMixin {
                         decoration: BoxDecoration(
                           color: AppColor.cardColor,
                           borderRadius: BorderRadius.vertical(top: radius),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: _Sheet.scrim,
-                              blurRadius: 40,
-                              offset: Offset(0, -10),
+                              color: AppColor.scrim,
+                              blurRadius: 40.r,
+                              offset: Offset(0, -10.r),
                             ),
                           ],
                         ),
@@ -279,7 +277,7 @@ class AppSheet extends StatelessWidget {
               width: 36.w,
               height: 5.h,
               decoration: BoxDecoration(
-                color: _Sheet.grabber,
+                color: AppColor.textMuted,
                 borderRadius: BorderRadius.circular(3.r),
               ),
             ),
