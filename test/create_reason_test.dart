@@ -3,63 +3,75 @@ import 'dart:async';
 import 'package:eala/core/constants/app_constant.dart';
 import 'package:eala/core/router/app_router.dart';
 import 'package:eala/core/router/route_names.dart';
-import 'package:eala/core/widgets/animated_select_list.dart';
 import 'package:eala/core/widgets/add_card.dart';
-import 'package:eala/core/widgets/shimmer.dart';
-import 'package:eala/core/widgets/sliding_border.dart';
-import 'package:eala/core/widgets/dictation_bar.dart';
 import 'package:eala/core/widgets/pill_button.dart';
 import 'package:eala/core/widgets/play_button.dart';
-import 'package:eala/features/create_reason/presentation/widgets/voice_row.dart';
-import 'package:eala/features/voice/domain/entities/voice_group.dart';
 import 'package:eala/core/widgets/select_list_skeleton.dart';
-import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
-import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
-import 'package:eala/features/area_of_life/domain/entities/matter_suggestion.dart';
-import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
-import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
-import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
-import 'package:eala/features/sound/domain/entities/sound_quote.dart';
-import 'package:eala/features/sound/domain/entities/sound_type.dart';
-import 'package:eala/features/sound/domain/usecases/get_sound_quote_usecase.dart';
-import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart';
-import 'package:eala/features/voice/domain/entities/voice.dart';
-import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
-import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart';
-import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
+import 'package:eala/core/widgets/sliding_border.dart';
+import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_event.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_state.dart';
-import 'package:eala/main.dart';
-import 'package:flutter/material.dart';
-import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
 import 'package:eala/features/create_reason/presentation/pages/create_reason_page.dart';
 import 'package:eala/features/create_reason/presentation/pages/reason_ready_page.dart';
-import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
 import 'package:eala/features/create_reason/presentation/widgets/reason_name_field.dart';
-import 'package:eala/features/reasons/domain/entities/reason.dart';
+import 'package:eala/features/create_reason/presentation/widgets/select_sound_step.dart';
+import 'package:eala/features/create_reason/presentation/widgets/voice_row.dart';
+import 'package:eala/features/goal_topic/domain/entities/goal_topic.dart';
+import 'package:eala/features/goal_topic/domain/usecases/refresh_goal_topics_usecase.dart';
+import 'package:eala/features/goal_topic/domain/usecases/watch_general_whys_usecase.dart';
+import 'package:eala/features/goal_topic/domain/usecases/watch_goal_topics_usecase.dart';
 import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
+import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
 import 'package:eala/features/reasons/presentation/widgets/reason_row.dart';
+import 'package:eala/features/sound/domain/entities/sound_type.dart';
+import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart';
+import 'package:eala/features/voice/domain/entities/voice.dart';
+import 'package:eala/features/voice/domain/entities/voice_group.dart';
+import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
+import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart';
+import 'package:eala/main.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes/fake_alarm_repository.dart';
 
-const health = AreaOfLife(
+const fit = GoalTopic(
   id: 1,
-  name: 'health',
-  title: 'Health',
-  description: 'Body and mind',
-  color: 0xFF30D158,
+  label: 'Getting fit',
+  keywords: 'gym run workout',
+  sortOrder: 1,
+  goals: ['Run a 5K by spring', 'Lift three times a week', 'Walk every day'],
+  whys: ['I want more energy', 'I want to feel strong', 'For my future self'],
 );
-const work = AreaOfLife(
+const grief = GoalTopic(
   id: 2,
-  name: 'work',
-  title: 'Work',
-  description: 'Get things done',
+  label: 'Grief',
+  gentle: true,
+  sortOrder: 2,
+  goals: [
+    'Be kind to myself today',
+    'Let myself rest',
+    'Reach out to a friend',
+  ],
+  whys: ['I am allowed to heal', 'Small steps count', 'I am not alone'],
 );
+const family = GoalTopic(
+  id: 3,
+  label: 'My family',
+  sortOrder: 3,
+  goals: ['Be home for dinner', 'Call my parents', 'Plan a family day'],
+  whys: ['They are my world', 'Time passes fast', 'I want to be present'],
+);
+const topics = [fit, grief, family];
+const generalWhys = [
+  'Because it matters to me',
+  'I owe it to myself',
+  'I want a better life',
+];
 
 CreateReasonBloc buildBloc(
-  FakeAreaOfLifeRepository repo, [
+  FakeGoalTopicRepository repo, [
   FakeVoiceRepository? voices,
   FakeSoundRepository? sound,
   FakeReasonRepository? reasons,
@@ -67,17 +79,22 @@ CreateReasonBloc buildBloc(
   final voiceRepo = voices ?? FakeVoiceRepository();
   final soundRepo = sound ?? FakeSoundRepository();
   return CreateReasonBloc(
-    WatchAreasOfLifeUseCase(repo),
-    RefreshAreasOfLifeUseCase(repo),
+    WatchGoalTopicsUseCase(repo),
+    WatchGeneralWhysUseCase(repo),
+    RefreshGoalTopicsUseCase(repo),
     WatchVoicesUseCase(voiceRepo),
     RefreshVoicesUseCase(voiceRepo),
-    GetPurposeSuggestionsUseCase(repo),
-    GetMatterSuggestionsUseCase(repo),
     GetSoundTypesUseCase(soundRepo),
-    GetSoundQuoteUseCase(soundRepo),
     CreateReasonUseCase(reasons ?? FakeReasonRepository()),
   );
 }
+
+FakeGoalTopicRepository savedTopics() => FakeGoalTopicRepository(
+  saved: topics,
+  server: topics,
+  savedWhys: generalWhys,
+  serverWhys: generalWhys,
+);
 
 const calm = Voice(
   id: 1,
@@ -89,980 +106,598 @@ const calm = Voice(
 );
 const bold = Voice(id: 2, name: 'Bold', voiceId: 'v_bold');
 
+const encouraging = SoundType(
+  id: 1,
+  title: 'Encouraging',
+  description: 'Positive, warm and uplifting.',
+  sample: 'You can do this.',
+);
+const calmSound = SoundType(
+  id: 2,
+  title: 'Calm',
+  description: 'Calm, peaceful and reassuring.',
+  sample: 'Slow down, breathe.',
+);
+
 Future<void> settle() => Future<void>.delayed(Duration.zero);
 
 void main() {
   group('CreateReasonBloc', () {
     test(
-      'first time: loading until the server answers, then the areas',
+      'first time: loading until the server answers, then the chips',
       () async {
         final answer = Completer<void>();
-        final repo = FakeAreaOfLifeRepository(
-          server: [health, work],
+        final repo = FakeGoalTopicRepository(
+          server: topics,
+          serverWhys: generalWhys,
           serverAnswer: answer.future,
         );
-        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+        final bloc = buildBloc(repo)..add(const LoadTopicsEvent());
         await settle();
-        expect(bloc.state.areas, isEmpty);
-        expect(bloc.state.areasStatus, LoadStatus.loading);
+        expect(bloc.state.topics, isEmpty);
+        expect(bloc.state.topicsStatus, LoadStatus.loading);
 
         answer.complete();
         await settle();
         await settle();
-        expect(bloc.state.areas, [health, work]);
-        expect(bloc.state.areasStatus, LoadStatus.loaded);
+        expect(bloc.state.topics, topics);
+        expect(bloc.state.generalWhys, generalWhys);
+        expect(bloc.state.topicsStatus, LoadStatus.loaded);
         await bloc.close();
       },
     );
 
     test(
-      'saved areas show at once; the update brings changes in later',
+      'with chips saved on the device they show at once, offline too',
       () async {
-        final answer = Completer<void>();
-        final repo = FakeAreaOfLifeRepository(
-          saved: [health],
-          server: [health, work],
-          serverAnswer: answer.future,
+        final repo = FakeGoalTopicRepository(
+          saved: topics,
+          server: const [],
+          offline: true,
         );
-        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+        final bloc = buildBloc(repo)..add(const LoadTopicsEvent());
         await settle();
-        expect(bloc.state.areas, [health]);
-
-        answer.complete();
+        expect(bloc.state.topics, topics);
         await settle();
-        await settle();
-        expect(bloc.state.areas, [health, work]);
+        expect(bloc.state.topics, topics, reason: 'a failed update is silent');
         await bloc.close();
       },
     );
 
     test(
-      'offline with nothing saved: failed, and Try again recovers',
+      'offline with nothing saved is a failure, Try again recovers',
       () async {
-        final repo = FakeAreaOfLifeRepository(server: [health], offline: true);
-        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
+        final repo = FakeGoalTopicRepository(server: topics, offline: true);
+        final bloc = buildBloc(repo)..add(const LoadTopicsEvent());
         await settle();
         await settle();
-        expect(bloc.state.areasStatus, LoadStatus.failed);
+        expect(bloc.state.topicsStatus, LoadStatus.failed);
 
         repo.offline = false;
-        bloc.add(const RefreshAreasEvent());
+        bloc.add(const RefreshTopicsEvent());
         await settle();
         await settle();
-        expect(bloc.state.areas, [health]);
-        expect(bloc.state.areasStatus, LoadStatus.loaded);
+        expect(bloc.state.topics, topics);
+        expect(bloc.state.topicsStatus, LoadStatus.loaded);
         await bloc.close();
       },
     );
 
-    test('offline with saved areas: they stay and nothing breaks', () async {
-      final repo = FakeAreaOfLifeRepository(saved: [health], offline: true);
-      final bloc = buildBloc(repo)..add(const LoadAreasEvent());
-      await settle();
-      await settle();
-      expect(bloc.state.areas, [health]);
-      await bloc.close();
-    });
+    group('topic (step 1)', () {
+      late CreateReasonBloc bloc;
+      setUp(() async {
+        bloc = buildBloc(savedTopics())..add(const LoadTopicsEvent());
+        await settle();
+      });
+      tearDown(() => bloc.close());
 
-    test(
-      'choosing an area enables Continue; progress is 1 of the steps',
-      () async {
-        final bloc = buildBloc(
-          FakeAreaOfLifeRepository(
-            saved: [health, work],
-            server: [health, work],
-          ),
-        )..add(const LoadAreasEvent());
+      test('a chip is the answer; Continue is on', () async {
+        expect(bloc.state.canContinue, isFalse);
+        bloc.add(const TopicPickedEvent(1));
+        await settle();
+        expect(bloc.state.chip, fit);
+        expect(bloc.state.topic, 'Getting fit');
+        expect(bloc.state.topicText, '');
+        expect(bloc.state.canContinue, isTrue);
+      });
+
+      test('a chip that is not in the list can not be picked', () async {
+        bloc.add(const TopicPickedEvent(99));
+        await settle();
+        expect(bloc.state.chip, isNull);
+      });
+
+      test('own words are the answer, two characters are enough', () async {
+        bloc.add(const TopicTypedEvent('a'));
         await settle();
         expect(bloc.state.canContinue, isFalse);
-        expect(bloc.state.progress, closeTo(0.2, 1e-9));
-
-        bloc.add(const AreaSelectedEvent(2));
+        bloc.add(const TopicTypedEvent('My garden'));
         await settle();
-        expect(bloc.state.selectedArea, work);
+        expect(bloc.state.chip, isNull);
+        expect(bloc.state.topic, 'My garden');
         expect(bloc.state.canContinue, isTrue);
+      });
 
-        // On to step 2 (the purpose); nothing to continue to from there yet.
+      test('typing lets go of a chip, a chip clears the typing', () async {
+        bloc.add(const TopicPickedEvent(1));
+        bloc.add(const TopicTypedEvent('Surfing'));
+        await settle();
+        expect(bloc.state.selectedTopicId, isNull);
+        expect(bloc.state.topic, 'Surfing');
+
+        bloc.add(const TopicPickedEvent(3));
+        await settle();
+        expect(bloc.state.topicText, '');
+        expect(bloc.state.topic, 'My family');
+      });
+
+      test('typing a chip\'s exact name is that chip', () async {
+        bloc.add(const TopicTypedEvent('getting FIT'));
+        await settle();
+        expect(bloc.state.chip, fit);
+        expect(bloc.state.goalSuggestions, fit.goals);
+      });
+
+      test('at most 20 characters, one line', () async {
+        bloc.add(const TopicTypedEvent('  Learning to play\nthe violin well'));
+        await settle();
+        expect(bloc.state.topicText.length, lessThanOrEqualTo(20));
+        expect(bloc.state.topicText.contains('\n'), isFalse);
+        expect(bloc.state.topicText.startsWith(' '), isFalse);
+      });
+
+      test('suggestions: a chip brings its goals and whys', () async {
+        bloc.add(const TopicPickedEvent(1));
+        await settle();
+        expect(bloc.state.goalSuggestions, fit.goals);
+        expect(bloc.state.whySuggestions, fit.whys);
+      });
+
+      test(
+        'suggestions: own words get no goals, only the general whys',
+        () async {
+          bloc.add(const TopicTypedEvent('My garden'));
+          await settle();
+          expect(bloc.state.goalSuggestions, isEmpty);
+          expect(bloc.state.whySuggestions, generalWhys);
+        },
+      );
+
+      test('gentle: a chip\'s own mark, or the words typed', () async {
+        bloc.add(const TopicPickedEvent(1));
+        await settle();
+        expect(bloc.state.focus, GoalFocus.general);
+        bloc.add(const TopicPickedEvent(2));
+        await settle();
+        expect(bloc.state.focus, GoalFocus.gentle);
+        bloc.add(const TopicTypedEvent('Staying sober'));
+        await settle();
+        expect(bloc.state.focus, GoalFocus.gentle);
+        bloc.add(const TopicTypedEvent('Surfing'));
+        await settle();
+        expect(bloc.state.focus, GoalFocus.general);
+      });
+
+      test('a chip the server removed is no longer chosen', () async {
+        final repo = savedTopics();
+        final other = buildBloc(repo)..add(const LoadTopicsEvent());
+        await settle();
+        other.add(const TopicPickedEvent(3));
+        await settle();
+        expect(other.state.chip, family);
+
+        repo.server = const [fit, grief];
+        other.add(const RefreshTopicsEvent());
+        await settle();
+        await settle();
+        expect(other.state.selectedTopicId, isNull);
+        expect(other.state.canContinue, isFalse);
+        await other.close();
+      });
+
+      test('Continue tidies a trailing full stop off own words', () async {
+        bloc.add(const TopicTypedEvent('My garden.'));
         bloc.add(const NextStepEvent());
         await settle();
-        expect(bloc.state.stepIndex, 1);
-        expect(bloc.state.progress, closeTo(0.4, 1e-9));
+        expect(bloc.state.stepIndex, CreateReasonState.purposeStep);
+        expect(bloc.state.topic, 'My garden');
+      });
+
+      test('Continue without an answer asks for nothing', () async {
+        bloc.add(const NextStepEvent());
+        await settle();
+        expect(bloc.state.stepIndex, 0);
+      });
+    });
+
+    group('goal (step 2)', () {
+      late CreateReasonBloc bloc;
+      setUp(() async {
+        bloc = buildBloc(savedTopics())
+          ..add(const LoadTopicsEvent())
+          ..add(const TopicPickedEvent(1))
+          ..add(const NextStepEvent());
+        await settle();
+      });
+      tearDown(() => bloc.close());
+
+      test('needs 12 characters and 2 words; the mic holds Continue', () async {
+        expect(bloc.state.stepIndex, CreateReasonState.purposeStep);
+        bloc.add(const PurposeChangedEvent('Run'));
+        await settle();
         expect(bloc.state.canContinue, isFalse);
-        await bloc.close();
-      },
-    );
+        bloc.add(const PurposeChangedEvent('Run a 5K by spring'));
+        await settle();
+        expect(bloc.state.canContinue, isTrue);
+        bloc.add(const DictationChangedEvent(true));
+        await settle();
+        expect(bloc.state.canContinue, isFalse);
+      });
 
-    test('a chosen area the server removed is no longer chosen', () async {
-      final answer = Completer<void>();
-      final repo = FakeAreaOfLifeRepository(
-        saved: [health, work],
-        server: [health],
-        serverAnswer: answer.future,
+      test(
+        'changing the chip takes away a goal picked from the old one',
+        () async {
+          bloc.add(const PurposeChangedEvent('Run a 5K by spring'));
+          bloc.add(const TopicPickedEvent(3));
+          await settle();
+          expect(bloc.state.purpose, '');
+        },
       );
-      final bloc = buildBloc(repo)..add(const LoadAreasEvent());
-      await settle();
-      bloc.add(const AreaSelectedEvent(2));
-      await settle();
-      expect(bloc.state.selectedAreaId, 2);
 
-      answer.complete();
-      await settle();
-      await settle();
-      expect(bloc.state.areas, [health]);
-      expect(bloc.state.selectedAreaId, isNull);
-      await bloc.close();
+      test('...but not what the person wrote themselves', () async {
+        bloc.add(const PurposeChangedEvent('Finish my first marathon'));
+        bloc.add(const TopicPickedEvent(3));
+        await settle();
+        expect(bloc.state.purpose, 'Finish my first marathon');
+      });
     });
 
-    test('an area that is not in the list can not be chosen', () async {
-      final bloc = buildBloc(
-        FakeAreaOfLifeRepository(saved: [health], server: [health]),
-      )..add(const LoadAreasEvent());
-      await settle();
-      bloc.add(const AreaSelectedEvent(99));
-      await settle();
-      expect(bloc.state.selectedAreaId, isNull);
-      await bloc.close();
+    group('why (step 3, optional)', () {
+      late CreateReasonBloc bloc;
+      setUp(() async {
+        bloc = buildBloc(savedTopics())
+          ..add(const LoadTopicsEvent())
+          ..add(const TopicPickedEvent(1))
+          ..add(const NextStepEvent())
+          ..add(const PurposeChangedEvent('Run a 5K by spring'))
+          ..add(const NextStepEvent());
+        await settle();
+      });
+      tearDown(() => bloc.close());
+
+      test('empty reads Skip for now; a little text is held back', () async {
+        expect(bloc.state.stepIndex, CreateReasonState.matterStep);
+        expect(bloc.state.continueSkips, isTrue);
+        expect(bloc.state.canContinue, isTrue);
+        bloc.add(const MatterChangedEvent('Because'));
+        await settle();
+        expect(bloc.state.continueSkips, isFalse);
+        expect(bloc.state.matterTooShort, isTrue);
+        expect(bloc.state.canContinue, isFalse);
+        bloc.add(const MatterChangedEvent('I want more energy'));
+        await settle();
+        expect(bloc.state.canContinue, isTrue);
+      });
     });
 
-    test(
-      'voices load when asked: saved first, then the server update',
-      () async {
-        final voices = FakeVoiceRepository(saved: [calm], server: [calm, bold]);
-        final bloc = buildBloc(FakeAreaOfLifeRepository(), voices)
+    group('voice and sound (steps 4 and 5)', () {
+      late CreateReasonBloc bloc;
+      late FakeReasonRepository reasons;
+
+      Future<void> toVoiceStep() async {
+        bloc
+          ..add(const LoadTopicsEvent())
+          ..add(const LoadVoicesEvent())
+          ..add(const LoadSoundTypesEvent())
+          ..add(const TopicPickedEvent(2))
+          ..add(const NextStepEvent())
+          ..add(const PurposeChangedEvent('Be kind to myself today'))
+          ..add(const NextStepEvent())
+          ..add(const NextStepEvent());
+        await settle();
+        await settle();
+      }
+
+      setUp(() {
+        reasons = FakeReasonRepository();
+        bloc = buildBloc(
+          savedTopics(),
+          FakeVoiceRepository(saved: [calm, bold], server: [calm, bold]),
+          FakeSoundRepository(sounds: [encouraging, calmSound]),
+          reasons,
+        );
+      });
+      tearDown(() => bloc.close());
+
+      test('voice comes after why; Continue needs a chosen voice', () async {
+        await toVoiceStep();
+        expect(bloc.state.stepIndex, CreateReasonState.voiceStep);
+        expect(bloc.state.canContinue, isFalse);
+        bloc.add(const VoiceSelectedEvent(99));
+        await settle();
+        expect(bloc.state.selectedVoice, isNull);
+        bloc.add(const VoiceSelectedEvent(2));
+        await settle();
+        expect(bloc.state.selectedVoice, bold);
+        expect(bloc.state.canContinue, isTrue);
+      });
+
+      test('a voice the server removed is no longer chosen', () async {
+        await toVoiceStep();
+        bloc.add(const VoiceSelectedEvent(2));
+        await settle();
+        final repo = FakeVoiceRepository(saved: [calm], server: [calm]);
+        final other = buildBloc(savedTopics(), repo)
           ..add(const LoadVoicesEvent());
         await settle();
-        expect(bloc.state.voices, isNotEmpty);
-        await settle();
-        await settle();
-        expect(bloc.state.voices, [calm, bold]);
-        expect(bloc.state.voicesStatus, LoadStatus.loaded);
-        await bloc.close();
-      },
-    );
-
-    test(
-      'voices: offline with nothing saved is a failure; saved ones stay',
-      () async {
-        final empty = buildBloc(
-          FakeAreaOfLifeRepository(),
-          FakeVoiceRepository(offline: true),
-        )..add(const LoadVoicesEvent());
-        await settle();
-        await settle();
-        expect(empty.state.voicesStatus, LoadStatus.failed);
-        await empty.close();
-
-        final kept = buildBloc(
-          FakeAreaOfLifeRepository(),
-          FakeVoiceRepository(saved: [calm], offline: true),
-        )..add(const LoadVoicesEvent());
-        await settle();
-        await settle();
-        expect(kept.state.voices, [calm]);
-        await kept.close();
-      },
-    );
-
-    test('voice files get the base URL from their paths', () {
-      expect(calm.audioUrl, '${AppConstant.baseUrl}voices/calm.mp3');
-      expect(calm.avatarUrl, '${AppConstant.baseUrl}voices/calm.png');
-      expect(bold.audioUrl, isNull);
-      expect(bold.avatarUrl, isNull);
-    });
-
-    test(
-      'Continue loads the areaSuggestions of the chosen area, from the server',
-      () async {
-        const q1 = PurposeSuggestion(id: 1, areaId: 1, text: 'Rise.');
-        const q2 = PurposeSuggestion(id: 2, areaId: 2, text: 'Work.');
-        final repo = FakeAreaOfLifeRepository(
-          saved: [health, work],
-          server: [health, work],
-          areaSuggestions: {
-            1: [q1],
-            2: [q2],
-          },
-        );
-        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
-        await settle();
-        await settle();
-
-        // Nothing is asked for before the user continues.
-        expect(repo.suggestionRequests, isEmpty);
-
-        bloc.add(const AreaSelectedEvent(2));
-        await settle();
-        bloc.add(const NextStepEvent());
-        await settle();
-        await settle();
-        expect(repo.suggestionRequests, [2]);
-        expect(bloc.state.suggestionsAreaId, 2);
-        expect(bloc.state.areaSuggestions, [q2]);
-        expect(bloc.state.suggestionsStatus, LoadStatus.loaded);
-
-        // Back, another area, another request: suggestions are never reused.
-        bloc
-          ..add(const PreviousStepEvent())
-          ..add(const AreaSelectedEvent(1));
-        await settle();
-        bloc.add(const NextStepEvent());
-        await settle();
-        await settle();
-        expect(repo.suggestionRequests, [2, 1]);
-        expect(bloc.state.areaSuggestions, [q1]);
-        await bloc.close();
-      },
-    );
-
-    test('an old area\'s late areaSuggestions are dropped', () async {
-      const q1 = PurposeSuggestion(id: 1, areaId: 1, text: 'Rise.');
-      const q2 = PurposeSuggestion(id: 2, areaId: 2, text: 'Work.');
-      final slow = Completer<void>();
-      final repo = FakeAreaOfLifeRepository(
-        saved: [health, work],
-        server: [health, work],
-        areaSuggestions: {
-          1: [q1],
-          2: [q2],
-        },
-        suggestionsAnswer: slow.future,
-      );
-      final bloc = buildBloc(repo)..add(const LoadAreasEvent());
-      await settle();
-      await settle();
-      bloc
-        ..add(const AreaSelectedEvent(1))
-        ..add(const NextStepEvent());
-      await settle();
-      // The user goes back for another area before the first answer arrives.
-      bloc
-        ..add(const PreviousStepEvent())
-        ..add(const AreaSelectedEvent(2))
-        ..add(const NextStepEvent());
-      await settle();
-      expect(bloc.state.suggestionsAreaId, 2);
-      expect(bloc.state.suggestionsStatus, LoadStatus.loading);
-      expect(bloc.state.areaSuggestions, isEmpty);
-
-      slow.complete();
-      await settle();
-      await settle();
-      expect(bloc.state.suggestionsAreaId, 2);
-      expect(bloc.state.areaSuggestions, [q2]);
-      await bloc.close();
-    });
-
-    test('areaSuggestions: offline is a failure (nothing is cached)', () async {
-      final repo = FakeAreaOfLifeRepository(
-        saved: [health],
-        server: [health],
-        suggestionsOffline: true,
-      );
-      final bloc = buildBloc(repo)..add(const LoadAreasEvent());
-      await settle();
-      await settle();
-      bloc
-        ..add(const AreaSelectedEvent(1))
-        ..add(const NextStepEvent());
-      await settle();
-      await settle();
-      expect(bloc.state.suggestionsStatus, LoadStatus.failed);
-      expect(bloc.state.areaSuggestions, isEmpty);
-      await bloc.close();
-    });
-
-    test('Continue without a chosen area asks for nothing', () async {
-      final repo = FakeAreaOfLifeRepository(saved: [health], server: [health]);
-      final bloc = buildBloc(repo)
-        ..add(const LoadAreasEvent())
-        ..add(const NextStepEvent());
-      await settle();
-      expect(repo.suggestionRequests, isEmpty);
-      await bloc.close();
-    });
-
-    group('purpose (step 2)', () {
-      const q1 = PurposeSuggestion(
-        id: 11,
-        areaId: 1,
-        text: 'I want energy for my kids',
-      );
-      const q2 = PurposeSuggestion(
-        id: 12,
-        areaId: 1,
-        text: 'Sleep well, feel strong',
-      );
-      const other = PurposeSuggestion(
-        id: 21,
-        areaId: 2,
-        text: 'Ship the project',
-      );
-
-      Future<CreateReasonBloc> atPurposeStep({
-        Map<int, List<PurposeSuggestion>> areaSuggestions = const {
-          1: [q1, q2],
-          2: [other],
-        },
-      }) async {
-        final bloc = buildBloc(
-          FakeAreaOfLifeRepository(
-            saved: [health, work],
-            server: [health, work],
-            areaSuggestions: areaSuggestions,
-          ),
-        )..add(const LoadAreasEvent());
-        await settle();
-        await settle();
-        bloc
-          ..add(const AreaSelectedEvent(1))
-          ..add(const NextStepEvent());
-        await settle();
-        await settle();
-        expect(bloc.state.stepIndex, 1);
-        return bloc;
-      }
-
-      test(
-        'suggestions are the selected area\'s areaSuggestions only',
-        () async {
-          final bloc = await atPurposeStep();
-          expect(bloc.state.suggestions, [q1, q2]);
-          await bloc.close();
-        },
-      );
-
-      test(
-        'picking a suggestion fills the purpose and sets the flag',
-        () async {
-          final bloc = await atPurposeStep();
-          bloc.add(const SuggestionPickedEvent(11));
-          await settle();
-          expect(bloc.state.purpose, q1.text);
-          expect(bloc.state.purposeFromSuggestion, isTrue);
-          expect(bloc.state.purposeSuggestion, q1);
-          expect(bloc.state.canContinue, isTrue);
-
-          // The field echoing the same text back keeps it a suggestion.
-          bloc.add(PurposeChangedEvent(q1.text));
-          await settle();
-          expect(bloc.state.purposeFromSuggestion, isTrue);
-          await bloc.close();
-        },
-      );
-
-      test(
-        'typing until it reads like a suggestion makes it that suggestion',
-        () async {
-          final bloc = await atPurposeStep();
-          bloc.add(const PurposeChangedEvent('Sleep well'));
-          await settle();
-          expect(bloc.state.purposeFromSuggestion, isFalse);
-
-          // Same words as q2, other spaces and letter case: still that suggestion.
-          bloc.add(const PurposeChangedEvent('  sleep WELL,   feel strong '));
-          await settle();
-          expect(bloc.state.purposeSuggestion, q2);
-          await bloc.close();
-        },
-      );
-
-      test(
-        'edited away from a pick and back again: the suggestion again',
-        () async {
-          final bloc = await atPurposeStep();
-          bloc.add(const SuggestionPickedEvent(11));
-          await settle();
-          bloc.add(PurposeChangedEvent('${q1.text}!'));
-          await settle();
-          expect(bloc.state.purposeFromSuggestion, isFalse);
-
-          bloc.add(PurposeChangedEvent(q1.text));
-          await settle();
-          expect(bloc.state.purposeSuggestion, q1);
-          await bloc.close();
-        },
-      );
-
-      test('editing a picked suggestion makes it the user\'s own', () async {
-        final bloc = await atPurposeStep();
-        bloc.add(const SuggestionPickedEvent(11));
-        await settle();
-        bloc.add(PurposeChangedEvent('${q1.text} every day'));
-        await settle();
-        expect(bloc.state.purposeFromSuggestion, isFalse);
-        expect(bloc.state.purposeSuggestion, isNull);
-        expect(bloc.state.purpose, '${q1.text} every day');
-        await bloc.close();
+        expect(other.state.selectedVoiceId, isNull);
+        await other.close();
       });
 
       test(
-        'typed text is the user\'s own; too short cannot continue',
+        'the first tone is chosen until another is picked; 30 s by default',
         () async {
-          final bloc = await atPurposeStep();
-          bloc.add(const PurposeChangedEvent('Run'));
-          await settle();
-          expect(bloc.state.purposeFromSuggestion, isFalse);
-          expect(bloc.state.canContinue, isFalse);
-
-          bloc.add(const PurposeChangedEvent('Run a marathon in spring'));
-          await settle();
-          expect(bloc.state.canContinue, isTrue);
-          await bloc.close();
-        },
-      );
-
-      test('a quote that is not suggested cannot be picked', () async {
-        final bloc = await atPurposeStep();
-        bloc.add(const SuggestionPickedEvent(21)); // belongs to another area
-        await settle();
-        expect(bloc.state.purpose, isEmpty);
-        expect(bloc.state.purposeFromSuggestion, isFalse);
-        await bloc.close();
-      });
-
-      test('while the mic listens, Continue waits', () async {
-        final bloc = await atPurposeStep();
-        bloc
-          ..add(const PurposeChangedEvent('Run a marathon in spring'))
-          ..add(const DictationChangedEvent(true));
-        await settle();
-        expect(bloc.state.canContinue, isFalse);
-        bloc.add(const DictationChangedEvent(false));
-        await settle();
-        expect(bloc.state.canContinue, isTrue);
-        await bloc.close();
-      });
-
-      test(
-        'another area drops a picked suggestion but keeps own text',
-        () async {
-          final bloc = await atPurposeStep();
-          bloc.add(const SuggestionPickedEvent(11));
-          await settle();
-          bloc.add(const AreaSelectedEvent(2));
-          await settle();
-          expect(bloc.state.purpose, isEmpty);
-          expect(bloc.state.purposeSuggestion, isNull);
-
-          bloc
-            ..add(const AreaSelectedEvent(1))
-            ..add(const PurposeChangedEvent('My own words here'));
-          await settle();
-          bloc.add(const AreaSelectedEvent(2));
-          await settle();
-          expect(bloc.state.purpose, 'My own words here');
-          await bloc.close();
-        },
-      );
-    });
-
-    test('choosing a voice; Continue on the voice step needs one', () async {
-      final bloc = buildBloc(
-        FakeAreaOfLifeRepository(),
-        FakeVoiceRepository(saved: [calm, bold], server: [calm, bold]),
-      )..add(const LoadVoicesEvent());
-      await settle();
-      await settle();
-      expect(bloc.state.selectedVoice, isNull);
-
-      bloc.add(const VoiceSelectedEvent(99)); // not a voice
-      await settle();
-      expect(bloc.state.selectedVoiceId, isNull);
-
-      bloc.add(const VoiceSelectedEvent(2));
-      await settle();
-      expect(bloc.state.selectedVoice, bold);
-      expect(
-        bloc.state.copyWith(stepIndex: 2).canContinue,
-        isTrue,
-        reason: 'step 3 is complete once a voice is chosen',
-      );
-      expect(
-        bloc.state
-            .copyWith(stepIndex: 2, selectedVoiceId: () => null)
-            .canContinue,
-        isFalse,
-      );
-      await bloc.close();
-    });
-
-    test('a chosen voice the server removed is no longer chosen', () async {
-      final voices = FakeVoiceRepository(saved: [calm, bold], server: [calm]);
-      final bloc = buildBloc(FakeAreaOfLifeRepository(), voices)
-        ..add(const LoadVoicesEvent());
-      await settle();
-      bloc.add(const VoiceSelectedEvent(2));
-      await settle();
-      await settle();
-      await settle();
-      expect(bloc.state.voices, [calm]);
-      expect(bloc.state.selectedVoiceId, isNull);
-      await bloc.close();
-    });
-
-    group('why it matters (step 4)', () {
-      const p1 = PurposeSuggestion(id: 11, areaId: 1, text: 'Sleep well again');
-      const forP1 = MatterSuggestion(
-        id: 1,
-        areaId: 1,
-        purposeSuggestionId: 11,
-        text: 'I am tired of running on empty',
-      );
-      const general = MatterSuggestion(
-        id: 2,
-        areaId: 1,
-        text: 'It is about feeling like me',
-      );
-
-      Future<(CreateReasonBloc, FakeAreaOfLifeRepository)> atPurpose() async {
-        final repo = FakeAreaOfLifeRepository(
-          saved: [health],
-          server: [health],
-          areaSuggestions: {
-            1: [p1],
-          },
-          matterSuggestions: [forP1, general],
-        );
-        final bloc = buildBloc(repo)..add(const LoadAreasEvent());
-        await settle();
-        await settle();
-        bloc
-          ..add(const AreaSelectedEvent(1))
-          ..add(const NextStepEvent());
-        await settle();
-        await settle();
-        return (bloc, repo);
-      }
-
-      test(
-        'an unchanged picked purpose loads the suggestions made for it',
-        () async {
-          final (bloc, repo) = await atPurpose();
-          bloc.add(const SuggestionPickedEvent(11));
-          await settle();
-          bloc.add(const NextStepEvent());
-          await settle();
-          await settle();
-          expect(repo.matterRequests, [(1, 11)]);
-          expect(bloc.state.matterSuggestionsShown, [forP1]);
-          expect(bloc.state.matterSuggestionsStatus, LoadStatus.loaded);
-          await bloc.close();
-        },
-      );
-
-      test('a typed purpose that matches a suggestion passes its id', () async {
-        final (bloc, repo) = await atPurpose();
-        bloc.add(const PurposeChangedEvent('sleep well again'));
-        await settle();
-        bloc.add(const NextStepEvent());
-        await settle();
-        await settle();
-        expect(repo.matterRequests, [(1, 11)]);
-        expect(bloc.state.matterSuggestionsShown, [forP1]);
-        await bloc.close();
-      });
-
-      test(
-        'an own (or edited) purpose loads the area\'s general ones',
-        () async {
-          final (bloc, repo) = await atPurpose();
-          bloc
-            ..add(const SuggestionPickedEvent(11))
-            ..add(const PurposeChangedEvent('Sleep well again, truly'));
-          await settle();
-          bloc.add(const NextStepEvent());
-          await settle();
-          await settle();
-          expect(repo.matterRequests, [(1, null)]);
-          expect(bloc.state.matterSuggestionsShown, [general]);
-          await bloc.close();
-        },
-      );
-
-      test(
-        'nothing is asked for before Continue on the purpose step',
-        () async {
-          final (bloc, repo) = await atPurpose();
-          expect(repo.matterRequests, isEmpty);
-          await bloc.close();
-        },
-      );
-
-      test('empty skips, 1-7 characters wait, 8+ continue', () async {
-        final (bloc, _) = await atPurpose();
-        var state = bloc.state.copyWith(stepIndex: 3);
-        expect(state.continueSkips, isTrue);
-        expect(state.canContinue, isTrue);
-
-        state = state.copyWith(matter: 'Because');
-        expect(state.matterTooShort, isTrue);
-        expect(state.canContinue, isFalse);
-        expect(state.continueSkips, isFalse);
-
-        state = state.copyWith(matter: 'Because I care');
-        expect(state.matterTooShort, isFalse);
-        expect(state.canContinue, isTrue);
-
-        state = state.copyWith(dictating: true);
-        expect(state.canContinue, isFalse);
-        await bloc.close();
-      });
-
-      test('suggestions loaded for another purpose are not shown', () async {
-        final (bloc, _) = await atPurpose();
-        bloc.add(const SuggestionPickedEvent(11));
-        await settle();
-        bloc.add(const NextStepEvent());
-        await settle();
-        await settle();
-        expect(bloc.state.matterSuggestionsShown, [forP1]);
-        // Back on the purpose step the user edits: the loaded ones no longer apply.
-        bloc
-          ..add(const PreviousStepEvent())
-          ..add(const PurposeChangedEvent('Something else entirely'));
-        await settle();
-        expect(bloc.state.matterSuggestionsShown, isEmpty);
-        await bloc.close();
-      });
-    });
-
-    group('sound (step 5)', () {
-      const encouraging = SoundType(
-        id: 1,
-        title: 'Encouraging',
-        description: 'Warm.',
-      );
-      const calmSound = SoundType(id: 2, title: 'Calm', description: 'Steady.');
-      const q1 = SoundQuote(id: 1, areaId: 1, soundId: 1, text: 'You can.');
-      const q2 = SoundQuote(id: 2, areaId: 1, soundId: 2, text: 'Breathe.');
-
-      Future<(CreateReasonBloc, FakeSoundRepository)> atSoundStep({
-        Future<void>? quoteAnswer,
-      }) async {
-        final sound = FakeSoundRepository(
-          sounds: [encouraging, calmSound],
-          quotes: [q1, q2],
-          quoteAnswer: quoteAnswer,
-        );
-        final bloc =
-            buildBloc(
-                FakeAreaOfLifeRepository(saved: [health], server: [health]),
-                FakeVoiceRepository(saved: [bold], server: [bold]),
-                sound,
-              )
-              ..add(const LoadAreasEvent())
-              ..add(const LoadVoicesEvent())
-              ..add(const LoadSoundTypesEvent());
-        await settle();
-        await settle();
-        bloc
-          ..add(const AreaSelectedEvent(1))
-          ..add(const NextStepEvent())
-          ..add(const PurposeChangedEvent('Run a marathon in spring'))
-          ..add(const NextStepEvent())
-          ..add(const VoiceSelectedEvent(2))
-          ..add(const NextStepEvent())
-          ..add(const NextStepEvent());
-        for (var i = 0; i < 6; i++) {
-          await settle();
-        }
-        expect(bloc.state.stepIndex, 4);
-        return (bloc, sound);
-      }
-
-      test(
-        'the first sound is chosen; its example loads for the area',
-        () async {
-          final (bloc, sound) = await atSoundStep();
+          await toVoiceStep();
           expect(bloc.state.selectedSound, encouraging);
-          expect(sound.quoteRequests, [(1, 1)]);
-          expect(bloc.state.soundQuoteShown, q1);
-          expect(bloc.state.isLastStep, isTrue);
-          expect(bloc.state.canContinue, isTrue);
           expect(bloc.state.lengthSeconds, 30);
-          await bloc.close();
+          bloc.add(const SoundSelectedEvent(2));
+          bloc.add(const LengthSelectedEvent(45));
+          bloc.add(const LengthSelectedEvent(99));
+          await settle();
+          expect(bloc.state.selectedSound?.sample, 'Slow down, breathe.');
+          expect(bloc.state.lengthSeconds, 45);
         },
       );
 
-      test('another sound loads its example again, from the server', () async {
-        final (bloc, sound) = await atSoundStep();
-        bloc.add(const SoundSelectedEvent(2));
-        await settle();
-        expect(bloc.state.soundQuoteStatus, LoadStatus.loading);
-        expect(bloc.state.soundQuoteShown, isNull);
-        await settle();
-        await settle();
-        expect(bloc.state.soundQuoteShown, q2);
-
-        bloc.add(const SoundSelectedEvent(1));
+      test('Create saves the goal named after its topic', () async {
+        await toVoiceStep();
+        bloc
+          ..add(const VoiceSelectedEvent(1))
+          ..add(const NextStepEvent())
+          ..add(const LengthSelectedEvent(45))
+          ..add(const CreateReasonSubmittedEvent());
         await settle();
         await settle();
-        expect(sound.quoteRequests, [(1, 1), (1, 2), (1, 1)]);
-        await bloc.close();
+        expect(bloc.state.saveStatus, SaveStatus.saved);
+        final saved = reasons.created.single;
+        expect(saved.name, 'Grief');
+        expect(
+          saved.draft,
+          const ReasonDraft(
+            topic: 'Grief',
+            focus: GoalFocus.gentle,
+            purpose: 'Be kind to myself today',
+            soundTypeId: 1,
+            voiceId: 1,
+            lengthSeconds: 45,
+          ),
+        );
+        expect(bloc.state.createdReason?.name, 'Grief');
       });
 
-      test('a late example for an old sound is dropped', () async {
-        final gate = Completer<void>();
-        final (bloc, _) = await atSoundStep(quoteAnswer: gate.future);
-        bloc.add(const SoundSelectedEvent(2));
+      test('a failed save says so and can be tried again', () async {
+        reasons.offline = true;
+        await toVoiceStep();
+        bloc
+          ..add(const VoiceSelectedEvent(1))
+          ..add(const NextStepEvent())
+          ..add(const CreateReasonSubmittedEvent());
         await settle();
-        gate.complete();
+        await settle();
+        expect(bloc.state.saveStatus, SaveStatus.failed);
+        reasons.offline = false;
+        bloc.add(const CreateReasonSubmittedEvent());
         await settle();
         await settle();
-        expect(bloc.state.selectedSound, calmSound);
-        expect(bloc.state.soundQuoteShown, q2);
-        await bloc.close();
-      });
-
-      test('length is 30 or 45 seconds only', () async {
-        final (bloc, _) = await atSoundStep();
-        bloc.add(const LengthSelectedEvent(45));
-        await settle();
-        expect(bloc.state.lengthSeconds, 45);
-        bloc.add(const LengthSelectedEvent(60));
-        await settle();
-        expect(bloc.state.lengthSeconds, 45);
-        await bloc.close();
+        expect(bloc.state.saveStatus, SaveStatus.saved);
       });
     });
 
     test('Previous on the first step does nothing', () async {
-      final bloc = buildBloc(FakeAreaOfLifeRepository())
-        ..add(const PreviousStepEvent());
+      final bloc = buildBloc(savedTopics())..add(const PreviousStepEvent());
       await settle();
       expect(bloc.state.stepIndex, 0);
       await bloc.close();
     });
   });
 
-  group('Create Reason page', () {
+  group('Create Goal page', () {
     // The router is one app-wide object: start every test from the Dashboard.
     setUp(() => appRouter.go(RouteNames.dashboardPath));
 
     Future<void> openPage(
-      WidgetTester tester,
-      FakeAreaOfLifeRepository repo,
-    ) async {
+      WidgetTester tester, {
+      FakeGoalTopicRepository? topicRepo,
+      FakeVoiceRepository? voiceRepo,
+      FakeSoundRepository? soundRepo,
+      FakeReasonRepository? reasons,
+    }) async {
       await registerFakeAlarmDependencies(
         FakeAlarmRepository(),
-        areaOfLifeRepository: repo,
+        goalTopicRepository: topicRepo ?? savedTopics(),
+        voiceRepository: voiceRepo,
+        soundRepository: soundRepo,
+        reasonRepository: reasons,
       );
       await tester.pumpWidget(const MyApp());
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Reasons').first);
+      await tester.tap(find.text('Goal').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Add your first Reason'));
+      await tester.tap(find.byType(AddCard));
       // The page slides in; the rows then rise in.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
     }
 
-    testWidgets('opens from the Reasons tab: skeleton first, then the rows', (
+    Future<void> tapContinue(WidgetTester tester) async {
+      await tester.tap(find.byType(PillButton));
+      await tester.pumpAndSettle();
+    }
+
+    bool continueEnabled(WidgetTester tester) =>
+        tester.widget<PillButton>(find.byType(PillButton)).enabled;
+
+    testWidgets('opens on the topic step: skeleton first, then the chips', (
       tester,
     ) async {
       final answer = Completer<void>();
-      final repo = FakeAreaOfLifeRepository(
-        server: [health, work],
-        serverAnswer: answer.future,
+      await openPage(
+        tester,
+        topicRepo: FakeGoalTopicRepository(
+          server: topics,
+          serverAnswer: answer.future,
+        ),
       );
-      await openPage(tester, repo);
-      // The shimmer never stops, so settle by pumping a fixed time.
       await tester.pump(const Duration(seconds: 1));
-
       expect(find.textContaining('wake up for'), findsOneWidget);
       expect(find.byType(SelectListSkeleton), findsOneWidget);
-      expect(find.text('Health'), findsNothing);
+      expect(find.text('Getting fit'), findsNothing);
 
       answer.complete();
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
-
       expect(find.byType(SelectListSkeleton), findsNothing);
-      expect(find.text('Health'), findsOneWidget);
-      expect(find.text('Body and mind'), findsOneWidget);
-      expect(find.text('Work'), findsOneWidget);
-    });
-
-    testWidgets(
-      'choosing rows moves the one shared border; Continue wakes up',
-      (tester) async {
-        await openPage(
-          tester,
-          FakeAreaOfLifeRepository(
-            saved: [health, work],
-            server: [health, work],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final list = tester.state<SlidingBorderScopeState>(
-          find.byType(SlidingBorderScope),
-        );
-        expect(list.indicatorRect, isNull);
-
-        await tester.tap(find.text('Health'));
-        await tester.pumpAndSettle();
-        final first = list.indicatorRect!;
-        expect(
-          first.top,
-          closeTo(
-            tester.getTopLeft(find.byType(SelectRow).first).dy -
-                tester.getTopLeft(find.byType(AnimatedSelectList)).dy,
-            0.5,
-          ),
-        );
-
-        await tester.tap(find.text('Work'));
-        await tester.pumpAndSettle();
-        final second = list.indicatorRect!;
-        expect(second.top, greaterThan(first.top));
-        expect(second.height, closeTo(first.height, 0.01));
-        expect(second.width, closeTo(first.width, 0.01));
-      },
-    );
-
-    testWidgets('back on the first step closes the page', (tester) async {
-      await openPage(
-        tester,
-        FakeAreaOfLifeRepository(saved: [health], server: [health]),
-      );
-      await tester.pumpAndSettle();
-      expect(find.textContaining('wake up for'), findsOneWidget);
-
-      await tester.tap(find.bySemanticsLabel('Back'));
-      await tester.pumpAndSettle();
-      expect(find.text('My Reasons'), findsOneWidget);
+      expect(find.text('Getting fit'), findsOneWidget);
+      expect(find.text('Grief'), findsOneWidget);
+      expect(find.text('My family'), findsOneWidget);
+      expect(continueEnabled(tester), isFalse);
     });
 
     testWidgets('offline with nothing saved shows the message and Try again', (
       tester,
     ) async {
-      final repo = FakeAreaOfLifeRepository(server: [health], offline: true);
-      await openPage(tester, repo);
+      final repo = FakeGoalTopicRepository(server: topics, offline: true);
+      await openPage(tester, topicRepo: repo);
       await tester.pumpAndSettle();
       expect(find.textContaining('Couldn’t load'), findsOneWidget);
 
       repo.offline = false;
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
-      expect(find.text('Health'), findsOneWidget);
-      expect(find.textContaining('Couldn’t load'), findsNothing);
+      expect(find.text('Getting fit'), findsOneWidget);
     });
 
-    group('purpose step', () {
-      final areaSuggestions = [
-        for (var i = 1; i <= 5; i++)
-          PurposeSuggestion(
-            id: i,
-            areaId: 1,
-            text: 'Idea number $i for health',
-          ),
-      ];
+    testWidgets('a chip lights up, Continue wakes up, one answer at a time', (
+      tester,
+    ) async {
+      await openPage(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Getting fit'));
+      await tester.pumpAndSettle();
+      expect(continueEnabled(tester), isTrue);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty,
+        reason: 'a chip does not write into the field',
+      );
 
-      Future<void> toPurposeStep(WidgetTester tester) async {
-        await openPage(
-          tester,
-          FakeAreaOfLifeRepository(
-            saved: [health, work],
-            server: [health, work],
-            areaSuggestions: {1: areaSuggestions},
-          ),
-        );
+      await tester.enterText(find.byType(TextField), 'Surf');
+      await tester.pumpAndSettle();
+      expect(continueEnabled(tester), isTrue);
+    });
+
+    testWidgets('typing is a search: matches come first, the rest stay', (
+      tester,
+    ) async {
+      await openPage(tester);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'gym');
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.text('Getting fit')).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.text('Grief')).dy),
+      );
+      expect(find.text('Grief'), findsOneWidget, reason: 'still there to tap');
+    });
+
+    testWidgets('back on the first step closes the page', (tester) async {
+      await openPage(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('My Goals'), findsOneWidget);
+    });
+
+    group('goal and why steps', () {
+      Future<void> toGoalStep(WidgetTester tester, String chip) async {
+        await openPage(tester);
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Health'));
+        await tester.tap(find.text(chip));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
+        await tapContinue(tester);
       }
 
-      testWidgets('shows the area, the heading and 3 ideas; More adds 3', (
+      testWidgets(
+        'a chip\'s three goals are suggested; picking fills the field',
+        (tester) async {
+          await toGoalStep(tester, 'Getting fit');
+          expect(find.textContaining('working toward'), findsOneWidget);
+          for (final goal in fit.goals) {
+            expect(find.text(goal), findsOneWidget);
+          }
+          await tester.tap(find.text('Run a 5K by spring'));
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<TextField>(find.byType(TextField)).controller!.text,
+            'Run a 5K by spring',
+          );
+          expect(find.text('Lift three times a week'), findsNothing);
+          expect(continueEnabled(tester), isTrue);
+        },
+      );
+
+      testWidgets('own words as the topic: no goal suggestions at all', (
         tester,
       ) async {
-        await toPurposeStep(tester);
-        expect(find.text('HEALTH'), findsOneWidget);
-        expect(find.textContaining('What are you'), findsOneWidget);
-        expect(find.text('OR START FROM ONE OF THESE'), findsOneWidget);
-        expect(find.text('Idea number 1 for health'), findsOneWidget);
-        expect(find.text('Idea number 3 for health'), findsOneWidget);
-        expect(find.text('Idea number 4 for health'), findsNothing);
-
-        await tester.tap(find.text('More ideas'));
+        await openPage(tester);
         await tester.pumpAndSettle();
-        expect(find.text('Idea number 5 for health'), findsOneWidget);
-        expect(find.text('More ideas'), findsNothing);
+        await tester.enterText(find.byType(TextField), 'My garden');
+        await tester.pumpAndSettle();
+        await tapContinue(tester);
+        expect(find.textContaining('working toward'), findsOneWidget);
+        for (final chip in topics) {
+          for (final goal in chip.goals) {
+            expect(find.text(goal), findsNothing);
+          }
+        }
       });
 
-      testWidgets('tapping the field focuses it (nothing steals the tap)', (
+      testWidgets('why: the chip\'s own whys, and Skip for now', (
         tester,
       ) async {
-        await toPurposeStep(tester);
-        await tester.tap(find.byType(TextField));
-        await tester.pump();
-        final editable = tester.widget<EditableText>(find.byType(EditableText));
-        expect(editable.focusNode.hasFocus, isTrue);
+        await toGoalStep(tester, 'Getting fit');
+        await tester.enterText(find.byType(TextField), 'Run a 5K by spring');
+        await tester.pumpAndSettle();
+        await tapContinue(tester);
+        expect(find.textContaining('matter to you'), findsOneWidget);
+        for (final why in fit.whys) {
+          expect(find.text(why), findsOneWidget);
+        }
+        expect(find.text('Skip for now'), findsOneWidget);
       });
 
-      testWidgets('a picked idea fills the field, then the ideas go', (
+      testWidgets('why for own words: the three general whys', (tester) async {
+        await openPage(tester);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'My garden');
+        await tester.pumpAndSettle();
+        await tapContinue(tester);
+        await tester.enterText(find.byType(TextField), 'Grow my own food');
+        await tester.pumpAndSettle();
+        await tapContinue(tester);
+        for (final why in generalWhys) {
+          expect(find.text(why), findsOneWidget);
+        }
+      });
+
+      testWidgets('back returns to the topic with the answer still there', (
         tester,
       ) async {
-        await toPurposeStep(tester);
-        await tester.tap(find.text('Idea number 2 for health'));
-        await tester.pumpAndSettle();
-
-        final field = tester.widget<TextField>(find.byType(TextField));
-        expect(field.controller!.text, 'Idea number 2 for health');
-        expect(find.text('OR START FROM ONE OF THESE'), findsNothing);
-
-        // Clearing the field brings the ideas back.
-        await tester.enterText(find.byType(TextField), '');
-        await tester.pumpAndSettle();
-        expect(find.text('OR START FROM ONE OF THESE'), findsOneWidget);
-      });
-
-      testWidgets('speaking adds the words to the field', (tester) async {
-        await toPurposeStep(tester);
-        await tester.enterText(find.byType(TextField), 'I want');
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.bySemanticsLabel('Say it out loud'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-        expect(find.byType(DictationBar), findsOneWidget);
-        expect(find.byType(LiveMeter), findsOneWidget);
-
-        lastFakeDictation!.speak(['to', 'feel'], 'strong');
-        await tester.pump(const Duration(milliseconds: 300));
-        lastFakeDictation!.commit();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-
-        expect(find.byType(DictationBar), findsNothing);
-        final field = tester.widget<TextField>(find.byType(TextField));
-        expect(field.controller!.text, 'I want to feel strong');
-      });
-
-      testWidgets('no speech input: a message explains it', (tester) async {
-        await toPurposeStep(tester);
-        lastFakeDictation!.available = false;
-        await tester.tap(find.bySemanticsLabel('Say it out loud'));
-        await tester.pump();
-        expect(
-          find.textContaining('Voice input isn’t available'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('back returns to the area step with the area still chosen', (
-        tester,
-      ) async {
-        await toPurposeStep(tester);
+        await toGoalStep(tester, 'Getting fit');
         await tester.tap(find.bySemanticsLabel('Back'));
         await tester.pumpAndSettle();
         expect(find.textContaining('wake up for'), findsOneWidget);
-        final list = tester.state<SlidingBorderScopeState>(
-          find.byType(SlidingBorderScope),
-        );
-        expect(list.indicatorRect, isNotNull);
+        expect(continueEnabled(tester), isTrue);
       });
     });
 
@@ -1102,34 +737,24 @@ void main() {
       );
 
       Future<void> toVoiceStep(WidgetTester tester) async {
-        await registerFakeAlarmDependencies(
-          FakeAlarmRepository(),
-          areaOfLifeRepository: FakeAreaOfLifeRepository(
-            saved: [health],
-            server: [health],
-          ),
-          voiceRepository: FakeVoiceRepository(
+        await openPage(
+          tester,
+          voiceRepo: FakeVoiceRepository(
             saved: [orion, astra],
             server: [orion, astra],
           ),
         );
-        await tester.pumpWidget(const MyApp());
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reasons').first);
+        await tester.tap(find.text('Getting fit'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Add your first Reason'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Health'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
+        await tapContinue(tester);
         await tester.enterText(
           find.byType(TextField),
           'Sleep well every night',
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
+        await tapContinue(tester);
+        await tapContinue(tester); // why: Skip for now
       }
 
       testWidgets('voices sit under their group headings, in group order', (
@@ -1142,14 +767,11 @@ void main() {
         expect(find.text('Calm'), findsOneWidget);
         expect(find.text('Female · American · Warm'), findsOneWidget);
         expect(find.text('Male · British · Calm'), findsOneWidget);
-        // Group 1 (Warm, Astra) comes before group 2 (Calm, Orion).
         expect(
           tester.getTopLeft(find.text('Astra')).dy,
           lessThan(tester.getTopLeft(find.text('Orion')).dy),
         );
-        // Continue waits for a voice.
-        final pill = tester.widget<PillButton>(find.byType(PillButton));
-        expect(pill.enabled, isFalse);
+        expect(continueEnabled(tester), isFalse);
       });
 
       testWidgets('choosing moves the one border across groups', (
@@ -1165,15 +787,11 @@ void main() {
         await tester.tap(find.text('Orion'));
         await tester.pumpAndSettle();
         expect(border.indicatorRect!.top, greaterThan(first.top));
-        expect(
-          tester.widget<PillButton>(find.byType(PillButton)).enabled,
-          isTrue,
-        );
+        expect(continueEnabled(tester), isTrue);
       });
 
       testWidgets(
-        'play plays the sample (base URL added), shows the animation, '
-        'and stops',
+        'play plays the sample (base URL added), shows the animation, and stops',
         (tester) async {
           await toVoiceStep(tester);
           await tester.tap(playOf('Astra'));
@@ -1187,23 +805,11 @@ void main() {
             tester.widget<PlayButton>(playOf('Astra')).label,
             'Stop Astra',
           );
-          // Playing a voice also chooses it.
-          expect(
-            tester.widget<PillButton>(find.byType(PillButton)).enabled,
-            isTrue,
-          );
+          expect(continueEnabled(tester), isTrue);
 
           await tester.tap(playOf('Astra'));
           await tester.pump(const Duration(milliseconds: 300));
           expect(player.stops, 1);
-          expect(find.byType(PlayBars), findsNothing);
-
-          // Playing another, then letting it finish on its own.
-          await tester.tap(playOf('Orion'));
-          await tester.pump(const Duration(milliseconds: 300));
-          expect(find.byType(PlayBars), findsOneWidget);
-          player.finish();
-          await tester.pump(const Duration(milliseconds: 300));
           expect(find.byType(PlayBars), findsNothing);
         },
       );
@@ -1229,258 +835,201 @@ void main() {
       });
     });
 
-    group('matter step', () {
-      const p1 = PurposeSuggestion(id: 11, areaId: 1, text: 'Sleep well again');
-      final matter = [
-        for (var i = 1; i <= 4; i++)
-          MatterSuggestion(
-            id: i,
-            areaId: 1,
-            purposeSuggestionId: 11,
-            text: 'Reason number $i',
-          ),
-      ];
+    group('tone step', () {
       const astra = Voice(id: 1, name: 'Astra', voiceId: 'a');
 
-      Future<void> toMatterStep(WidgetTester tester) async {
-        await registerFakeAlarmDependencies(
-          FakeAlarmRepository(),
-          areaOfLifeRepository: FakeAreaOfLifeRepository(
-            saved: [health],
-            server: [health],
-            areaSuggestions: {
-              1: [p1],
-            },
-            matterSuggestions: matter,
-          ),
-          voiceRepository: FakeVoiceRepository(saved: [astra], server: [astra]),
-        );
-        await tester.pumpWidget(const MyApp());
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Reasons').first);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Add your first Reason'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Health'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Sleep well again'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Astra'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-      }
-
-      testWidgets('shows OPTIONAL, the purpose as a quote and 3 suggestions', (
-        tester,
-      ) async {
-        await toMatterStep(tester);
-        expect(find.text('OPTIONAL'), findsOneWidget);
-        expect(find.textContaining('matter to you'), findsOneWidget);
-        expect(find.text('FOR'), findsOneWidget);
-        expect(find.text('“Sleep well again”'), findsOneWidget);
-        expect(find.text('Reason number 1'), findsOneWidget);
-        expect(find.text('Reason number 3'), findsOneWidget);
-        expect(find.text('Reason number 4'), findsNothing);
-        expect(find.text('More ideas'), findsNothing);
-        // Nothing written: the button skips, in the quiet look.
-        final pill = tester.widget<PillButton>(find.byType(PillButton));
-        expect(pill.label, 'Skip for now');
-        expect(pill.quiet, isTrue);
-        expect(pill.enabled, isTrue);
-      });
-
-      testWidgets(
-        'too short shows the note and waits; a pick fills the field',
-        (tester) async {
-          await toMatterStep(tester);
-          await tester.enterText(find.byType(TextField), 'Because');
-          await tester.pumpAndSettle();
-          expect(find.textContaining('A few more words'), findsOneWidget);
-          var pill = tester.widget<PillButton>(find.byType(PillButton));
-          expect(pill.enabled, isFalse);
-          expect(pill.label, 'Continue');
-
-          await tester.enterText(find.byType(TextField), '');
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Reason number 2'));
-          await tester.pumpAndSettle();
-          final field = tester.widget<TextField>(find.byType(TextField));
-          expect(field.controller!.text, 'Reason number 2');
-          expect(find.textContaining('A few more words'), findsNothing);
-          pill = tester.widget<PillButton>(find.byType(PillButton));
-          expect(pill.enabled, isTrue);
-          expect(pill.quiet, isFalse);
-        },
-      );
-
-      testWidgets('the mic works here too', (tester) async {
-        await toMatterStep(tester);
-        await tester.tap(find.bySemanticsLabel('Say it out loud'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-        expect(find.byType(DictationBar), findsOneWidget);
-        lastFakeDictation!.speak(['it', 'keeps', 'me'], 'going');
-        lastFakeDictation!.commit();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-        final field = tester.widget<TextField>(find.byType(TextField));
-        expect(field.controller!.text, 'it keeps me going');
-      });
-    });
-
-    group('sound step', () {
-      const encouraging = SoundType(
-        id: 1,
-        title: 'Encouraging',
-        description: 'Positive, warm and uplifting.',
-      );
-      const calmSound = SoundType(
-        id: 2,
-        title: 'Calm',
-        description: 'Calm, peaceful and reassuring.',
-      );
-      const astra = Voice(id: 1, name: 'Astra', voiceId: 'a');
-
-      Future<FakeSoundRepository> toSoundStep(
+      Future<void> toToneStep(
         WidgetTester tester, {
-        Future<void>? quoteAnswer,
+        List<SoundType> sounds = const [encouraging, calmSound],
         FakeReasonRepository? reasons,
+        String chip = 'Getting fit',
       }) async {
-        final sound = FakeSoundRepository(
-          sounds: [encouraging, calmSound],
-          quotes: [
-            const SoundQuote(
-              id: 1,
-              areaId: 1,
-              soundId: 1,
-              text: 'You can do this.',
-            ),
-            const SoundQuote(
-              id: 2,
-              areaId: 1,
-              soundId: 2,
-              text: 'Slow down, breathe.',
-            ),
-          ],
-          quoteAnswer: quoteAnswer,
+        await openPage(
+          tester,
+          voiceRepo: FakeVoiceRepository(saved: [astra], server: [astra]),
+          soundRepo: FakeSoundRepository(sounds: sounds),
+          reasons: reasons,
         );
-        await registerFakeAlarmDependencies(
-          FakeAlarmRepository(),
-          areaOfLifeRepository: FakeAreaOfLifeRepository(
-            saved: [health],
-            server: [health],
-          ),
-          voiceRepository: FakeVoiceRepository(saved: [astra], server: [astra]),
-          soundRepository: sound,
-          reasonRepository: reasons,
-        );
-        await tester.pumpWidget(const MyApp());
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Reasons').first);
+        await tester.tap(find.text(chip));
         await tester.pumpAndSettle();
-        await tester.tap(find.byType(AddCard));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Health'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
+        await tapContinue(tester);
         await tester.enterText(
           find.byType(TextField),
           'Sleep well every night',
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
+        await tapContinue(tester);
+        await tapContinue(tester); // why: Skip for now
         await tester.tap(find.text('Astra'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Continue'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Skip for now'));
-        return sound;
+        await tapContinue(tester);
       }
 
-      testWidgets('first sound chosen, its example, description and lengths', (
-        tester,
-      ) async {
-        await toSoundStep(tester);
-        await tester.pumpAndSettle();
-        expect(find.textContaining('sound'), findsWidgets);
-        expect(find.text('Example'), findsOneWidget);
-        expect(find.text('You'), findsOneWidget); // word by word
-        expect(find.text('Positive, warm and uplifting.'), findsOneWidget);
-        expect(find.text('LENGTH'), findsOneWidget);
-        expect(find.text('30 sec'), findsOneWidget);
-        expect(find.text('45 sec'), findsOneWidget);
-        final pill = tester.widget<PillButton>(find.byType(PillButton));
-        expect(pill.label, 'Create Reason');
-        expect(pill.enabled, isTrue);
-      });
+      testWidgets(
+        'first tone chosen, its own example, description and lengths',
+        (tester) async {
+          await toToneStep(tester);
+          expect(find.textContaining('sound'), findsWidgets);
+          expect(find.text('Example'), findsOneWidget);
+          expect(find.text('You'), findsOneWidget); // word by word
+          expect(find.text('Positive, warm and uplifting.'), findsOneWidget);
+          expect(find.text('LENGTH'), findsOneWidget);
+          expect(find.text('30 sec'), findsOneWidget);
+          expect(find.text('45 sec'), findsOneWidget);
+          final pill = tester.widget<PillButton>(find.byType(PillButton));
+          expect(pill.label, 'Create Goal');
+          expect(pill.enabled, isTrue);
+        },
+      );
 
-      testWidgets('changing the sound shows a shimmer, then its own example', (
+      testWidgets('another tone shows its own example at once (no loading)', (
         tester,
       ) async {
-        final sound = await toSoundStep(tester);
-        await tester.pumpAndSettle();
-        // Hold the next answer so the loading look can be seen.
-        final gate = Completer<void>();
-        sound.quoteAnswer = gate.future;
+        await toToneStep(tester);
         await tester.tap(find.bySemanticsLabel('Calm'));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(Shimmer), findsOneWidget);
-        expect(find.text('You'), findsNothing);
-
-        gate.complete();
-        await tester.pump();
         await tester.pump(const Duration(seconds: 1));
-        expect(find.byType(Shimmer), findsNothing);
+        expect(find.text('You'), findsNothing);
         expect(find.text('Slow'), findsOneWidget);
         expect(find.text('Calm, peaceful and reassuring.'), findsOneWidget);
-        expect(sound.quoteRequests, [(1, 1), (1, 2)]);
       });
 
-      testWidgets('the length border moves to the chosen box', (tester) async {
-        await toSoundStep(tester);
+      // The step itself is a PageView too: this is the card's.
+      final tonePager = find.descendant(
+        of: find.byType(SelectSoundStep),
+        matching: find.byType(PageView),
+      );
+
+      List<double> dotWidths(WidgetTester tester) => [
+        for (final e in find.byType(AnimatedContainer).evaluate())
+          if (tester.getSize(find.byWidget(e.widget)).height < 12)
+            tester.getSize(find.byWidget(e.widget)).width,
+      ];
+
+      testWidgets('the card is a PageView with one page dot per tone', (
+        tester,
+      ) async {
+        await toToneStep(tester);
+        expect(tonePager, findsOneWidget);
+        final dots = dotWidths(tester);
+        expect(dots.length, 2);
+        expect(dots[0], greaterThan(dots[1]), reason: 'the first is current');
+      });
+
+      testWidgets('swiping the card chooses the next tone, dots follow', (
+        tester,
+      ) async {
+        await toToneStep(tester);
+        await tester.drag(tonePager, const Offset(-400, 0));
         await tester.pumpAndSettle();
+        expect(find.text('Slow'), findsOneWidget);
+        expect(find.text('You'), findsNothing);
+        expect(find.text('Calm, peaceful and reassuring.'), findsOneWidget);
+        final dots = dotWidths(tester);
+        expect(dots[1], greaterThan(dots[0]), reason: 'the second is current');
+
+        await tester.drag(tonePager, const Offset(400, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('You'), findsOneWidget);
+        expect(find.text('Positive, warm and uplifting.'), findsOneWidget);
+      });
+
+      testWidgets('a swipe is the same choice as a dial: it is what is saved', (
+        tester,
+      ) async {
+        final reasons = FakeReasonRepository(
+          const [],
+          const [],
+          const [encouraging, calmSound],
+          const [astra],
+        );
+        await toToneStep(tester, reasons: reasons);
+        await tester.drag(tonePager, const Offset(-400, 0));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Create Goal'));
+        await tester.pumpAndSettle();
+        expect(reasons.created.single.draft.soundTypeId, 2);
+      });
+
+      testWidgets('a short drag springs back and chooses nothing', (
+        tester,
+      ) async {
+        await toToneStep(tester);
+        await tester.drag(tonePager, const Offset(-40, 0));
+        await tester.pumpAndSettle();
+        expect(find.text('You'), findsOneWidget);
+        expect(find.text('Slow'), findsNothing);
+      });
+
+      testWidgets('the card keeps its height whichever tone shows', (
+        tester,
+      ) async {
+        await toToneStep(tester);
+        final first = tester.getSize(tonePager).height;
+        await tester.tap(find.bySemanticsLabel('Calm'));
+        await tester.pumpAndSettle();
+        expect(tester.getSize(tonePager).height, first);
+      });
+
+      testWidgets('a single tone has no dots', (tester) async {
+        await toToneStep(tester, sounds: const [encouraging]);
+        expect(dotWidths(tester), isEmpty);
+      });
+
+      testWidgets('the example is the tone\'s, whatever the topic', (
+        tester,
+      ) async {
+        await toToneStep(tester, chip: 'Grief');
+        expect(find.text('You'), findsOneWidget);
+      });
+
+      testWidgets('a tone with no sample yet shows an empty letter', (
+        tester,
+      ) async {
+        await toToneStep(
+          tester,
+          sounds: const [SoundType(id: 1, title: 'Plain')],
+        );
+        expect(find.text('Example'), findsOneWidget);
+        expect(find.text('You'), findsNothing);
+        expect(continueEnabled(tester), isTrue);
+      });
+
+      testWidgets('the length note follows the chosen box', (tester) async {
+        await toToneStep(tester);
         await tester.tap(find.text('45 sec'));
         await tester.pumpAndSettle();
         expect(find.text('A full thought, not a ramble.'), findsOneWidget);
       });
 
       group('save and ready', () {
-        // Reuses the sound group's walk through the steps.
         Future<FakeReasonRepository> toReady(
           WidgetTester tester, {
-          List<Reason> existing = const [],
+          String chip = 'Getting fit',
         }) async {
           final reasons = FakeReasonRepository(
-            existing,
-            const [health],
+            const [],
+            const [],
             const [encouraging, calmSound],
             const [astra],
           );
-          await toSoundStep(tester, reasons: reasons);
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Create Reason'));
+          await toToneStep(tester, reasons: reasons, chip: chip);
+          await tester.tap(find.text('Create Goal'));
           await tester.pumpAndSettle();
           return reasons;
         }
 
-        testWidgets('Create Reason saves what was chosen and shows it ready', (
+        testWidgets('Create Goal saves what was chosen and shows it ready', (
           tester,
         ) async {
           final reasons = await toReady(tester);
           final saved = reasons.created.single;
-          expect(saved.baseName, 'health');
+          expect(saved.name, 'Getting fit');
           expect(
             saved.draft,
             const ReasonDraft(
-              areaId: 1,
+              topic: 'Getting fit',
               purpose: 'Sleep well every night',
               soundTypeId: 1,
               voiceId: 1,
@@ -1494,30 +1043,18 @@ void main() {
             find.textContaining('ready', findRichText: true),
             findsWidgets,
           );
-          expect(find.text('health'), findsWidgets);
+          expect(find.text('Getting fit'), findsWidgets);
           expect(find.text('Sleep well every night'), findsOneWidget);
           expect(find.text('Astra'), findsOneWidget);
           expect(find.text('Encouraging'), findsOneWidget);
         });
 
-        testWidgets('a name already used gets the next number', (tester) async {
-          await toReady(
-            tester,
-            existing: [
-              testReason(id: 1, name: 'health'),
-              testReason(id: 2, name: 'health 3'),
-            ],
-          );
-          expect(
-            find.descendant(
-              of: find.byType(ReasonReadyPage),
-              matching: find.text('health 4'),
-            ),
-            findsWidgets,
-          );
+        testWidgets('a gentle chip is saved gentle', (tester) async {
+          final reasons = await toReady(tester, chip: 'Grief');
+          expect(reasons.created.single.draft.focus, GoalFocus.gentle);
         });
 
-        testWidgets('renaming saves the new name for that reason', (
+        testWidgets('the name is the topic and can be renamed in place', (
           tester,
         ) async {
           final reasons = await toReady(tester);
@@ -1528,11 +1065,27 @@ void main() {
           await tester.tap(find.byType(ReasonNameField));
           await tester.pumpAndSettle();
           expect(find.bySemanticsLabel('Save name'), findsOneWidget);
-          await tester.enterText(field, '  Morning health ');
+          await tester.enterText(field, '  Morning run ');
           await tester.testTextInput.receiveAction(TextInputAction.done);
           await tester.pumpAndSettle();
-          expect(reasons.renames, [(100, 'Morning health')]);
-          expect(find.text('Morning health'), findsWidgets);
+          expect(reasons.renames, [(100, 'Morning run')]);
+          expect(find.text('Morning run'), findsWidgets);
+        });
+
+        testWidgets('a name is at most 20 characters', (tester) async {
+          await toReady(tester);
+          await tester.tap(find.byType(ReasonNameField));
+          await tester.pumpAndSettle();
+          final field = find.descendant(
+            of: find.byType(ReasonNameField),
+            matching: find.byType(TextField),
+          );
+          await tester.enterText(field, 'A name that is far too long to keep');
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<TextField>(field).controller!.text.length,
+            lessThanOrEqualTo(AppConstant.reasonNameMaxLength),
+          );
         });
 
         testWidgets('a rename that fails puts the old name back and says so', (
@@ -1552,11 +1105,11 @@ void main() {
           await tester.testTextInput.receiveAction(TextInputAction.done);
           await tester.pumpAndSettle();
           expect(find.textContaining('Couldn’t rename it'), findsOneWidget);
-          expect(find.text('health'), findsWidgets);
+          expect(find.text('Getting fit'), findsWidgets);
           expect(find.text('Other'), findsNothing);
         });
 
-        testWidgets('Save for later returns to the list with the new reason', (
+        testWidgets('Save for later returns to the list with the new goal', (
           tester,
         ) async {
           await toReady(tester);
@@ -1564,33 +1117,31 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(ReasonReadyPage), findsNothing);
           expect(find.byType(ReasonRow), findsOneWidget);
-          expect(find.text('health'), findsOneWidget);
+          expect(find.text('Getting fit'), findsWidgets);
         });
 
-        testWidgets(
-          'Use with alarm opens the alarm editor, the reason chosen',
-          (tester) async {
-            await toReady(tester);
-            await tester.tap(find.text('Use with alarm'));
-            await tester.pumpAndSettle();
-            expect(find.byType(ReasonReadyPage), findsNothing);
-            expect(find.byType(CreateAlarmPage), findsOneWidget);
-            expect(
-              find.descendant(
-                of: find.byType(CreateAlarmPage),
-                matching: find.text('health'),
-              ),
-              findsOneWidget,
-            );
-            expect(find.text('Save Alarm'), findsOneWidget);
+        testWidgets('Use with alarm opens the alarm editor, the goal chosen', (
+          tester,
+        ) async {
+          await toReady(tester);
+          await tester.tap(find.text('Use with alarm'));
+          await tester.pumpAndSettle();
+          expect(find.byType(ReasonReadyPage), findsNothing);
+          expect(find.byType(CreateAlarmPage), findsOneWidget);
+          expect(
+            find.descendant(
+              of: find.byType(CreateAlarmPage),
+              matching: find.text('Getting fit'),
+            ),
+            findsWidgets,
+          );
+          expect(find.text('Save Alarm'), findsOneWidget);
 
-            // Back returns to where Create Reason was opened.
-            await tester.tap(find.text('Cancel'));
-            await tester.pumpAndSettle();
-            expect(find.byType(CreateAlarmPage), findsNothing);
-            expect(find.byType(ReasonRow), findsOneWidget);
-          },
-        );
+          await tester.tap(find.text('Cancel'));
+          await tester.pumpAndSettle();
+          expect(find.byType(CreateAlarmPage), findsNothing);
+          expect(find.byType(ReasonRow), findsOneWidget);
+        });
 
         testWidgets('back does what Save for later does', (tester) async {
           await toReady(tester);
@@ -1601,16 +1152,15 @@ void main() {
           expect(find.byType(ReasonRow), findsOneWidget);
         });
 
-        testWidgets('a failed save says so and stays on the sound step', (
+        testWidgets('a failed save says so and stays on the tone step', (
           tester,
         ) async {
           final reasons = FakeReasonRepository()..offline = true;
-          await toSoundStep(tester, reasons: reasons);
-          await tester.pumpAndSettle();
-          await tester.tap(find.text('Create Reason'));
+          await toToneStep(tester, reasons: reasons);
+          await tester.tap(find.text('Create Goal'));
           await tester.pumpAndSettle();
           expect(
-            find.textContaining('Couldn’t save your reason'),
+            find.textContaining('Couldn’t save your goal'),
             findsOneWidget,
           );
           expect(find.byType(CreateReasonPage), findsOneWidget);

@@ -2,94 +2,78 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/app_color.dart';
-import '../../../../core/utils/text_utils.dart';
 import '../../../../core/widgets/app_svg_icon.dart';
-import '../../../../core/widgets/cached_svg_icon.dart';
 import '../../../../gen/assets.gen.dart';
-import '../../../../main.dart';
+import '../../../voice/presentation/widgets/voice_avatar.dart';
+import '../../../voice/domain/entities/voice.dart';
 
 /// Whether an alarm plays a reason: none = no badge, on = orange, off = grey.
 enum ReasonAlarmBadge { none, on, off }
 
-/// The area mark: a 46 rounded square (radius 15) in the area's tint at 15 %, showing
-/// the area's icon ([areaIcon], its server path) in the full tint, or the first letter
-/// of its name when it has none or it can not be loaded. [areaColor] is the server's
-/// ARGB tint (the brand colour when it sent none). [badge] adds the alarm mark
-/// (22 + 2.5 black ring) hanging off the lower-right corner.
+/// A goal's mark: the face of the voice that speaks it, the same picture on My Goals, the
+/// goal's own screen, its alarm card, the picker and the editor, so a goal is one
+/// recognisable thing everywhere (the prototype's `CueEmblem`). It replaced a monogram of
+/// the area, which only repeated the title printed beside it.
 ///
-/// [disc] is the reason screen's header look: a 46 circle (the tint at 22 % over the
-/// card) with the icon in the tint mixed into white. [size] (46 before scaling)
-/// shrinks or grows the whole mark (an alarm card's 28 disc). [muted] drains it to
-/// grey (#2C2C2E with a grey icon): the look of a switched-off alarm.
+/// [voice] is the joined voice (a round portrait over its tint; the first letter of
+/// [name] when it has none or the picture fails). [size] (46 before scaling) is the
+/// diameter. [muted] is a switched-off alarm: the face greyed and dimmed to half, the
+/// colour coming back with the alarm (0.3 s). [badge] adds the alarm mark (22 + 2.5
+/// black ring) hanging off the lower-right corner.
 class ReasonEmblem extends StatelessWidget {
   const ReasonEmblem({
     super.key,
-    required this.areaName,
-    this.areaColor,
-    this.areaIcon,
+    required this.voice,
+    required this.name,
     this.badge = ReasonAlarmBadge.none,
-    this.disc = false,
     this.size = 46,
     this.muted = false,
   });
 
-  final String areaName;
-  final int? areaColor;
-  final String? areaIcon;
+  final Voice? voice;
+
+  /// The goal's name: its first letter stands in when there is no voice picture.
+  final String name;
   final ReasonAlarmBadge badge;
-  final bool disc;
   final double size;
   final bool muted;
 
+  /// One colour matrix for the whole switched-off look: [s] = 1 is the face as it is,
+  /// 0 is grey at half strength. Saturation and opacity in one filter (one layer).
+  @visibleForTesting
+  static ColorFilter mutedFilter(double s) {
+    final alpha = 0.5 + 0.5 * s;
+    return ColorFilter.matrix([
+      0.2126 + 0.7874 * s, 0.7152 - 0.7152 * s, 0.0722 - 0.0722 * s, 0, 0, //
+      0.2126 - 0.2126 * s, 0.7152 + 0.2848 * s, 0.0722 - 0.0722 * s, 0, 0, //
+      0.2126 - 0.2126 * s, 0.7152 - 0.7152 * s, 0.0722 + 0.9278 * s, 0, 0, //
+      0, 0, 0, alpha, 0,
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tint = AppColor.tintOf(areaColor);
-    final ink = muted
-        ? AppColor.textSecondary
-        : disc
-        ? Color.lerp(AppColor.white, tint, 0.85)!
-        : tint;
-    // Everything inside keeps its proportion to the 46 mark.
-    final k = size / 46;
-    final letter = Text(
-      initialOf(areaName),
-      style: appTheme(context).textTheme.headlineMedium!
-          .copyWith(fontSize: ((disc ? 19 : 21) * k).spMin, color: ink),
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final face = TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: muted ? 0 : 1),
+      duration: reduced ? Duration.zero : const Duration(milliseconds: 300),
+      curve: const Cubic(0.25, 0.1, 0.25, 1),
+      // In full colour (the usual case) no filter at all.
+      builder: (context, s, child) => s >= 1
+          ? child!
+          : ColorFiltered(colorFilter: mutedFilter(s), child: child),
+      child: VoiceAvatar(
+        voice: voice ?? Voice(id: 0, name: name, voiceId: ''),
+        size: size,
+      ),
     );
-    final icon = areaIcon;
     return SizedBox(
       width: size.r,
       height: size.r,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            width: size.r,
-            height: size.r,
-            alignment: Alignment.center,
-            decoration: disc
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: muted
-                        ? AppColor.surfaceSecondary
-                        : Color.alphaBlend(
-                            tint.withValues(alpha: 0.22),
-                            AppColor.cardColor,
-                          ),
-                  )
-                : BoxDecoration(
-                    color: tint.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular((15 * k).r),
-                  ),
-            child: icon == null || icon.isEmpty
-                ? letter
-                : CachedSvgIcon(
-                    path: icon,
-                    size: ((disc ? 21 : 22) * k).r,
-                    color: ink,
-                    fallback: Center(child: letter),
-                  ),
-          ),
+          Positioned.fill(child: face),
           if (badge != ReasonAlarmBadge.none)
             Positioned(
               right: -7.8.r,

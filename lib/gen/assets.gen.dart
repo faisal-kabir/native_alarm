@@ -31,6 +31,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/alarm_off.svg
   SvgGenImage get alarmOff => const SvgGenImage('assets/icons/alarm_off.svg');
 
+  /// File path: assets/icons/bulb.svg
+  SvgGenImage get bulb => const SvgGenImage('assets/icons/bulb.svg');
+
   /// File path: assets/icons/check.svg
   SvgGenImage get check => const SvgGenImage('assets/icons/check.svg');
 
@@ -62,7 +65,15 @@ class $AssetsIconsGen {
   $AssetsIconsVoiceGen get voice => const $AssetsIconsVoiceGen();
 
   /// List of all assets
-  List<SvgGenImage> get values => [alarm, alarmOff, check, info, pencil, quote];
+  List<SvgGenImage> get values => [
+    alarm,
+    alarmOff,
+    bulb,
+    check,
+    info,
+    pencil,
+    quote,
+  ];
 }
 
 class $AssetsTranscriptsGen {
@@ -81,6 +92,9 @@ class $AssetsIconsDetailGen {
   /// File path: assets/icons/detail/clock.svg
   SvgGenImage get clock => const SvgGenImage('assets/icons/detail/clock.svg');
 
+  /// File path: assets/icons/detail/flag.svg
+  SvgGenImage get flag => const SvgGenImage('assets/icons/detail/flag.svg');
+
   /// File path: assets/icons/detail/heart.svg
   SvgGenImage get heart => const SvgGenImage('assets/icons/detail/heart.svg');
 
@@ -91,7 +105,7 @@ class $AssetsIconsDetailGen {
   SvgGenImage get volume => const SvgGenImage('assets/icons/detail/volume.svg');
 
   /// List of all assets
-  List<SvgGenImage> get values => [clock, heart, target, volume];
+  List<SvgGenImage> get values => [clock, flag, heart, target, volume];
 }
 
 class $AssetsIconsEditorGen {
@@ -128,9 +142,6 @@ class $AssetsIconsSettingsGen {
   /// File path: assets/icons/settings/bell.svg
   SvgGenImage get bell => const SvgGenImage('assets/icons/settings/bell.svg');
 
-  /// File path: assets/icons/settings/bulb.svg
-  SvgGenImage get bulb => const SvgGenImage('assets/icons/settings/bulb.svg');
-
   /// File path: assets/icons/settings/crown.svg
   SvgGenImage get crown => const SvgGenImage('assets/icons/settings/crown.svg');
 
@@ -159,7 +170,6 @@ class $AssetsIconsSettingsGen {
   /// List of all assets
   List<SvgGenImage> get values => [
     bell,
-    bulb,
     crown,
     doc,
     help,

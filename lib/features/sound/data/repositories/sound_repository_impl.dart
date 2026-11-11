@@ -3,7 +3,6 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
-import '../../domain/entities/sound_quote.dart';
 import '../../domain/entities/sound_type.dart';
 import '../../domain/repositories/sound_repository.dart';
 import '../datasources/sound_remote_data_source.dart';
@@ -18,18 +17,6 @@ class SoundRepositoryImpl implements SoundRepository {
   Future<Either<Failure, List<SoundType>>> getSoundTypes() async {
     try {
       return Right(await remoteDataSource.fetchSoundTypes());
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    }
-  }
-
-  @override
-  Future<Either<Failure, SoundQuote?>> getSoundQuote(
-    int areaId,
-    int soundId,
-  ) async {
-    try {
-      return Right(await remoteDataSource.fetchSoundQuote(areaId, soundId));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }

@@ -463,12 +463,12 @@ void main() {
       expect(find.text('None'), findsOneWidget);
       expect(find.text('Chime'), findsOneWidget);
       // No Reason yet: the button chooses one.
-      await tester.tap(find.text('Choose a reason').last);
+      await tester.tap(find.text('Choose a goal').last);
       await tester.pumpAndSettle();
       expect(find.text('What should wake you up?'), findsOneWidget);
       await tester.tap(find.text('Training'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Select Reason'));
+      await tester.tap(find.text('Select Goal'));
       await tester.pumpAndSettle();
 
       expect(find.text('Training'), findsOneWidget);
@@ -553,14 +553,14 @@ void main() {
       await open(tester);
       expect(find.byType(AlarmCard), findsNothing);
       expect(find.text('Set your first alarm'), findsOneWidget);
-      expect(find.text('Pick a time and a reason.'), findsOneWidget);
+      expect(find.text('Pick a time and a goal.'), findsOneWidget);
     });
 
     testWidgets('a reason another alarm plays is not offered', (tester) async {
       await open(tester, existing: [savedAlarm('a', reasonId: 1)]);
       await tester.tap(find.text('Add alarm'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Choose a reason').last);
+      await tester.tap(find.text('Choose a goal').last);
       await tester.pumpAndSettle();
       expect(find.text('Training'), findsOneWidget);
       expect(find.text('Mornings'), findsNothing);
@@ -671,7 +671,7 @@ void main() {
       await tester.drag(find.byType(AlarmCard), const Offset(-300, 0));
       await tester.pumpAndSettle();
       expect(find.text('Delete this alarm?'), findsOneWidget);
-      expect(find.text('Your reason stays in My Reasons.'), findsOneWidget);
+      expect(find.text('Your goal stays in My Goals.'), findsOneWidget);
 
       // Cancel brings the card home.
       await tester.tap(find.text('Cancel'));

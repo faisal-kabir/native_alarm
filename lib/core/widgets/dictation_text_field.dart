@@ -31,6 +31,7 @@ class DictationTextField extends StatefulWidget {
     required this.maxLength,
     this.showCounter = true,
     this.note,
+    this.minHeight = 72,
     this.onDictationUnavailable,
   });
 
@@ -40,6 +41,9 @@ class DictationTextField extends StatefulWidget {
   final int maxLength;
   final bool showCounter;
   final String? note;
+
+  /// The field is at least this tall (dp) before anything is written.
+  final double minHeight;
   final VoidCallback? onDictationUnavailable;
 
   @override
@@ -116,6 +120,7 @@ class _DictationTextFieldState extends State<DictationTextField> {
                   maxLength: widget.maxLength,
                   showCounter: widget.showCounter,
                   note: widget.note,
+                  minHeight: widget.minHeight,
                   onMic: _startDictation,
                 ),
         );
@@ -133,6 +138,7 @@ class _TypingField extends StatelessWidget {
     required this.maxLength,
     required this.showCounter,
     required this.note,
+    required this.minHeight,
     required this.onMic,
   });
 
@@ -141,6 +147,7 @@ class _TypingField extends StatelessWidget {
   final int maxLength;
   final bool showCounter;
   final String? note;
+  final double minHeight;
   final VoidCallback onMic;
 
   @override
@@ -160,7 +167,7 @@ class _TypingField extends StatelessWidget {
         Stack(
           children: [
             ConstrainedBox(
-              constraints: BoxConstraints(minHeight: 72.h),
+              constraints: BoxConstraints(minHeight: minHeight.h),
               child: TextField(
                 controller: controller,
                 maxLines: null,

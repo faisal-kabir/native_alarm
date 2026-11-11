@@ -4,6 +4,7 @@ import '../../../area_of_life/data/models/area_of_life_model.dart';
 import '../../../sound/data/models/sound_type_model.dart';
 import '../../../voice/data/models/voice_model.dart';
 import '../../domain/entities/reason.dart';
+import '../../domain/entities/reason_draft.dart';
 
 /// What to ask the server for one reason: the row, and over its foreign keys the area
 /// (`area_id`), the sound (`sound_type_id`) and the voice (`voice_id`, with the voice's
@@ -28,7 +29,9 @@ Reason reasonFromJson(Map<String, dynamic> json) {
     lengthSeconds:
         (json['length'] as num?)?.toInt() ??
         AppConstant.defaultReasonLengthSeconds,
-    areaId: id('area_id'),
+    topic: cleanText(json['topic']) ?? '',
+    focus: GoalFocus.fromValue(json['focus']),
+    areaId: (json['area_id'] as num?)?.toInt(),
     area: area == null ? null : AreaOfLifeModel.fromJson(area),
     soundTypeId: id('sound_type_id'),
     sound: sound == null ? null : SoundTypeModel.fromJson(sound),

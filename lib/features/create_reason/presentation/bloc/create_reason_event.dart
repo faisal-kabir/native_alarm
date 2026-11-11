@@ -7,15 +7,15 @@ abstract class CreateReasonEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// The page opened: show the saved areas of life and start updating them from the
-/// server.
-class LoadAreasEvent extends CreateReasonEvent {
-  const LoadAreasEvent();
+/// The page opened: show the saved topics (and the general whys) and start updating
+/// them from the server.
+class LoadTopicsEvent extends CreateReasonEvent {
+  const LoadTopicsEvent();
 }
 
-/// Ask the server for the areas again (the "Try again" button).
-class RefreshAreasEvent extends CreateReasonEvent {
-  const RefreshAreasEvent();
+/// Ask the server for the topics again (the "Try again" button).
+class RefreshTopicsEvent extends CreateReasonEvent {
+  const RefreshTopicsEvent();
 }
 
 /// The page opened: show the saved voices and start updating them from the server.
@@ -29,24 +29,26 @@ class RefreshVoicesEvent extends CreateReasonEvent {
   const RefreshVoicesEvent();
 }
 
-/// Load the purpose suggestions of [areaId] from the server (sent on "Continue" from the area step).
-class LoadSuggestionsEvent extends CreateReasonEvent {
-  final int areaId;
+/// The user tapped a chip ([topicId]) or tapped the chosen one again (null): the
+/// answer to "What do you want to wake up for?" is that chip, and any typed text goes.
+class TopicPickedEvent extends CreateReasonEvent {
+  final int? topicId;
 
-  const LoadSuggestionsEvent(this.areaId);
+  const TopicPickedEvent(this.topicId);
 
   @override
-  List<Object?> get props => [areaId];
+  List<Object?> get props => [topicId];
 }
 
-/// The user chose an area of life.
-class AreaSelectedEvent extends CreateReasonEvent {
-  final int areaId;
+/// The user typed (or cleared) their own words as the topic: any chip goes. Typing a
+/// chip's exact name is that chip.
+class TopicTypedEvent extends CreateReasonEvent {
+  final String text;
 
-  const AreaSelectedEvent(this.areaId);
+  const TopicTypedEvent(this.text);
 
   @override
-  List<Object?> get props => [areaId];
+  List<Object?> get props => [text];
 }
 
 /// "Continue": go to the next step.
@@ -59,7 +61,7 @@ class PreviousStepEvent extends CreateReasonEvent {
   const PreviousStepEvent();
 }
 
-/// The purpose text changed in the field (typed, spoken, or set by a pick).
+/// The goal text changed in the field (typed, spoken, or set by a pick).
 class PurposeChangedEvent extends CreateReasonEvent {
   final String text;
 
@@ -69,17 +71,7 @@ class PurposeChangedEvent extends CreateReasonEvent {
   List<Object?> get props => [text];
 }
 
-/// The user tapped a suggestion: its text becomes the purpose.
-class SuggestionPickedEvent extends CreateReasonEvent {
-  final int suggestionId;
-
-  const SuggestionPickedEvent(this.suggestionId);
-
-  @override
-  List<Object?> get props => [suggestionId];
-}
-
-/// The microphone started or stopped listening on the purpose step.
+/// The microphone started or stopped listening on a text step.
 class DictationChangedEvent extends CreateReasonEvent {
   final bool listening;
 
@@ -109,19 +101,6 @@ class MatterChangedEvent extends CreateReasonEvent {
   List<Object?> get props => [text];
 }
 
-/// Load the "why it matters" suggestions of [areaId] for purpose suggestion
-/// [purposeSuggestionId] (null: the user wrote their own purpose). Sent on "Continue"
-/// from the purpose step.
-class LoadMatterSuggestionsEvent extends CreateReasonEvent {
-  final int areaId;
-  final int? purposeSuggestionId;
-
-  const LoadMatterSuggestionsEvent(this.areaId, this.purposeSuggestionId);
-
-  @override
-  List<Object?> get props => [areaId, purposeSuggestionId];
-}
-
 /// The page opened: load the sound types (the last step needs them).
 class LoadSoundTypesEvent extends CreateReasonEvent {
   const LoadSoundTypesEvent();
@@ -137,17 +116,6 @@ class SoundSelectedEvent extends CreateReasonEvent {
   List<Object?> get props => [soundId];
 }
 
-/// Load the example line of [areaId] in sound [soundId] ("Try again" too).
-class LoadSoundQuoteEvent extends CreateReasonEvent {
-  final int areaId;
-  final int soundId;
-
-  const LoadSoundQuoteEvent(this.areaId, this.soundId);
-
-  @override
-  List<Object?> get props => [areaId, soundId];
-}
-
 /// The user chose a length (seconds).
 class LengthSelectedEvent extends CreateReasonEvent {
   final int seconds;
@@ -158,7 +126,7 @@ class LengthSelectedEvent extends CreateReasonEvent {
   List<Object?> get props => [seconds];
 }
 
-/// "Create Reason" on the last step: save the reason.
+/// "Create Goal" on the last step: save the goal.
 class CreateReasonSubmittedEvent extends CreateReasonEvent {
   const CreateReasonSubmittedEvent();
 }

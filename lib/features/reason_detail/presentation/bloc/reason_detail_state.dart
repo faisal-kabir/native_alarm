@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/utils/load_status.dart';
 import '../../../alarm/domain/entities/alarm.dart';
-import '../../../area_of_life/domain/entities/area_of_life.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../../reasons/domain/entities/reason_draft.dart';
 import '../../../sound/domain/entities/sound_type.dart';
@@ -15,8 +14,7 @@ class ReasonDetailState extends Equatable {
   /// What the screen shows: the saved values with the user's held changes on top.
   final ReasonDraft draft;
 
-  /// What the sheets offer: cached areas and voices, and the tones from the server.
-  final List<AreaOfLife> areas;
+  /// What the sheets offer: the cached voices, and the tones from the server.
   final List<Voice> voices;
   final List<SoundType> soundTypes;
   final LoadStatus soundTypesStatus;
@@ -38,7 +36,6 @@ class ReasonDetailState extends Equatable {
   ReasonDetailState({
     required this.reason,
     ReasonDraft? draft,
-    this.areas = const [],
     this.voices = const [],
     this.soundTypes = const [],
     this.soundTypesStatus = LoadStatus.loading,
@@ -66,12 +63,7 @@ class ReasonDetailState extends Equatable {
   /// Something is held that differs from what is saved (the Save bar shows).
   bool get dirty => draft != reason.draft;
 
-  /// The chosen area, voice and tone (as held), from the lists or else the reason's
-  /// own copy.
-  AreaOfLife? get area =>
-      _pick(areas, (a) => a.id == draft.areaId) ??
-      (reason.areaId == draft.areaId ? reason.area : null);
-
+  /// The chosen voice and tone (as held), from the lists or else the reason's own copy.
   Voice? get voice =>
       _pick(voices, (v) => v.id == draft.voiceId) ??
       (reason.voiceId == draft.voiceId ? reason.voice : null);
@@ -90,7 +82,6 @@ class ReasonDetailState extends Equatable {
   ReasonDetailState copyWith({
     Reason? reason,
     ReasonDraft? draft,
-    List<AreaOfLife>? areas,
     List<Voice>? voices,
     List<SoundType>? soundTypes,
     LoadStatus? soundTypesStatus,
@@ -104,7 +95,6 @@ class ReasonDetailState extends Equatable {
   }) => ReasonDetailState(
     reason: reason ?? this.reason,
     draft: draft ?? this.draft,
-    areas: areas ?? this.areas,
     voices: voices ?? this.voices,
     soundTypes: soundTypes ?? this.soundTypes,
     soundTypesStatus: soundTypesStatus ?? this.soundTypesStatus,
@@ -121,7 +111,6 @@ class ReasonDetailState extends Equatable {
   List<Object?> get props => [
     reason,
     draft,
-    areas,
     voices,
     soundTypes,
     soundTypesStatus,

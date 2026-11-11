@@ -9,6 +9,7 @@ class SoundTypeModel extends SoundType {
     super.description,
     super.icon,
     super.color,
+    super.sample,
   });
 
   factory SoundTypeModel.fromJson(Map<String, dynamic> json) => SoundTypeModel(
@@ -17,5 +18,6 @@ class SoundTypeModel extends SoundType {
     description: cleanText(json['description']),
     icon: cleanText(json['icon']),
     color: parseHexColor(json['color'] as String?),
+    sample: cleanText(json['sample']),
   );
 }

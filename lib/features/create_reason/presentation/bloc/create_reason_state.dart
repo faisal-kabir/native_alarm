@@ -3,32 +3,40 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/constants/app_constant.dart';
 import '../../../../core/utils/load_status.dart';
 import '../../../../core/utils/text_utils.dart';
-import '../../../area_of_life/domain/entities/area_of_life.dart';
-import '../../../area_of_life/domain/entities/matter_suggestion.dart';
-import '../../../area_of_life/domain/entities/purpose_suggestion.dart';
+import '../../../goal_topic/domain/entities/goal_topic.dart';
+import '../../../goal_topic/domain/goal_topic_search.dart';
 import '../../../reasons/domain/entities/reason.dart';
-import '../../../sound/domain/entities/sound_quote.dart';
+import '../../../reasons/domain/entities/reason_draft.dart';
 import '../../../sound/domain/entities/sound_type.dart';
 import '../../../voice/domain/entities/voice.dart';
 
 // The steps' list statuses live in core; re-exported for the steps.
 export '../../../../core/utils/load_status.dart';
 
-/// Where saving the reason stands ("Create Reason" on the last step).
+/// Where saving the reason stands ("Create Goal" on the last step).
 enum SaveStatus { idle, saving, saved, failed }
 
-/// Everything the Create Reason flow collects, step by step, in one place: the mother
-/// page's BLoC keeps it all so the last step can save the reason in one go.
+/// Everything the Create Goal flow collects, step by step, in one place: the mother
+/// page's BLoC keeps it all so the last step can save the goal in one go.
 class CreateReasonState extends Equatable {
   /// The steps, by their index in the page (the order of `CreateReasonPage._steps`).
-  static const int areaStep = 0;
+  static const int topicStep = 0;
   static const int purposeStep = 1;
-  static const int voiceStep = 2;
-  static const int matterStep = 3;
+  static const int matterStep = 2;
+  static const int voiceStep = 3;
   static const int soundStep = 4;
 
   /// 0-based index of the step showing now.
   final int stepIndex;
+
+  /// Step 1 data: the topic chips (saved copy, live), the general whys (for a topic
+  /// the person wrote themselves), and the answer: a tapped chip ([selectedTopicId])
+  /// or the person's own words ([topicText]); never both.
+  final List<GoalTopic> topics;
+  final LoadStatus topicsStatus;
+  final List<String> generalWhys;
+  final int? selectedTopicId;
+  final String topicText;
 
   /// Voices (saved copy, live), loaded as soon as the page opens because a later step
   /// needs them. Their `audio` and `avatar` are server paths: use `voice.audioUrl` /
@@ -36,92 +44,74 @@ class CreateReasonState extends Equatable {
   final List<Voice> voices;
   final LoadStatus voicesStatus;
 
-  /// The purpose suggestions of area [suggestionsAreaId], loaded when the user continues from the area
-  /// step. Never saved on the device: they are fully dynamic. Only use [areaSuggestions] while
-  /// [suggestionsAreaId] is the selected area.
-  final List<PurposeSuggestion> areaSuggestions;
-  final int? suggestionsAreaId;
-  final LoadStatus suggestionsStatus;
-
-  /// Step 1 data: the areas of life (saved copy, live) and the user's choice.
-  final List<AreaOfLife> areas;
-  final LoadStatus areasStatus;
-  final int? selectedAreaId;
-
   /// Step 2 data: "What are you working toward?" as the user wrote, spoke or picked it.
   final String purpose;
 
-  /// The microphone is listening on the purpose step (Continue waits for it).
+  /// The microphone is listening on a text step (Continue waits for it).
   final bool dictating;
 
-  /// Step 3 data: the chosen voice (from [voices]).
-  final int? selectedVoiceId;
-
-  /// Step 4 data (optional): "Why does it matter to you?" as written, spoken or picked.
+  /// Step 3 data (optional): "Why does it matter to you?" as written, spoken or picked.
   final String matter;
 
-  /// The "why it matters" suggestions loaded for [matterSuggestionsFor] (area id, picked
-  /// purpose suggestion id or null), when the user continued from the purpose step.
-  /// Never saved on the device. Use [matterSuggestionsShown].
-  final List<MatterSuggestion> matterSuggestions;
-  final (int, int?)? matterSuggestionsFor;
-  final LoadStatus matterSuggestionsStatus;
+  /// Step 4 data: the chosen voice (from [voices]).
+  final int? selectedVoiceId;
 
-  /// Step 5 data: the sound types (loaded when the page opens), the chosen one (the
-  /// first until the user picks), the example line for [soundQuoteFor] (area id, sound
-  /// id; loaded fresh every time, never saved) and the chosen length in seconds.
+  /// Step 5 data: the sound types (tones; loaded when the page opens), the chosen one
+  /// (the first until the user picks) and the chosen length in seconds.
   final List<SoundType> soundTypes;
   final LoadStatus soundTypesStatus;
   final int? selectedSoundId;
-  final SoundQuote? soundQuote;
-  final (int, int)? soundQuoteFor;
-  final LoadStatus soundQuoteStatus;
   final int lengthSeconds;
 
-  /// Saving the reason, and the saved reason (server id, unique name) once it is.
+  /// Saving the goal, and the saved goal (server id, name) once it is.
   final SaveStatus saveStatus;
   final Reason? createdReason;
 
   const CreateReasonState({
     this.stepIndex = 0,
-    this.areas = const [],
-    this.areasStatus = LoadStatus.loading,
-    this.selectedAreaId,
+    this.topics = const [],
+    this.topicsStatus = LoadStatus.loading,
+    this.generalWhys = const [],
+    this.selectedTopicId,
+    this.topicText = '',
     this.voices = const [],
     this.voicesStatus = LoadStatus.loading,
-    this.areaSuggestions = const [],
-    this.suggestionsAreaId,
-    this.suggestionsStatus = LoadStatus.loading,
     this.purpose = '',
     this.dictating = false,
-    this.selectedVoiceId,
     this.matter = '',
-    this.matterSuggestions = const [],
-    this.matterSuggestionsFor,
-    this.matterSuggestionsStatus = LoadStatus.loading,
+    this.selectedVoiceId,
     this.soundTypes = const [],
     this.soundTypesStatus = LoadStatus.loading,
     this.selectedSoundId,
-    this.soundQuote,
-    this.soundQuoteFor,
-    this.soundQuoteStatus = LoadStatus.loading,
     this.lengthSeconds = AppConstant.defaultReasonLengthSeconds,
     this.saveStatus = SaveStatus.idle,
     this.createdReason,
   });
 
-  /// What the "why it matters" suggestions must be loaded for now: the selected area
-  /// and the picked purpose suggestion (null when the purpose is the user's own).
-  (int, int?)? get matterSuggestionsKey {
-    final areaId = selectedAreaId;
-    return areaId == null ? null : (areaId, purposeSuggestion?.id);
+  /// The chip the answer is: the tapped one, else the one whose exact name was typed;
+  /// null when the topic is the person's own words (or nothing yet).
+  GoalTopic? get chip {
+    for (final topic in topics) {
+      if (topic.id == selectedTopicId) return topic;
+    }
+    return selectedTopicId != null ? null : topicNamed(topics, topicText);
   }
 
-  /// The "why it matters" suggestions for the current area and purpose only.
-  List<MatterSuggestion> get matterSuggestionsShown =>
-      matterSuggestionsFor == matterSuggestionsKey
-      ? matterSuggestions
-      : const [];
+  /// The first step's answer, as the later steps read it.
+  TopicAnswer get answer => TopicAnswer(chip: chip, text: topicText);
+
+  /// What the goal is about, in words: the chip's label or the typed text (trimmed,
+  /// at most [AppConstant.reasonNameMaxLength] characters).
+  String get topic => clipToWord(answer.label, AppConstant.reasonNameMaxLength);
+
+  /// How the goal must be spoken to.
+  GoalFocus get focus => answer.gentle ? GoalFocus.gentle : GoalFocus.general;
+
+  /// The goals the Goal step suggests: the chip's own; none for the person's own words.
+  List<String> get goalSuggestions => chip?.goals ?? const [];
+
+  /// The whys the Why step suggests: the chip's own, or the general ones.
+  List<String> get whySuggestions => chip?.whys ?? generalWhys;
 
   /// The optional "why it matters" text is started but still too short to keep.
   bool get matterTooShort {
@@ -140,18 +130,7 @@ class CreateReasonState extends Equatable {
     return soundTypes.isEmpty ? null : soundTypes.first;
   }
 
-  /// What the example line must be loaded for now: the selected area and sound.
-  (int, int)? get soundQuoteKey {
-    final areaId = selectedAreaId;
-    final soundId = selectedSound?.id;
-    return areaId == null || soundId == null ? null : (areaId, soundId);
-  }
-
-  /// The example line for the current area and sound only.
-  SoundQuote? get soundQuoteShown =>
-      soundQuoteFor == soundQuoteKey ? soundQuote : null;
-
-  /// On the last step the button reads "Create Reason".
+  /// On the last step the button reads "Create Goal".
   bool get isLastStep => stepIndex == AppConstant.createReasonStepCount - 1;
 
   Voice? get selectedVoice {
@@ -161,48 +140,18 @@ class CreateReasonState extends Equatable {
     return null;
   }
 
-  /// The suggestion whose text the purpose is right now, however it got there: picked,
-  /// or typed / spoken / edited until it reads the same (spaces and letter case aside).
-  /// Null when the text matches none of the selected area's suggestions.
-  PurposeSuggestion? get purposeSuggestion {
-    if (purpose.trim().isEmpty) return null;
-    for (final suggestion in suggestions) {
-      if (sameWords(suggestionText(suggestion), purpose)) return suggestion;
-    }
-    return null;
-  }
-
-  /// True when the purpose is one of the suggestions (see [purposeSuggestion]); false
-  /// when it is the user's own text. The next steps suggest differently for the two.
-  bool get purposeFromSuggestion => purposeSuggestion != null;
-
-  /// The text a suggestion puts in the field (within the length limit).
-  static String suggestionText(PurposeSuggestion suggestion) =>
-      clipToWord(suggestion.text.trim(), AppConstant.purposeMaxLength);
-
-  /// The suggestions to show on the purpose step: only those of the selected area.
-  List<PurposeSuggestion> get suggestions =>
-      suggestionsAreaId == selectedAreaId ? areaSuggestions : const [];
-
   bool get _purposeReady {
     final text = purpose.trim();
     return text.length >= AppConstant.purposeMinLength &&
         wordCount(text) >= AppConstant.purposeMinWords;
   }
 
-  AreaOfLife? get selectedArea {
-    for (final area in areas) {
-      if (area.id == selectedAreaId) return area;
-    }
-    return null;
-  }
-
   /// Whether the current step is complete, so "Continue" is enabled.
   bool get canContinue => switch (stepIndex) {
-    areaStep => selectedArea != null,
+    topicStep => answer.ready,
     purposeStep => _purposeReady && !dictating,
-    voiceStep => selectedVoice != null,
     matterStep => !matterTooShort && !dictating,
+    voiceStep => selectedVoice != null,
     soundStep => selectedSound != null && saveStatus != SaveStatus.saving,
     _ => false,
   };
@@ -212,64 +161,45 @@ class CreateReasonState extends Equatable {
 
   CreateReasonState copyWith({
     int? stepIndex,
-    List<AreaOfLife>? areas,
-    LoadStatus? areasStatus,
-    int? Function()? selectedAreaId,
+    List<GoalTopic>? topics,
+    LoadStatus? topicsStatus,
+    List<String>? generalWhys,
+    int? Function()? selectedTopicId,
+    String? topicText,
     List<Voice>? voices,
     LoadStatus? voicesStatus,
-    List<PurposeSuggestion>? areaSuggestions,
-    int? Function()? suggestionsAreaId,
-    LoadStatus? suggestionsStatus,
     String? purpose,
     bool? dictating,
-    int? Function()? selectedVoiceId,
     String? matter,
-    List<MatterSuggestion>? matterSuggestions,
-    (int, int?)? Function()? matterSuggestionsFor,
-    LoadStatus? matterSuggestionsStatus,
+    int? Function()? selectedVoiceId,
     List<SoundType>? soundTypes,
     LoadStatus? soundTypesStatus,
     int? Function()? selectedSoundId,
-    SoundQuote? Function()? soundQuote,
-    (int, int)? Function()? soundQuoteFor,
-    LoadStatus? soundQuoteStatus,
     int? lengthSeconds,
     SaveStatus? saveStatus,
     Reason? Function()? createdReason,
   }) => CreateReasonState(
     stepIndex: stepIndex ?? this.stepIndex,
-    areas: areas ?? this.areas,
-    areasStatus: areasStatus ?? this.areasStatus,
-    selectedAreaId: selectedAreaId == null
-        ? this.selectedAreaId
-        : selectedAreaId(),
+    topics: topics ?? this.topics,
+    topicsStatus: topicsStatus ?? this.topicsStatus,
+    generalWhys: generalWhys ?? this.generalWhys,
+    selectedTopicId: selectedTopicId == null
+        ? this.selectedTopicId
+        : selectedTopicId(),
+    topicText: topicText ?? this.topicText,
     voices: voices ?? this.voices,
     voicesStatus: voicesStatus ?? this.voicesStatus,
-    areaSuggestions: areaSuggestions ?? this.areaSuggestions,
-    suggestionsAreaId: suggestionsAreaId == null
-        ? this.suggestionsAreaId
-        : suggestionsAreaId(),
-    suggestionsStatus: suggestionsStatus ?? this.suggestionsStatus,
     purpose: purpose ?? this.purpose,
     dictating: dictating ?? this.dictating,
+    matter: matter ?? this.matter,
     selectedVoiceId: selectedVoiceId == null
         ? this.selectedVoiceId
         : selectedVoiceId(),
-    matter: matter ?? this.matter,
-    matterSuggestions: matterSuggestions ?? this.matterSuggestions,
-    matterSuggestionsFor: matterSuggestionsFor == null
-        ? this.matterSuggestionsFor
-        : matterSuggestionsFor(),
-    matterSuggestionsStatus:
-        matterSuggestionsStatus ?? this.matterSuggestionsStatus,
     soundTypes: soundTypes ?? this.soundTypes,
     soundTypesStatus: soundTypesStatus ?? this.soundTypesStatus,
     selectedSoundId: selectedSoundId == null
         ? this.selectedSoundId
         : selectedSoundId(),
-    soundQuote: soundQuote == null ? this.soundQuote : soundQuote(),
-    soundQuoteFor: soundQuoteFor == null ? this.soundQuoteFor : soundQuoteFor(),
-    soundQuoteStatus: soundQuoteStatus ?? this.soundQuoteStatus,
     lengthSeconds: lengthSeconds ?? this.lengthSeconds,
     saveStatus: saveStatus ?? this.saveStatus,
     createdReason: createdReason == null ? this.createdReason : createdReason(),
@@ -278,27 +208,20 @@ class CreateReasonState extends Equatable {
   @override
   List<Object?> get props => [
     stepIndex,
-    areas,
-    areasStatus,
-    selectedAreaId,
+    topics,
+    topicsStatus,
+    generalWhys,
+    selectedTopicId,
+    topicText,
     voices,
     voicesStatus,
-    areaSuggestions,
-    suggestionsAreaId,
-    suggestionsStatus,
     purpose,
     dictating,
-    selectedVoiceId,
     matter,
-    matterSuggestions,
-    matterSuggestionsFor,
-    matterSuggestionsStatus,
+    selectedVoiceId,
     soundTypes,
     soundTypesStatus,
     selectedSoundId,
-    soundQuote,
-    soundQuoteFor,
-    soundQuoteStatus,
     lengthSeconds,
     saveStatus,
     createdReason,

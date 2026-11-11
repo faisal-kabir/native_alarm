@@ -73,7 +73,6 @@ class _ReadyViewState extends State<_ReadyView>
     CurveTween(curve: Interval(0.9 / _total, 1)),
   );
   late final Animation<double> _heading = _window(0.9, 0.7);
-  late final Animation<double> _card = _window(1.2, 0.7);
   late final Animation<double> _buttons = _window(1.6, 0.6);
 
   Timer? _hapticTimer;
@@ -186,28 +185,25 @@ class _ReadyViewState extends State<_ReadyView>
                                 ),
                               ),
                               SizedBox(height: 28.h),
-                              RiseTransition(
-                                animation: _card,
-                                dy: 16,
-                                child: ReasonSummaryCard(
-                                  reason: widget.reason,
-                                  name:
-                                      BlocBuilder<
-                                        ReasonReadyBloc,
-                                        ReasonReadyState
-                                      >(
-                                        buildWhen: (a, b) => a.name != b.name,
-                                        builder: (context, state) =>
-                                            ReasonNameField(
-                                              value: state.name,
-                                              onCommit: (name) => context
-                                                  .read<ReasonReadyBloc>()
-                                                  .add(
-                                                    ReasonRenamedEvent(name),
-                                                  ),
-                                            ),
-                                      ),
-                                ),
+                              ReasonSummaryCard(
+                                timeline: _t,
+                                total: _total,
+                                delay: 1.2,
+                                reason: widget.reason,
+                                name:
+                                    BlocBuilder<
+                                      ReasonReadyBloc,
+                                      ReasonReadyState
+                                    >(
+                                      buildWhen: (a, b) => a.name != b.name,
+                                      builder: (context, state) =>
+                                          ReasonNameField(
+                                            value: state.name,
+                                            onCommit: (name) => context
+                                                .read<ReasonReadyBloc>()
+                                                .add(ReasonRenamedEvent(name)),
+                                          ),
+                                    ),
                               ),
                             ],
                           ),

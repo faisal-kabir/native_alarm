@@ -28,8 +28,16 @@ abstract final class AppConstant {
   static const List<int> reasonLengthsSeconds = [30, 45];
   static const int defaultReasonLengthSeconds = 30;
 
-  /// Longest name a reason can be given.
-  static const int reasonNameMaxLength = 32;
+  /// Longest name a goal can be given. A goal is named after its topic (a chip or the
+  /// person's own words), so this is also the longest topic.
+  static const int reasonNameMaxLength = 20;
+
+  /// A topic the person types needs at least this many characters to continue.
+  static const int topicMinLength = 2;
+
+  /// The topic chips arrive in steps: the first 20, then "More" opens up to 35, then
+  /// "More" the rest (`chipSteps`).
+  static const List<int> topicChipSteps = [20, 35];
 
   /// Suggestions are shown this many at a time ("More ideas" adds as many again).
   static const int suggestionsPerPage = 3;

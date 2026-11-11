@@ -175,7 +175,7 @@ abstract class AppLocalizations {
   /// No description provided for @tab_reasons.
   ///
   /// In en, this message translates to:
-  /// **'Reasons'**
+  /// **'Goal'**
   String get tab_reasons;
 
   /// No description provided for @tab_settings.
@@ -301,7 +301,7 @@ abstract class AppLocalizations {
   /// No description provided for @my_alarms_add_first_alarm_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pick a time and a reason.'**
+  /// **'Pick a time and a goal.'**
   String get my_alarms_add_first_alarm_subtitle;
 
   /// No description provided for @my_alarms_add_alarm.
@@ -313,13 +313,13 @@ abstract class AppLocalizations {
   /// No description provided for @reasons_title.
   ///
   /// In en, this message translates to:
-  /// **'My Reasons'**
+  /// **'My Goals'**
   String get reasons_title;
 
   /// No description provided for @reasons_add_first_title.
   ///
   /// In en, this message translates to:
-  /// **'Add your first Reason'**
+  /// **'Add your first Goal'**
   String get reasons_add_first_title;
 
   /// No description provided for @reasons_add_first_subtitle.
@@ -331,22 +331,22 @@ abstract class AppLocalizations {
   /// No description provided for @reasons_add_label.
   ///
   /// In en, this message translates to:
-  /// **'New Reason'**
+  /// **'New Goal'**
   String get reasons_add_label;
 
-  /// Second line of a reason row: its area of life and tone.
+  /// Second line of a goal row: the voice that speaks it and its tone.
   ///
   /// In en, this message translates to:
-  /// **'{area} · {tone}'**
-  String reason_row_subtitle(String area, String tone);
+  /// **'{voice} · {tone}'**
+  String reason_row_subtitle(String voice, String tone);
 
   /// Screen reader label of a reason row; note is empty or one of the alarm notes below.
   ///
   /// In en, this message translates to:
-  /// **'{name}. {area}, {tone} tone.{note}'**
+  /// **'{name}. {voice}’s voice, {tone} tone.{note}'**
   String reason_row_semantics(
     String name,
-    String area,
+    String voice,
     String tone,
     String note,
   );
@@ -369,6 +369,78 @@ abstract class AppLocalizations {
   /// **'Nothing to choose from yet.'**
   String get common_list_empty;
 
+  /// No description provided for @create_reason_topic_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'What you wake up for, in a few words'**
+  String get create_reason_topic_semantics;
+
+  /// No description provided for @create_reason_topic_chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Or pick one'**
+  String get create_reason_topic_chips;
+
+  /// No description provided for @create_reason_topic_more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get create_reason_topic_more;
+
+  /// No description provided for @create_reason_topic_more_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get create_reason_topic_more_semantics;
+
+  /// No description provided for @create_reason_topic_clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get create_reason_topic_clear;
+
+  /// No description provided for @create_reason_topic_left.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left'**
+  String create_reason_topic_left(int count);
+
+  /// No description provided for @create_reason_topic_example_1.
+  ///
+  /// In en, this message translates to:
+  /// **'My garden'**
+  String get create_reason_topic_example_1;
+
+  /// No description provided for @create_reason_topic_example_2.
+  ///
+  /// In en, this message translates to:
+  /// **'My dog'**
+  String get create_reason_topic_example_2;
+
+  /// No description provided for @create_reason_topic_example_3.
+  ///
+  /// In en, this message translates to:
+  /// **'Painting'**
+  String get create_reason_topic_example_3;
+
+  /// No description provided for @create_reason_topic_example_4.
+  ///
+  /// In en, this message translates to:
+  /// **'Coaching kids'**
+  String get create_reason_topic_example_4;
+
+  /// No description provided for @create_reason_topic_example_5.
+  ///
+  /// In en, this message translates to:
+  /// **'Volunteering'**
+  String get create_reason_topic_example_5;
+
+  /// No description provided for @create_reason_topic_example_6.
+  ///
+  /// In en, this message translates to:
+  /// **'Surfing'**
+  String get create_reason_topic_example_6;
+
   /// Heading of the second Create Reason step. Words between stars are drawn in the brand colour.
   ///
   /// In en, this message translates to:
@@ -378,7 +450,7 @@ abstract class AppLocalizations {
   /// No description provided for @create_reason_purpose_hint.
   ///
   /// In en, this message translates to:
-  /// **'I’m working toward something that matters to me because…'**
+  /// **'In your own words'**
   String get create_reason_purpose_hint;
 
   /// No description provided for @create_reason_suggestions_label.
@@ -405,7 +477,7 @@ abstract class AppLocalizations {
   /// **'Couldn’t load ideas.'**
   String get suggestions_load_failed;
 
-  /// Heading of the optional fourth Create Reason step. Words between stars are drawn in the brand colour.
+  /// Heading of the optional third Create Reason step. Words between stars are drawn in the brand colour.
   ///
   /// In en, this message translates to:
   /// **'Why does it\n*matter to you*?'**
@@ -465,12 +537,6 @@ abstract class AppLocalizations {
   /// **'Example'**
   String get create_reason_example;
 
-  /// No description provided for @create_reason_example_failed.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn’t load the example.'**
-  String get create_reason_example_failed;
-
   /// No description provided for @create_reason_length.
   ///
   /// In en, this message translates to:
@@ -504,7 +570,7 @@ abstract class AppLocalizations {
   /// No description provided for @create_reason_create.
   ///
   /// In en, this message translates to:
-  /// **'Create Reason'**
+  /// **'Create Goal'**
   String get create_reason_create;
 
   /// No description provided for @seconds_short.
@@ -513,22 +579,34 @@ abstract class AppLocalizations {
   /// **'{seconds} sec'**
   String seconds_short(int seconds);
 
-  /// Heading after a reason is saved. Words between stars are drawn in the brand colour.
+  /// Heading after a goal is saved. Words between stars are drawn in the brand colour.
   ///
   /// In en, this message translates to:
-  /// **'Your reason is *ready*.'**
+  /// **'Your goal is *ready*.'**
   String get reason_ready_title;
 
   /// No description provided for @reason_ready_announcement.
   ///
   /// In en, this message translates to:
-  /// **'Your reason is ready.'**
+  /// **'Your goal is ready.'**
   String get reason_ready_announcement;
+
+  /// No description provided for @reason_ready_topic.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake up for'**
+  String get reason_ready_topic;
+
+  /// No description provided for @reason_ready_goal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get reason_ready_goal;
 
   /// No description provided for @reason_ready_why.
   ///
   /// In en, this message translates to:
-  /// **'Why it matters'**
+  /// **'Why'**
   String get reason_ready_why;
 
   /// No description provided for @reason_ready_voice.
@@ -542,6 +620,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tone'**
   String get reason_ready_tone;
+
+  /// No description provided for @reason_ready_length.
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get reason_ready_length;
 
   /// No description provided for @reason_ready_use_with_alarm.
   ///
@@ -558,13 +642,13 @@ abstract class AppLocalizations {
   /// No description provided for @reason_name_hint.
   ///
   /// In en, this message translates to:
-  /// **'Name this reason'**
+  /// **'Name this goal'**
   String get reason_name_hint;
 
   /// No description provided for @reason_name_label.
   ///
   /// In en, this message translates to:
-  /// **'Reason name'**
+  /// **'Goal name'**
   String get reason_name_label;
 
   /// No description provided for @reason_name_save.
@@ -576,7 +660,7 @@ abstract class AppLocalizations {
   /// No description provided for @reason_save_failed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn’t save your reason. Check your connection and try again.'**
+  /// **'Couldn’t save your goal. Check your connection and try again.'**
   String get reason_save_failed;
 
   /// No description provided for @reason_rename_failed.
@@ -591,7 +675,7 @@ abstract class AppLocalizations {
   /// **'Saving…'**
   String get common_saving;
 
-  /// Heading of the third Create Reason step. Words between stars are drawn in the brand colour.
+  /// Heading of the fourth Create Reason step. Words between stars are drawn in the brand colour.
   ///
   /// In en, this message translates to:
   /// **'Who should *say it*?'**
@@ -849,6 +933,12 @@ abstract class AppLocalizations {
   /// **'Use {name}'**
   String sheet_use_choice(String name);
 
+  /// No description provided for @reason_detail_back.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get reason_detail_back;
+
   /// No description provided for @reason_detail_about.
   ///
   /// In en, this message translates to:
@@ -882,13 +972,13 @@ abstract class AppLocalizations {
   /// No description provided for @reason_detail_purpose.
   ///
   /// In en, this message translates to:
-  /// **'Purpose'**
+  /// **'Goal'**
   String get reason_detail_purpose;
 
   /// No description provided for @reason_detail_why.
   ///
   /// In en, this message translates to:
-  /// **'Why it matters'**
+  /// **'Why'**
   String get reason_detail_why;
 
   /// No description provided for @reason_detail_tone.
@@ -912,7 +1002,7 @@ abstract class AppLocalizations {
   /// No description provided for @reason_detail_length_value.
   ///
   /// In en, this message translates to:
-  /// **'{name} · {seconds} sec'**
+  /// **'{name} · {seconds}s'**
   String reason_detail_length_value(String name, int seconds);
 
   /// A row of the reason screen for screen readers.
@@ -958,7 +1048,7 @@ abstract class AppLocalizations {
   /// No description provided for @reason_detail_discard_message.
   ///
   /// In en, this message translates to:
-  /// **'This reason stays as it is now.'**
+  /// **'This goal stays as it is now.'**
   String get reason_detail_discard_message;
 
   /// No description provided for @reason_detail_keep_editing.
@@ -1084,7 +1174,7 @@ abstract class AppLocalizations {
   /// No description provided for @reason_actions_delete.
   ///
   /// In en, this message translates to:
-  /// **'Delete Reason'**
+  /// **'Delete Goal'**
   String get reason_actions_delete;
 
   /// Asks before a reason is deleted.
@@ -1102,13 +1192,13 @@ abstract class AppLocalizations {
   /// No description provided for @reason_delete_alarm_message.
   ///
   /// In en, this message translates to:
-  /// **'Its alarm will be deleted too. Every alarm needs a reason.'**
+  /// **'Its alarm will be deleted too. Every alarm needs a goal.'**
   String get reason_delete_alarm_message;
 
   /// No description provided for @reason_delete_failed.
   ///
   /// In en, this message translates to:
-  /// **'Couldn’t delete this reason. Check your connection and try again.'**
+  /// **'Couldn’t delete this goal. Check your connection and try again.'**
   String get reason_delete_failed;
 
   /// No description provided for @common_ok.
@@ -1132,13 +1222,13 @@ abstract class AppLocalizations {
   /// No description provided for @create_alarm_choose_reason.
   ///
   /// In en, this message translates to:
-  /// **'Choose a reason'**
+  /// **'Choose a goal'**
   String get create_alarm_choose_reason;
 
   /// When there is no reason left to pick: the tap opens the reason maker.
   ///
   /// In en, this message translates to:
-  /// **'Add a reason'**
+  /// **'Add a goal'**
   String get create_alarm_add_reason;
 
   /// No description provided for @create_alarm_reason_hint.
@@ -1408,31 +1498,31 @@ abstract class AppLocalizations {
   /// No description provided for @reason_picker_subtitle.
   ///
   /// In en, this message translates to:
-  /// **'Each alarm plays one reason.'**
+  /// **'Each alarm plays one goal.'**
   String get reason_picker_subtitle;
 
   /// No description provided for @reason_picker_all_taken.
   ///
   /// In en, this message translates to:
-  /// **'Every reason already has an alarm.'**
+  /// **'Every goal already has an alarm.'**
   String get reason_picker_all_taken;
 
   /// No description provided for @reason_picker_select.
   ///
   /// In en, this message translates to:
-  /// **'Select Reason'**
+  /// **'Select Goal'**
   String get reason_picker_select;
 
   /// No description provided for @reason_picker_new.
   ///
   /// In en, this message translates to:
-  /// **'New Reason'**
+  /// **'New Goal'**
   String get reason_picker_new;
 
   /// No description provided for @reason_picker_none.
   ///
   /// In en, this message translates to:
-  /// **'You don’t have any reasons yet.'**
+  /// **'You don’t have any goals yet.'**
   String get reason_picker_none;
 
   /// No description provided for @soundtrack_sheet_subtitle.
@@ -1563,7 +1653,7 @@ abstract class AppLocalizations {
   /// No description provided for @my_alarms_delete_message.
   ///
   /// In en, this message translates to:
-  /// **'Your reason stays in My Reasons.'**
+  /// **'Your goal stays in My Goals.'**
   String get my_alarms_delete_message;
 
   /// No description provided for @my_alarms_delete_semantics.

@@ -20,7 +20,16 @@ class Reason extends Equatable {
   /// "Why it matters"; empty when there is none.
   final String why;
   final int lengthSeconds;
-  final int areaId;
+
+  /// What the goal is about (a chip or the person's own words, at most 20 characters);
+  /// empty only for a reason the server has no topic for.
+  final String topic;
+
+  /// How it must be spoken to.
+  final GoalFocus focus;
+
+  /// The area of life of a reason made before topics existed; null for every newer one.
+  final int? areaId;
   final AreaOfLife? area;
   final int soundTypeId;
   final SoundType? sound;
@@ -38,7 +47,9 @@ class Reason extends Equatable {
     this.purpose = '',
     this.why = '',
     required this.lengthSeconds,
-    required this.areaId,
+    this.topic = '',
+    this.focus = GoalFocus.general,
+    this.areaId,
     this.area,
     required this.soundTypeId,
     this.sound,
@@ -48,14 +59,17 @@ class Reason extends Equatable {
     this.alarmId,
   });
 
-  /// The area's display name, e.g. "Health" (empty when unknown).
-  String get areaTitle => area?.title ?? '';
+  /// What the goal is about, e.g. "Getting fit"; for a reason made before topics
+  /// existed, its area's name (empty when neither is known).
+  String get areaTitle => topic.isNotEmpty ? topic : (area?.title ?? '');
 
   /// The tone's display name, e.g. "Calm" (empty when unknown).
   String get toneTitle => sound?.title ?? '';
 
   /// What the user chose, as it is saved now.
   ReasonDraft get draft => ReasonDraft(
+    topic: topic,
+    focus: focus,
     areaId: areaId,
     purpose: purpose,
     why: why,
@@ -71,6 +85,8 @@ class Reason extends Equatable {
     purpose,
     why,
     lengthSeconds,
+    topic,
+    focus,
     areaId,
     area,
     soundTypeId,

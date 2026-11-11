@@ -15,7 +15,6 @@ import 'package:eala/features/reasons/data/repositories/reason_repository_impl.d
 import 'package:eala/features/reasons/domain/entities/new_reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
-import 'package:eala/features/reasons/domain/entities/reason_name.dart';
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/rename_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/watch_reasons_usecase.dart';
@@ -31,7 +30,9 @@ Map<String, dynamic> serverRow(
   int id,
   String name, {
   String createdAt = '2026-11-05T04:00:00Z',
-  int areaId = 3,
+  int? areaId = 3,
+  String topic = '',
+  String focus = 'general',
   String purpose = 'Sleep well',
   String? why = 'I feel better',
   int soundTypeId = 2,
@@ -41,19 +42,23 @@ Map<String, dynamic> serverRow(
   'id': id,
   'name': name,
   'created_at': createdAt,
+  'topic': topic,
+  'focus': focus,
   'area_id': areaId,
   'purpose': purpose,
   'why': why,
   'sound_type_id': soundTypeId,
   'voice_id': voiceId,
   'length': length,
-  'area_of_life': {
-    'id': areaId,
-    'name': 'Health',
-    'title': 'Health & body',
-    'color': '#30D158',
-    'icon': 'icons/health.svg',
-  },
+  'area_of_life': areaId == null
+      ? null
+      : {
+          'id': areaId,
+          'name': 'Health',
+          'title': 'Health & body',
+          'color': '#30D158',
+          'icon': 'icons/health.svg',
+        },
   'sound_type': {'id': soundTypeId, 'title': 'Calm'},
   'voice': {
     'id': voiceId,
@@ -65,15 +70,13 @@ Map<String, dynamic> serverRow(
 
 /// The `reason` and `user` tables, in memory: answers like the server (joined rows).
 class FakeReasonRemote implements ReasonRemoteDataSource {
-  FakeReasonRemote({this.userId = 7, this.names = const []});
+  FakeReasonRemote({this.userId = 7});
 
   final int userId;
-  final List<String> names;
   bool offline = false;
   final Map<int, Map<String, dynamic>> rows = {};
   final List<Map<String, Object?>> inserted = [];
   final List<(int, Map<String, Object?>)> updates = [];
-  String? lastPrefix;
 
   /// Holds [fetchReasons]'s answer until completed (to test overlapping writes).
   Completer<void>? fetchGate;
@@ -86,13 +89,6 @@ class FakeReasonRemote implements ReasonRemoteDataSource {
   Future<int> fetchOwnUserId() async {
     _check();
     return userId;
-  }
-
-  @override
-  Future<List<String>> fetchNamesStartingWith(int userId, String base) async {
-    _check();
-    lastPrefix = base;
-    return names.where((n) => n.startsWith(base)).toList();
   }
 
   @override
@@ -113,6 +109,8 @@ class FakeReasonRemote implements ReasonRemoteDataSource {
       id,
       name,
       areaId: draft.areaId,
+      topic: draft.topic,
+      focus: draft.focus.value,
       purpose: draft.purpose,
       why: columns['why'] as String?,
       soundTypeId: draft.soundTypeId,
@@ -152,8 +150,9 @@ class FakeReasonRemote implements ReasonRemoteDataSource {
 }
 
 const newReason = NewReason(
-  baseName: 'Health',
+  name: 'Getting fit',
   draft: ReasonDraft(
+    topic: 'Getting fit',
     areaId: 3,
     purpose: 'Sleep well',
     why: 'I feel better',
@@ -164,41 +163,15 @@ const newReason = NewReason(
 );
 
 void main() {
-  group('nextReasonName', () {
-    test('a new name is used as it is', () {
-      expect(nextReasonName('Health', const []), 'Health');
-      expect(nextReasonName(' Health ', const ['Work']), 'Health');
-    });
-
-    test('a used name gets one more than the highest number', () {
-      expect(nextReasonName('Health', const ['Health']), 'Health 2');
-      expect(
-        nextReasonName('Health', const ['Health', 'Health 2', 'Health 5']),
-        'Health 6',
-      );
-      // Numbered ones count even when the plain name was renamed away.
-      expect(nextReasonName('Health', const ['Health 3']), 'Health 4');
-    });
-
-    test('names that only start the same do not count', () {
-      expect(
-        nextReasonName('Health', const [
-          'Healthy',
-          'Health club 9',
-          'Health x',
-        ]),
-        'Health',
-      );
-    });
-  });
-
   group('reasonFromJson', () {
     test('one row is the whole reason: area, sound and voice joined', () {
-      final reason = reasonFromJson(serverRow(9, ' Mornings '));
+      final reason = reasonFromJson(
+        serverRow(9, ' Mornings ', topic: 'Getting fit'),
+      );
       expect(reason.id, 9);
       expect(reason.name, 'Mornings');
       expect(reason.draft, newReason.draft);
-      expect(reason.areaTitle, 'Health & body');
+      expect(reason.areaTitle, 'Getting fit', reason: 'the topic wins');
       expect(reason.area!.color, 0xFF30D158);
       expect(reason.area!.icon, 'icons/health.svg');
       expect(reason.toneTitle, 'Calm');
@@ -221,6 +194,24 @@ void main() {
       expect(reason.alarmId, isNull);
     });
 
+    test('a goal made from a topic has no area: the topic is its label', () {
+      final reason = reasonFromJson(
+        serverRow(9, 'Grief', areaId: null, topic: 'Grief', focus: 'gentle'),
+      );
+      expect(reason.areaId, isNull);
+      expect(reason.area, isNull);
+      expect(reason.topic, 'Grief');
+      expect(reason.focus, GoalFocus.gentle);
+      expect(reason.areaTitle, 'Grief');
+    });
+
+    test('an older reason keeps its area title and reads as general', () {
+      final reason = reasonFromJson({...serverRow(9, 'X'), 'topic': null});
+      expect(reason.topic, '');
+      expect(reason.focus, GoalFocus.general);
+      expect(reason.areaTitle, 'Health & body');
+    });
+
     test('alarm_id says which alarm plays it', () {
       final reason = reasonFromJson({...serverRow(9, 'X'), 'alarm_id': 12});
       expect(reason.alarmId, 12);
@@ -234,7 +225,7 @@ void main() {
 
     setUp(() {
       db = AppDatabase(NativeDatabase.memory());
-      remote = FakeReasonRemote(names: const ['Health', 'Health 2']);
+      remote = FakeReasonRemote();
       repository = ReasonRepositoryImpl(remote, ReasonLocalDataSourceImpl(db));
     });
 
@@ -247,13 +238,14 @@ void main() {
         (await repository.createReason(newReason))
             .getOrElse(() => throw 'failed');
 
-    test('create: next free name, saved on the server, then the whole row '
-        'on the device', () async {
+    test('create: the topic is the name, saved on the server, then the whole '
+        'row on the device', () async {
       final created = await create();
-      expect(remote.lastPrefix, 'Health');
       expect(remote.inserted.single, {
         'user_id': 7,
-        'name': 'Health 3',
+        'name': 'Getting fit',
+        'topic': 'Getting fit',
+        'focus': 'general',
         'area_id': 3,
         'purpose': 'Sleep well',
         'why': 'I feel better',
@@ -261,7 +253,7 @@ void main() {
         'voice_id': 5,
         'length': 45,
       });
-      expect(created.name, 'Health 3');
+      expect(created.name, 'Getting fit');
       expect(created.voice!.name, 'Astra');
       expect(await saved(), [created]);
     });
@@ -279,13 +271,28 @@ void main() {
       );
     });
 
-    test('rename updates the row by id; the device follows', () async {
+    test(
+      'rename updates the row by id, topic and focus; the device follows',
+      () async {
+        final id = (await create()).id;
+        final result = await repository.renameReason(id, ' Mornings ');
+        expect(result.getOrElse(() => throw 'failed').name, 'Mornings');
+        expect(remote.updates.single.$1, id);
+        // The name is the topic, so renaming moves both.
+        expect(remote.updates.single.$2, {
+          'name': 'Mornings',
+          'topic': 'Mornings',
+          'focus': 'general',
+        });
+        expect((await saved()).single.name, 'Mornings');
+      },
+    );
+
+    test('rename to words that call for gentleness says so', () async {
       final id = (await create()).id;
-      final result = await repository.renameReason(id, ' Mornings ');
-      expect(result.getOrElse(() => throw 'failed').name, 'Mornings');
-      expect(remote.updates.single.$1, id);
-      expect(remote.updates.single.$2, {'name': 'Mornings'});
-      expect((await saved()).single.name, 'Mornings');
+      await repository.renameReason(id, 'Staying sober');
+      expect(remote.updates.single.$2['focus'], 'gentle');
+      expect((await saved()).single.focus, GoalFocus.gentle);
     });
 
     test(
@@ -341,7 +348,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       await repository.renameReason(created.id, 'Mornings');
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(names, ['Health 3', 'Mornings']);
+      expect(names, ['Getting fit', 'Mornings']);
       await sub.cancel();
     });
 
@@ -385,7 +392,7 @@ void main() {
       remote.fetchGate!.complete();
       await refresh;
       await created;
-      expect([for (final r in await saved()) r.name], ['Health 3']);
+      expect([for (final r in await saved()) r.name], ['Getting fit']);
     });
 
     test('ReasonsBloc refreshes from the server when it starts', () async {
@@ -440,7 +447,11 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       expect(
         bloc.state,
-        ReasonReadyState(id: created.id, name: 'Health 3', renameFailures: 1),
+        ReasonReadyState(
+          id: created.id,
+          name: 'Getting fit',
+          renameFailures: 1,
+        ),
       );
 
       remote.offline = false;

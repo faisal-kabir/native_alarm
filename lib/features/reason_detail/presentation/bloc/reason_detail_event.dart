@@ -10,14 +10,9 @@ abstract class ReasonDetailEvent extends Equatable {
 }
 
 /// The screen opened (on the cached reason the bloc was made with): follow its saved
-/// copy, and get the areas, voices and tones the sheets offer.
+/// copy, and get the voices and tones the sheets offer.
 class ReasonDetailStartedEvent extends ReasonDetailEvent {
   const ReasonDetailStartedEvent();
-}
-
-/// The cached areas of life (followed while the screen is open).
-class ReasonDetailAreasWatchedEvent extends ReasonDetailEvent {
-  const ReasonDetailAreasWatchedEvent();
 }
 
 /// The cached voices (followed while the screen is open).

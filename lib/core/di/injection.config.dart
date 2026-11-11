@@ -119,6 +119,20 @@ import 'package:eala/features/create_reason/presentation/bloc/reason_ready_bloc.
     as _i64;
 import 'package:eala/features/dashboard/presentation/bloc/dashboard_bloc.dart'
     as _i875;
+import 'package:eala/features/goal_topic/data/datasources/goal_topic_local_data_source.dart'
+    as _i1059;
+import 'package:eala/features/goal_topic/data/datasources/goal_topic_remote_data_source.dart'
+    as _i370;
+import 'package:eala/features/goal_topic/data/repositories/goal_topic_repository_impl.dart'
+    as _i410;
+import 'package:eala/features/goal_topic/domain/repositories/goal_topic_repository.dart'
+    as _i222;
+import 'package:eala/features/goal_topic/domain/usecases/refresh_goal_topics_usecase.dart'
+    as _i616;
+import 'package:eala/features/goal_topic/domain/usecases/watch_general_whys_usecase.dart'
+    as _i861;
+import 'package:eala/features/goal_topic/domain/usecases/watch_goal_topics_usecase.dart'
+    as _i688;
 import 'package:eala/features/my_alarms/presentation/bloc/my_alarms_bloc.dart'
     as _i1005;
 import 'package:eala/features/reason_detail/domain/usecases/delete_reason_with_alarm_usecase.dart'
@@ -170,8 +184,6 @@ import 'package:eala/features/sound/data/repositories/sound_repository_impl.dart
     as _i727;
 import 'package:eala/features/sound/domain/repositories/sound_repository.dart'
     as _i1064;
-import 'package:eala/features/sound/domain/usecases/get_sound_quote_usecase.dart'
-    as _i262;
 import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart'
     as _i902;
 import 'package:eala/features/voice/data/datasources/voice_local_data_source.dart'
@@ -261,6 +273,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i22.VoiceRemoteDataSource>(
       () => _i22.VoiceRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
+    gh.lazySingleton<_i370.GoalTopicRemoteDataSource>(
+      () => _i370.GoalTopicRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
     gh.lazySingleton<_i209.SettingsLocalDataSource>(
       () => _i209.SettingsLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
@@ -287,6 +302,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i760.AreaOfLifeRemoteDataSource>(
       () => _i760.AreaOfLifeRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
+    );
+    gh.lazySingleton<_i1059.GoalTopicLocalDataSource>(
+      () => _i1059.GoalTopicLocalDataSourceImpl(gh<_i81.AppDatabase>()),
     );
     gh.lazySingleton<_i712.OwnUserId>(
       () => _i712.OwnUserId(gh<_i454.SupabaseClient>()),
@@ -340,14 +358,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1032.AlarmRepository>(
       () => _i695.AlarmRepositoryImpl(gh<_i276.AlarmLocalDataSource>()),
     );
+    gh.lazySingleton<_i222.GoalTopicRepository>(
+      () => _i410.GoalTopicRepositoryImpl(
+        gh<_i370.GoalTopicRemoteDataSource>(),
+        gh<_i1059.GoalTopicLocalDataSource>(),
+      ),
+    );
     gh.lazySingleton<_i512.UserProfileRepository>(
       () => _i172.UserProfileRepositoryImpl(
         gh<_i693.UserProfileRemoteDataSource>(),
         gh<_i125.UserProfileLocalDataSource>(),
       ),
-    );
-    gh.lazySingleton<_i262.GetSoundQuoteUseCase>(
-      () => _i262.GetSoundQuoteUseCase(gh<_i1064.SoundRepository>()),
     );
     gh.lazySingleton<_i902.GetSoundTypesUseCase>(
       () => _i902.GetSoundTypesUseCase(gh<_i1064.SoundRepository>()),
@@ -410,6 +431,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i258.WatchAlarmsUseCase>(
       () => _i258.WatchAlarmsUseCase(gh<_i1032.AlarmRepository>()),
     );
+    gh.lazySingleton<_i616.RefreshGoalTopicsUseCase>(
+      () => _i616.RefreshGoalTopicsUseCase(gh<_i222.GoalTopicRepository>()),
+    );
+    gh.lazySingleton<_i861.WatchGeneralWhysUseCase>(
+      () => _i861.WatchGeneralWhysUseCase(gh<_i222.GoalTopicRepository>()),
+    );
+    gh.lazySingleton<_i688.WatchGoalTopicsUseCase>(
+      () => _i688.WatchGoalTopicsUseCase(gh<_i222.GoalTopicRepository>()),
+    );
     gh.lazySingleton<_i25.GetCachedUserProfileUseCase>(
       () => _i25.GetCachedUserProfileUseCase(gh<_i512.UserProfileRepository>()),
     );
@@ -457,6 +487,17 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1032.AlarmRepository>(),
         gh<_i452.RemoteAlarmRepository>(),
         gh<_i173.AlarmScheduler>(),
+      ),
+    );
+    gh.factory<_i946.CreateReasonBloc>(
+      () => _i946.CreateReasonBloc(
+        gh<_i688.WatchGoalTopicsUseCase>(),
+        gh<_i861.WatchGeneralWhysUseCase>(),
+        gh<_i616.RefreshGoalTopicsUseCase>(),
+        gh<_i904.WatchVoicesUseCase>(),
+        gh<_i414.RefreshVoicesUseCase>(),
+        gh<_i902.GetSoundTypesUseCase>(),
+        gh<_i1004.CreateReasonUseCase>(),
       ),
     );
     gh.factory<_i743.ReasonsBloc>(
@@ -527,19 +568,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i173.AlarmScheduler>(),
       ),
     );
-    gh.factory<_i946.CreateReasonBloc>(
-      () => _i946.CreateReasonBloc(
-        gh<_i375.WatchAreasOfLifeUseCase>(),
-        gh<_i190.RefreshAreasOfLifeUseCase>(),
-        gh<_i904.WatchVoicesUseCase>(),
-        gh<_i414.RefreshVoicesUseCase>(),
-        gh<_i879.GetPurposeSuggestionsUseCase>(),
-        gh<_i478.GetMatterSuggestionsUseCase>(),
-        gh<_i902.GetSoundTypesUseCase>(),
-        gh<_i262.GetSoundQuoteUseCase>(),
-        gh<_i1004.CreateReasonUseCase>(),
-      ),
-    );
     gh.factoryParam<_i494.CreateAlarmBloc, int?, _i959.Alarm?>(
       (reasonId, editing) => _i494.CreateAlarmBloc(
         gh<_i305.WatchReasonsUseCase>(),
@@ -562,13 +590,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i874.DeleteReasonWithAlarmUseCase>(),
         gh<_i258.WatchAlarmsUseCase>(),
         gh<_i119.SyncSystemAlarmsUseCase>(),
-        gh<_i375.WatchAreasOfLifeUseCase>(),
-        gh<_i190.RefreshAreasOfLifeUseCase>(),
         gh<_i904.WatchVoicesUseCase>(),
         gh<_i414.RefreshVoicesUseCase>(),
         gh<_i902.GetSoundTypesUseCase>(),
-        gh<_i879.GetPurposeSuggestionsUseCase>(),
-        gh<_i478.GetMatterSuggestionsUseCase>(),
         reason,
       ),
     );

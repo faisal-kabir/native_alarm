@@ -22,13 +22,13 @@ import '../bloc/create_reason_state.dart';
 import 'step_message.dart';
 import 'reason_choice_items.dart';
 
-/// Step 5 of Create Reason (the last): "How should it sound?".
+/// Step 5 of Create Goal (the last): "How should it sound?".
 ///
-/// An example card (the selected area's line in the chosen sound, from
-/// `quotes_of_sound`, loaded fresh on every sound change with a shimmer while it
-/// loads), the sound dials (`sound_type`, the first chosen at first; one orange circle
-/// glides between them), the chosen sound's description, and the length (30 or 45
-/// seconds, one border gliding between the two boxes).
+/// The tones as a swipeable card (a PageView: one page per tone, holding its own example
+/// line, `sound_type.sample`, the same for every goal, and its description) with page
+/// dots under it, the sound dials (`sound_type`, the first chosen at first; one orange
+/// circle glides between them; swiping the card and tapping a dial are the same
+/// choice), and the length (30 or 45 seconds, one border gliding between the two boxes).
 class SelectSoundStep extends StatelessWidget {
   const SelectSoundStep({super.key});
 
@@ -41,8 +41,6 @@ class SelectSoundStep extends StatelessWidget {
           a.soundTypes != b.soundTypes ||
           a.soundTypesStatus != b.soundTypesStatus ||
           a.selectedSound != b.selectedSound ||
-          a.soundQuoteShown != b.soundQuoteShown ||
-          a.soundQuoteStatus != b.soundQuoteStatus ||
           a.lengthSeconds != b.lengthSeconds,
       builder: (context, state) {
         final selected = state.selectedSound;
@@ -66,14 +64,12 @@ class SelectSoundStep extends StatelessWidget {
               dy: 20,
               child: Padding(
                 padding: REdgeInsets.only(top: 18),
-                child: _ExampleCard(
-                  status: state.soundQuoteStatus,
-                  text: state.soundQuoteShown?.text,
-                  onRetry: () {
-                    final key = state.soundQuoteKey;
-                    if (key != null) {
-                      bloc.add(LoadSoundQuoteEvent(key.$1, key.$2));
-                    }
+                child: _TonePager(
+                  sounds: state.soundTypes,
+                  selectedId: selected.id,
+                  onSelect: (sound) {
+                    HapticFeedback.selectionClick();
+                    bloc.add(SoundSelectedEvent(sound.id));
                   },
                 ),
               ),
@@ -92,10 +88,6 @@ class SelectSoundStep extends StatelessWidget {
                   },
                 ),
               ),
-            ),
-            Padding(
-              padding: REdgeInsets.only(top: 16),
-              child: _Blurb(selected.description ?? ''),
             ),
             RiseIn(
               delay: const Duration(milliseconds: 350),
@@ -130,99 +122,343 @@ class SelectSoundStep extends StatelessWidget {
 
 // ------------------------------------------------------------------ example card
 
-/// The letter: a big orange “ and "Example", then the example line (word by word),
-/// a shimmer while it loads, or "Try again" when it failed.
-class _ExampleCard extends StatelessWidget {
-  const _ExampleCard({
-    required this.status,
-    required this.text,
-    required this.onRetry,
+/// The tone's example line, as it is set in the card (also what the card is measured with).
+TextStyle _lineStyle(BuildContext context) =>
+    appTheme(context).textTheme.titleMedium!.copyWith(
+      fontSize: 19.spMin,
+      height: 26.22 / 19,
+      fontWeight: Dimension.textSemiBold,
+      letterSpacing: -0.38,
+      color: AppColor.textColor,
+    );
+
+/// The tone's description under its line.
+TextStyle _descriptionStyle(BuildContext context) => appTheme(context)
+    .textTheme
+    .bodyLarge!
+    .copyWith(
+      fontSize: 14.spMin,
+      height: 20 / 14,
+      letterSpacing: 0,
+      color: AppColor.textTertiary,
+    );
+
+/// The letter: a card with a big “ and "Example" on top and, below, one page per tone
+/// (its example line arriving word by word, its description at the foot). Swipe to move
+/// between tones, or tap a dial: both move the same choice. Under it, page dots (the
+/// current one a long orange pill). The card is as tall as its tallest page, so nothing
+/// below it moves when the tone changes; its glow and rim take the tone's own colour.
+class _TonePager extends StatefulWidget {
+  const _TonePager({
+    required this.sounds,
+    required this.selectedId,
+    required this.onSelect,
   });
 
-  final LoadStatus status;
-  final String? text;
-  final VoidCallback onRetry;
+  final List<SoundType> sounds;
+  final int selectedId;
+  final ValueChanged<SoundType> onSelect;
+
+  @override
+  State<_TonePager> createState() => _TonePagerState();
+}
+
+class _TonePagerState extends State<_TonePager> {
+  late final PageController _pages = PageController(
+    initialPage: _indexOf(widget.selectedId),
+  );
+
+  /// A glide started by a dial: its in-between pages are not swipes.
+  bool _gliding = false;
+
+  int _indexOf(int id) {
+    final at = widget.sounds.indexWhere((s) => s.id == id);
+    return at < 0 ? 0 : at;
+  }
+
+  @override
+  void didUpdateWidget(_TonePager old) {
+    super.didUpdateWidget(old);
+    if (!_pages.hasClients) return;
+    final at = _indexOf(widget.selectedId);
+    if ((_pages.page?.round() ?? at) == at) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pages.jumpToPage(at);
+      return;
+    }
+    _gliding = true;
+    _pages
+        .animateToPage(
+          at,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeOutCubic,
+        )
+        .whenComplete(() => _gliding = false);
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  /// The last measured page height and what it was measured for (the tones, the width
+  /// and the text scale): picking a tone rebuilds the card, but measures nothing again.
+  double _height = 0;
+  Object? _measuredFor;
+
+  /// How tall the tallest page is: its line (laid out word by word, as the page's Wrap
+  /// does it) plus the description, at [width].
+  double _pageHeight(BuildContext context, double width) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final key = (widget.sounds, width, scaler);
+    if (key == _measuredFor) return _height;
+    final line = _lineStyle(context);
+    final spacing = 0.26 * 19.spMin;
+    final description = _descriptionStyle(context);
+
+    /// The [width] and [height] of [text] laid out in [style]; the painter is freed.
+    Size measure(String text, TextStyle style, [double? maxWidth]) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+      )..layout(maxWidth: maxWidth ?? double.infinity);
+      final size = painter.size;
+      painter.dispose();
+      return size;
+    }
+
+    var tallest = 0.0;
+    for (final sound in widget.sounds) {
+      var height = 14.h;
+      final words = (sound.sample ?? '')
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty);
+      if (words.isNotEmpty) {
+        var lines = 1;
+        var x = 0.0;
+        double rowHeight = 0;
+        for (final word in words) {
+          final p = measure(word, line);
+          rowHeight = p.height;
+          if (x > 0 && x + spacing + p.width > width) {
+            lines++;
+            x = p.width;
+          } else {
+            x += (x > 0 ? spacing : 0) + p.width;
+          }
+        }
+        height += lines * rowHeight;
+      }
+      final text = sound.description ?? '';
+      if (text.isNotEmpty) {
+        height += 14.h + measure(text, description, width).height;
+      }
+      if (height > tallest) tallest = height;
+    }
+    _measuredFor = key;
+    return _height = tallest + 1;
+  }
 
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     final textTheme = appTheme(context).textTheme;
-    final text = this.text;
-    final Widget content = switch (status) {
-      LoadStatus.loading => const _ExampleSkeleton(),
-      LoadStatus.failed => SuggestionError(
-        text: strings.create_reason_example_failed,
-        onRetry: onRetry,
-      ),
-      LoadStatus.loaded =>
-        text == null
-            ? const SizedBox.shrink()
-            : Semantics(
-                liveRegion: true,
-                label: '${strings.create_reason_example}: $text',
-                excludeSemantics: true,
-                // A new key per line, so every new example rises in again.
-                child: _ExampleLine(key: ValueKey(text), text: text),
-              ),
-    };
-    return RepaintBoundary(
-      child: Container(
-        constraints: BoxConstraints(minHeight: 172.h),
-        padding: REdgeInsets.fromLTRB(20, 18, 20, 20),
-        decoration: BoxDecoration(
-          color: AppColor.cardColor,
-          borderRadius: BorderRadius.circular(22.r),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: 18.h,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // The mark is a small box; the big glyph hangs out of it.
-                  ExcludeSemantics(
-                    child: SizedBox(
-                      width: 18.w,
-                      height: 16.h,
-                      child: OverflowBox(
-                        alignment: Alignment.topLeft,
-                        maxWidth: 60.w,
-                        maxHeight: 26.4.h,
-                        child: Text(
-                          '“',
-                          style: textTheme.headlineLarge!.copyWith(
-                            fontSize: 44.spMin,
-                            height: 0.6,
-                            letterSpacing: -0.88,
-                            color: AppColor.primary.withValues(alpha: 0.9),
+    final sounds = widget.sounds;
+    final at = _indexOf(widget.selectedId);
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final tint = AppColor.tintOf(sounds[at].color);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        RepaintBoundary(
+          child: TweenAnimationBuilder<Color?>(
+            tween: ColorTween(end: tint),
+            duration: reduced
+                ? Duration.zero
+                : const Duration(milliseconds: 800),
+            builder: (context, color, child) {
+              final light = color ?? tint;
+              return Container(
+                decoration: BoxDecoration(
+                  color: AppColor.cardColor,
+                  borderRadius: BorderRadius.circular(22.r),
+                  border: Border.all(color: light.withValues(alpha: 0.35)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    // The tone's own light, rising from below the card.
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: const Alignment(0, 1.6),
+                              radius: 1,
+                              colors: [
+                                light.withValues(alpha: 0.5),
+                                light.withValues(alpha: 0),
+                              ],
+                              stops: const [0, 0.72],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  ExcludeSemantics(
-                    child: Text(
-                      strings.create_reason_example,
-                      style: textTheme.labelSmall!.copyWith(
-                        fontSize: 12.spMin,
-                        height: 18 / 12,
-                        fontWeight: Dimension.textMedium,
-                        letterSpacing: 0.48,
-                        color: AppColor.textTertiary,
+                    Padding(
+                      padding: REdgeInsets.fromLTRB(20, 18, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            height: 18.h,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // The mark is a small box; the big glyph hangs out of it.
+                                ExcludeSemantics(
+                                  child: SizedBox(
+                                    width: 18.w,
+                                    height: 16.h,
+                                    child: OverflowBox(
+                                      alignment: Alignment.topLeft,
+                                      maxWidth: 60.w,
+                                      maxHeight: 26.4.h,
+                                      child: Text(
+                                        '“',
+                                        style: textTheme.headlineLarge!
+                                            .copyWith(
+                                              fontSize: 44.spMin,
+                                              height: 0.6,
+                                              letterSpacing: -0.88,
+                                              color: light.withValues(
+                                                alpha: 0.9,
+                                              ),
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                ExcludeSemantics(
+                                  child: Text(
+                                    strings.create_reason_example,
+                                    style: textTheme.labelSmall!.copyWith(
+                                      fontSize: 12.spMin,
+                                      height: 18 / 12,
+                                      fontWeight: Dimension.textMedium,
+                                      letterSpacing: 0.48,
+                                      color: AppColor.textTertiary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          child!,
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              );
+            },
+            child: LayoutBuilder(
+              builder: (context, constraints) => SizedBox(
+                height: _pageHeight(context, constraints.maxWidth),
+                child: PageView.builder(
+                  controller: _pages,
+                  itemCount: sounds.length,
+                  onPageChanged: (index) {
+                    if (_gliding) return;
+                    final sound = sounds[index];
+                    if (sound.id != widget.selectedId) widget.onSelect(sound);
+                  },
+                  itemBuilder: (context, index) =>
+                      _TonePage(sound: sounds[index]),
+                ),
               ),
             ),
-            SizedBox(height: 10.h),
-            content,
-          ],
+          ),
         ),
+        if (sounds.length > 1)
+          Padding(
+            padding: REdgeInsets.only(top: 14),
+            child: ExcludeSemantics(
+              child: _PageDots(count: sounds.length, at: at),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// One tone's page: its example line (word by word) and its description at the foot.
+class _TonePage extends StatelessWidget {
+  const _TonePage({required this.sound});
+
+  final SoundType sound;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    final sample = sound.sample;
+    final description = sound.description ?? '';
+    return Padding(
+      padding: REdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (sample != null)
+            Semantics(
+              liveRegion: true,
+              label: '${strings.create_reason_example}: $sample',
+              excludeSemantics: true,
+              // A new key per line, so every new example rises in again.
+              child: _ExampleLine(key: ValueKey(sample), text: sample),
+            ),
+          const Spacer(),
+          if (description.isNotEmpty)
+            Padding(
+              padding: REdgeInsets.only(top: 14),
+              child: Text(description, style: _descriptionStyle(context)),
+            ),
+        ],
       ),
+    );
+  }
+}
+
+/// Where the card is among the tones: the current dot a long orange pill.
+class _PageDots extends StatelessWidget {
+  const _PageDots({required this.count, required this.at});
+
+  final int count;
+  final int at;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var i = 0; i < count; i++)
+          AnimatedContainer(
+            duration: reduced
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            margin: REdgeInsets.symmetric(horizontal: 3),
+            width: (i == at ? 18 : 6).w,
+            height: 6.h,
+            decoration: BoxDecoration(
+              color: i == at ? AppColor.primary : AppColor.dotIdle,
+              borderRadius: BorderRadius.circular(3.r),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -274,13 +510,7 @@ class _ExampleLineState extends State<_ExampleLine>
 
   @override
   Widget build(BuildContext context) {
-    final style = appTheme(context).textTheme.titleMedium!.copyWith(
-      fontSize: 19.spMin,
-      height: 26.22 / 19,
-      fontWeight: Dimension.textSemiBold,
-      letterSpacing: -0.38,
-      color: AppColor.textColor,
-    );
+    final style = _lineStyle(context);
     final rise = 6.h;
     return AnimatedBuilder(
       animation: _enter,
@@ -313,40 +543,6 @@ class _ExampleLineState extends State<_ExampleLine>
           ),
         );
       },
-    );
-  }
-}
-
-/// Shimmering lines in the example card while the line loads.
-class _ExampleSkeleton extends StatelessWidget {
-  const _ExampleSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    Widget bar(double widthFactor) => FractionallySizedBox(
-      alignment: Alignment.centerLeft,
-      widthFactor: widthFactor,
-      child: Container(
-        height: 16.h,
-        decoration: BoxDecoration(
-          color: AppColor.white,
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-      ),
-    );
-    return ExcludeSemantics(
-      child: Shimmer(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            bar(1),
-            SizedBox(height: 10.h),
-            bar(0.92),
-            SizedBox(height: 10.h),
-            bar(0.6),
-          ],
-        ),
-      ),
     );
   }
 }

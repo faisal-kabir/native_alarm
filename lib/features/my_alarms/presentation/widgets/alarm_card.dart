@@ -55,7 +55,8 @@ String alarmRingsLabel(
 
 /// One saved alarm on My Alarms, in two sizes: [hero] (the next alarm, under "Next
 /// alarm") and a row (every other alarm, under "All alarms").
-/// * the Reason (a 28 disc in its area's colour and its name) and the on / off switch;
+/// * the goal (its voice's 28 face, greyed while off, and its name) and the on / off
+///   switch;
 /// * the time it rings next, light and large, with "AM" / "PM" (orange on the hero);
 /// * when that is ([alarmRingsLabel]);
 /// * the seven days (S M T W T F S): its days orange, the next ring's day ringed in
@@ -163,10 +164,8 @@ class _AlarmCardState extends State<AlarmCard> {
                             children: [
                               if (name.isNotEmpty) ...[
                                 ReasonEmblem(
-                                  areaName: reason?.areaTitle ?? name,
-                                  areaColor: reason?.area?.color,
-                                  areaIcon: reason?.area?.icon,
-                                  disc: true,
+                                  voice: reason?.voice,
+                                  name: name,
                                   size: 28,
                                   muted: !on,
                                 ),
@@ -177,6 +176,7 @@ class _AlarmCardState extends State<AlarmCard> {
                                   duration: fade,
                                   style: textTheme.titleMedium!.copyWith(
                                     fontSize: 15.spMin,
+                                    height: 17.5 / 15,
                                     fontWeight: Dimension.textSemiBold,
                                     letterSpacing: -0.2,
                                     color: ink,
@@ -240,16 +240,21 @@ class _AlarmCardState extends State<AlarmCard> {
                   ),
                 ),
                 SizedBox(height: hero ? 8.h : 5.h),
+                // A 19.5 line: 2 of air, then the 17.5 text.
                 ExcludeSemantics(
-                  child: Text(
-                    meta,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyLarge!.copyWith(
-                      fontSize: 15.spMin,
-                      height: 17.5 / 15,
-                      letterSpacing: -0.2,
-                      color: AppColor.textSecondary,
+                  child: Container(
+                    height: 19.5.h,
+                    alignment: Alignment.bottomLeft,
+                    child: Text(
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyLarge!.copyWith(
+                        fontSize: 15.spMin,
+                        height: 17.5 / 15,
+                        letterSpacing: -0.2,
+                        color: AppColor.textSecondary,
+                      ),
                     ),
                   ),
                 ),
@@ -287,6 +292,9 @@ class _Days extends StatelessWidget {
     required this.letters,
   });
 
+  /// The CSS `ease` the days change colour with.
+  static const Cubic _ease = Cubic(0.25, 0.1, 0.25, 1);
+
   final Set<int> days;
   final bool small;
   final bool off;
@@ -310,6 +318,7 @@ class _Days extends StatelessWidget {
             foregroundPainter: d == next ? const _NextRing() : null,
             child: AnimatedContainer(
               duration: AlarmCard._fade,
+              curve: _ease,
               width: size,
               height: size,
               alignment: Alignment.center,
@@ -319,13 +328,15 @@ class _Days extends StatelessWidget {
                     ? (off ? AppColor.slotFree : AppColor.primary)
                     : AppColor.surfaceSecondary,
               ),
-              child: Text(
-                letters[d],
+              child: AnimatedDefaultTextStyle(
+                duration: AlarmCard._fade,
+                curve: _ease,
                 style: style.copyWith(
                   color: days.contains(d)
                       ? (off ? AppColor.textSecondary : AppColor.onPrimary)
                       : (off ? AppColor.textMuted : AppColor.textSecondary),
                 ),
+                child: Text(letters[d]),
               ),
             ),
           ),

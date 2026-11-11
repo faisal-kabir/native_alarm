@@ -12,14 +12,13 @@ import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
 import 'composer_text_step.dart';
 
-/// Step 4 of Create Reason (optional): "Why does it matter to you?".
+/// Step 3 of Create Goal (optional): "Why does it matter to you?".
 ///
-/// Same shape as the purpose step: "OPTIONAL" on top, the heading, the purpose the
-/// user wrote as a quote, then the type-or-speak field (no counter; a note while it is
-/// 1-7 characters) and, while it is empty, the first 3 "why it matters" suggestions:
-/// the selected area's rows of `matter_suggestion` for the picked purpose suggestion,
-/// or the area's ones without one when the purpose is the user's own. Empty means
-/// "Skip for now".
+/// Same shape as the purpose step: "OPTIONAL" on top, the heading, the goal the user
+/// wrote as a quote, then the type-or-speak field (no counter; a note while it is 1-7
+/// characters) and, while it is empty, 3 "why it matters" suggestions that depend on the
+/// topic only (never on the goal's wording): the chip's own, or the general ones for a
+/// topic the person wrote. Empty means "Skip for now".
 class MatterStep extends StatelessWidget {
   const MatterStep({super.key});
 
@@ -107,7 +106,9 @@ class _PurposeQuote extends StatelessWidget {
   }
 }
 
-/// The first 3 suggestions, only while the field is empty and the mic is off.
+/// The whys under the field: the chosen chip's own three, or the three general ones for
+/// a topic the person wrote themselves. Only while the field is empty and the mic is
+/// off; they came with the topic, so there is nothing to load.
 class _Suggestions extends StatelessWidget {
   const _Suggestions({required this.onFill});
 
@@ -116,46 +117,31 @@ class _Suggestions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
-    final bloc = context.read<CreateReasonBloc>();
     return BlocBuilder<CreateReasonBloc, CreateReasonState>(
       buildWhen: (a, b) =>
-          a.matterSuggestionsShown != b.matterSuggestionsShown ||
-          a.matterSuggestionsStatus != b.matterSuggestionsStatus ||
+          a.whySuggestions != b.whySuggestions ||
           a.dictating != b.dictating ||
           a.matter.trim().isEmpty != b.matter.trim().isEmpty,
       builder: (context, state) {
-        if (state.dictating || state.matter.trim().isNotEmpty) {
+        final whys = state.whySuggestions;
+        if (state.dictating || state.matter.trim().isNotEmpty || whys.isEmpty) {
           return const SizedBox.shrink();
         }
-        final label = strings.create_reason_suggestions_label;
-        final suggestions = state.matterSuggestionsShown;
-        final Widget content = switch (state.matterSuggestionsStatus) {
-          LoadStatus.loading => SuggestionListSkeleton(label: label),
-          LoadStatus.failed => SuggestionError(
-            onRetry: () {
-              final key = state.matterSuggestionsKey;
-              if (key != null) {
-                bloc.add(LoadMatterSuggestionsEvent(key.$1, key.$2));
-              }
-            },
-          ),
-          LoadStatus.loaded =>
-            suggestions.isEmpty
-                ? const SizedBox.shrink()
-                : SuggestionList(
-                    label: label,
-                    expandable: false,
-                    items: [
-                      for (final s in suggestions)
-                        SuggestionItem(id: s.id, text: s.text),
-                    ],
-                    onPick: (item) => onFill(item.text),
-                  ),
-        };
         return RiseIn(
           delay: const Duration(milliseconds: 300),
           dy: 14,
-          child: Padding(padding: REdgeInsets.only(top: 26), child: content),
+          child: Padding(
+            padding: REdgeInsets.only(top: 26),
+            child: SuggestionList(
+              label: strings.create_reason_suggestions_label,
+              expandable: false,
+              items: [
+                for (var i = 0; i < whys.length && i < 3; i++)
+                  SuggestionItem(id: '${state.chip?.id}-$i', text: whys[i]),
+              ],
+              onPick: (item) => onFill(item.text),
+            ),
+          ),
         );
       },
     );

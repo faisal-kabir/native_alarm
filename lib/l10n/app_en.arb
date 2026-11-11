@@ -12,7 +12,7 @@
   "alarm_permission_overlay": "Allow \"Display over other apps\" so the alarm screen can open while you are using the phone.",
   "alarm_permission_exact_alarm": "Allow exact alarms so the alarm rings on time.",
   "tab_alarms": "Alarms",
-  "tab_reasons": "Reasons",
+  "tab_reasons": "Goal",
   "tab_settings": "Settings",
   "my_alarms_title": "My Alarms",
   "alarm_ringing_fallback_title": "Alarm",
@@ -63,17 +63,17 @@
   },
   "my_alarms_thought_semantics": "Today's thought",
   "my_alarms_add_first_alarm_title": "Set your first alarm",
-  "my_alarms_add_first_alarm_subtitle": "Pick a time and a reason.",
+  "my_alarms_add_first_alarm_subtitle": "Pick a time and a goal.",
   "my_alarms_add_alarm": "Add alarm",
-  "reasons_title": "My Reasons",
-  "reasons_add_first_title": "Add your first Reason",
+  "reasons_title": "My Goals",
+  "reasons_add_first_title": "Add your first Goal",
   "reasons_add_first_subtitle": "The why behind your day.",
-  "reasons_add_label": "New Reason",
-  "reason_row_subtitle": "{area} · {tone}",
+  "reasons_add_label": "New Goal",
+  "reason_row_subtitle": "{voice} · {tone}",
   "@reason_row_subtitle": {
-    "description": "Second line of a reason row: its area of life and tone.",
+    "description": "Second line of a goal row: the voice that speaks it and its tone.",
     "placeholders": {
-      "area": {
+      "voice": {
         "type": "String"
       },
       "tone": {
@@ -81,14 +81,14 @@
       }
     }
   },
-  "reason_row_semantics": "{name}. {area}, {tone} tone.{note}",
+  "reason_row_semantics": "{name}. {voice}’s voice, {tone} tone.{note}",
   "@reason_row_semantics": {
     "description": "Screen reader label of a reason row; note is empty or one of the alarm notes below.",
     "placeholders": {
       "name": {
         "type": "String"
       },
-      "area": {
+      "voice": {
         "type": "String"
       },
       "tone": {
@@ -105,18 +105,37 @@
   },
   "common_list_error": "Couldn’t load the list. Check your connection and try again.",
   "common_list_empty": "Nothing to choose from yet.",
+  "create_reason_topic_semantics": "What you wake up for, in a few words",
+  "create_reason_topic_chips": "Or pick one",
+  "create_reason_topic_more": "More",
+  "create_reason_topic_more_semantics": "Show more",
+  "create_reason_topic_clear": "Clear",
+  "create_reason_topic_left": "{count} left",
+  "@create_reason_topic_left": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "create_reason_topic_example_1": "My garden",
+  "create_reason_topic_example_2": "My dog",
+  "create_reason_topic_example_3": "Painting",
+  "create_reason_topic_example_4": "Coaching kids",
+  "create_reason_topic_example_5": "Volunteering",
+  "create_reason_topic_example_6": "Surfing",
   "create_reason_purpose_title": "What are you\n*working toward*?",
   "@create_reason_purpose_title": {
     "description": "Heading of the second Create Reason step. Words between stars are drawn in the brand colour."
   },
-  "create_reason_purpose_hint": "I’m working toward something that matters to me because…",
+  "create_reason_purpose_hint": "In your own words",
   "create_reason_suggestions_label": "Or start from one of these",
   "suggestions_more_ideas": "More ideas",
   "suggestions_more_ideas_semantics": "Show more ideas",
   "suggestions_load_failed": "Couldn’t load ideas.",
   "create_reason_matter_title": "Why does it\n*matter to you*?",
   "@create_reason_matter_title": {
-    "description": "Heading of the optional fourth Create Reason step. Words between stars are drawn in the brand colour."
+    "description": "Heading of the optional third Create Reason step. Words between stars are drawn in the brand colour."
   },
   "create_reason_matter_for": "For",
   "create_reason_matter_hint": "This matters to me because…",
@@ -137,13 +156,12 @@
   },
   "create_reason_sound_semantics": "Sound",
   "create_reason_example": "Example",
-  "create_reason_example_failed": "Couldn’t load the example.",
   "create_reason_length": "Length",
   "create_reason_length_30": "Short",
   "create_reason_length_30_note": "Quick and to the point.",
   "create_reason_length_45": "Standard",
   "create_reason_length_45_note": "A full thought, not a ramble.",
-  "create_reason_create": "Create Reason",
+  "create_reason_create": "Create Goal",
   "seconds_short": "{seconds} sec",
   "@seconds_short": {
     "placeholders": {
@@ -152,25 +170,28 @@
       }
     }
   },
-  "reason_ready_title": "Your reason is *ready*.",
+  "reason_ready_title": "Your goal is *ready*.",
   "@reason_ready_title": {
-    "description": "Heading after a reason is saved. Words between stars are drawn in the brand colour."
+    "description": "Heading after a goal is saved. Words between stars are drawn in the brand colour."
   },
-  "reason_ready_announcement": "Your reason is ready.",
-  "reason_ready_why": "Why it matters",
+  "reason_ready_announcement": "Your goal is ready.",
+  "reason_ready_topic": "Wake up for",
+  "reason_ready_goal": "Goal",
+  "reason_ready_why": "Why",
   "reason_ready_voice": "Voice",
   "reason_ready_tone": "Tone",
+  "reason_ready_length": "Length",
   "reason_ready_use_with_alarm": "Use with alarm",
   "reason_ready_save_for_later": "Save for later",
-  "reason_name_hint": "Name this reason",
-  "reason_name_label": "Reason name",
+  "reason_name_hint": "Name this goal",
+  "reason_name_label": "Goal name",
   "reason_name_save": "Save name",
-  "reason_save_failed": "Couldn’t save your reason. Check your connection and try again.",
+  "reason_save_failed": "Couldn’t save your goal. Check your connection and try again.",
   "reason_rename_failed": "Couldn’t rename it. Check your connection and try again.",
   "common_saving": "Saving…",
   "create_reason_voice_title": "Who should *say it*?",
   "@create_reason_voice_title": {
-    "description": "Heading of the third Create Reason step. Words between stars are drawn in the brand colour."
+    "description": "Heading of the fourth Create Reason step. Words between stars are drawn in the brand colour."
   },
   "voice_play": "Hear {name}",
   "@voice_play": {
@@ -282,17 +303,18 @@
       }
     }
   },
+  "reason_detail_back": "Goals",
   "reason_detail_about": "What it’s about",
   "reason_detail_speaks": "How it speaks",
   "reason_detail_alarm": "Alarm",
   "reason_detail_no_alarm": "Not in an alarm yet.",
   "reason_detail_area": "Area of life",
-  "reason_detail_purpose": "Purpose",
-  "reason_detail_why": "Why it matters",
+  "reason_detail_purpose": "Goal",
+  "reason_detail_why": "Why",
   "reason_detail_tone": "Tone",
   "reason_detail_voice": "Voice",
   "reason_detail_length": "Length",
-  "reason_detail_length_value": "{name} · {seconds} sec",
+  "reason_detail_length_value": "{name} · {seconds}s",
   "@reason_detail_length_value": {
     "placeholders": {
       "name": {
@@ -323,7 +345,7 @@
   "reason_detail_discard": "Discard",
   "reason_detail_caption": "Changes will apply from your next new message.",
   "reason_detail_discard_title": "Discard changes?",
-  "reason_detail_discard_message": "This reason stays as it is now.",
+  "reason_detail_discard_message": "This goal stays as it is now.",
   "reason_detail_keep_editing": "Keep Editing",
   "reason_detail_save_failed": "Couldn’t save your changes. Check your connection and try again.",
   "common_more_below": "More below",
@@ -344,7 +366,7 @@
   "common_cancel": "Cancel",
   "common_delete": "Delete",
   "reason_actions_use_with_alarm": "Use with an alarm",
-  "reason_actions_delete": "Delete Reason",
+  "reason_actions_delete": "Delete Goal",
   "reason_delete_title": "Delete “{name}”?",
   "@reason_delete_title": {
     "description": "Asks before a reason is deleted.",
@@ -355,16 +377,16 @@
     }
   },
   "reason_delete_message": "This can’t be undone.",
-  "reason_delete_alarm_message": "Its alarm will be deleted too. Every alarm needs a reason.",
-  "reason_delete_failed": "Couldn’t delete this reason. Check your connection and try again.",
+  "reason_delete_alarm_message": "Its alarm will be deleted too. Every alarm needs a goal.",
+  "reason_delete_failed": "Couldn’t delete this goal. Check your connection and try again.",
   "common_ok": "OK",
   "create_alarm_title": "Add Alarm",
   "@create_alarm_title": {
     "description": "Title of the alarm editor for a new alarm."
   },
   "create_alarm_section": "What you’ll hear",
-  "create_alarm_choose_reason": "Choose a reason",
-  "create_alarm_add_reason": "Add a reason",
+  "create_alarm_choose_reason": "Choose a goal",
+  "create_alarm_add_reason": "Add a goal",
   "@create_alarm_add_reason": {
     "description": "When there is no reason left to pick: the tap opens the reason maker."
   },
@@ -499,11 +521,11 @@
     "description": "The seven day names, Sunday first, comma-separated."
   },
   "reason_picker_title": "What should wake you up?",
-  "reason_picker_subtitle": "Each alarm plays one reason.",
-  "reason_picker_all_taken": "Every reason already has an alarm.",
-  "reason_picker_select": "Select Reason",
-  "reason_picker_new": "New Reason",
-  "reason_picker_none": "You don’t have any reasons yet.",
+  "reason_picker_subtitle": "Each alarm plays one goal.",
+  "reason_picker_all_taken": "Every goal already has an alarm.",
+  "reason_picker_select": "Select Goal",
+  "reason_picker_new": "New Goal",
+  "reason_picker_none": "You don’t have any goals yet.",
   "soundtrack_sheet_subtitle": "Music that plays behind your message.",
   "soundtrack_sheet_select": "Select Soundtrack",
   "alarm_sound_sheet_subtitle": "Tap play to hear it.",
@@ -601,7 +623,7 @@
   },
   "my_alarms_access_title": "Alarm access is off",
   "my_alarms_delete_title": "Delete this alarm?",
-  "my_alarms_delete_message": "Your reason stays in My Reasons.",
+  "my_alarms_delete_message": "Your goal stays in My Goals.",
   "my_alarms_delete_semantics": "Delete alarm at {time}",
   "@my_alarms_delete_semantics": {
     "placeholders": {

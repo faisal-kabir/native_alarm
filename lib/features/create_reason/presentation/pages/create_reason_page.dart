@@ -13,11 +13,11 @@ import '../bloc/create_reason_event.dart';
 import '../bloc/create_reason_state.dart';
 import '../widgets/matter_step.dart';
 import '../widgets/purpose_step.dart';
-import '../widgets/select_area_step.dart';
 import '../widgets/select_sound_step.dart';
 import '../widgets/select_voice_step.dart';
+import '../widgets/topic_step.dart';
 
-/// The mother page of the Create Reason flow. It owns the top progress bar, the
+/// The mother page of the Create Goal flow. It owns the top progress bar, the
 /// "Continue" button and a PageView whose pages are the steps, in order; every step's
 /// data lives in [CreateReasonBloc], which saves the reason after the last step.
 ///
@@ -40,7 +40,7 @@ class CreateReasonPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (BuildContext context) => instance<CreateReasonBloc>()
-        ..add(const LoadAreasEvent())
+        ..add(const LoadTopicsEvent())
         ..add(const LoadVoicesEvent())
         ..add(const LoadSoundTypesEvent()),
       child: _CreateReasonView(returnReason: returnReason),
@@ -60,10 +60,10 @@ class _CreateReasonView extends StatefulWidget {
 class _CreateReasonViewState extends State<_CreateReasonView> {
   /// The step pages, in order.
   static const List<Widget> _steps = [
-    SelectAreaStep(),
+    TopicStep(),
     PurposeStep(),
-    SelectVoiceStep(),
     MatterStep(),
+    SelectVoiceStep(),
     SelectSoundStep(),
   ];
 
@@ -118,7 +118,7 @@ class _CreateReasonViewState extends State<_CreateReasonView> {
           a.isLastStep != b.isLastStep ||
           a.saveStatus != b.saveStatus,
       builder: (context, state) {
-        final first = state.stepIndex == CreateReasonState.areaStep;
+        final first = state.stepIndex == CreateReasonState.topicStep;
         return PopScope(
           // The system back gesture goes one step back; only the first step closes.
           canPop: first,

@@ -149,7 +149,7 @@ class _SettingsViewState extends State<_SettingsView>
                         chevron: true,
                       ),
                       ListGroupRow(
-                        icon: icons.bulb,
+                        icon: Assets.icons.bulb,
                         label: strings.settings_request_feature,
                         chevron: true,
                       ),

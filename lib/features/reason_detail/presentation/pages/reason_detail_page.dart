@@ -8,23 +8,26 @@ import '../../../../core/constants/app_constant.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_color.dart';
+import '../../../../core/theme/dimension.dart';
 import '../../../../core/utils/load_status.dart';
 import '../../../../core/widgets/app_alert.dart';
+import '../../../../core/widgets/app_svg_icon.dart';
 import '../../../../core/widgets/back_chevron.dart';
 import '../../../../core/widgets/cached_svg_icon.dart';
 import '../../../../core/widgets/choice_sheet.dart';
 import '../../../../core/widgets/hinted_scroll_view.dart';
 import '../../../../core/widgets/list_group.dart';
-import '../../../../core/widgets/suggestion_list.dart';
 import '../../../../core/widgets/text_sheet.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
 import '../../../create_reason/presentation/widgets/reason_choice_items.dart';
 import '../../../create_reason/presentation/widgets/reason_name_field.dart';
 import '../../../alarm/domain/entities/alarm.dart';
+import '../../../create_alarm/domain/entities/alarm_draft.dart';
 import '../../../create_alarm/domain/entities/alarm_schedule.dart';
 import '../../../create_alarm/presentation/widgets/schedule_cards.dart';
 import '../../../reasons/domain/entities/reason.dart';
+import '../../../voice/domain/entities/voice.dart';
 import '../../../reasons/presentation/widgets/reason_emblem.dart';
 import '../bloc/reason_detail_bloc.dart';
 import '../bloc/reason_detail_event.dart';
@@ -72,24 +75,6 @@ class _DetailViewState extends State<_DetailView> {
   ReasonDetailState get _state => _bloc.state;
 
   // ------------------------------------------------------------------ sheets
-
-  Future<void> _pickArea() async {
-    HapticFeedback.selectionClick();
-    final strings = appLanguage(context);
-    final id = await showChoiceSheet(
-      context,
-      title: strings.reason_detail_area_sheet,
-      items: [for (final area in _state.areas) areaChoice(area)],
-      selectedId: _state.draft.areaId,
-      keepLabel: strings.reason_detail_keep_area,
-      useLabel: (item) => strings.sheet_use_choice(item.title),
-    );
-    if (id is int && mounted) {
-      _bloc.add(
-        ReasonDetailDraftChangedEvent(_state.draft.copyWith(areaId: id)),
-      );
-    }
-  }
 
   Future<void> _pickTone() async {
     HapticFeedback.selectionClick();
@@ -157,10 +142,6 @@ class _DetailViewState extends State<_DetailView> {
     HapticFeedback.selectionClick();
     final strings = appLanguage(context);
     final draft = _state.draft;
-    List<SuggestionItem> items(List<String> texts) => [
-      for (var i = 0; i < texts.length; i++)
-        SuggestionItem(id: i, text: texts[i]),
-    ];
     final text = await showTextSheet(
       context,
       title: why
@@ -179,11 +160,6 @@ class _DetailViewState extends State<_DetailView> {
       shortNote: why
           ? strings.reason_detail_why_short
           : strings.reason_detail_purpose_short,
-      loadSuggestions: () async => items(
-        why
-            ? await _bloc.whySuggestions(draft.areaId, draft.purpose)
-            : await _bloc.purposeSuggestions(draft.areaId),
-      ),
     );
     if (text != null && mounted) {
       final draft = _state.draft;
@@ -321,7 +297,6 @@ class _DetailViewState extends State<_DetailView> {
                       onRename: (name) =>
                           _bloc.add(ReasonDetailRenamedEvent(name)),
                       onConnectAlarm: _useWithAlarm,
-                      onArea: _pickArea,
                       onPurpose: () => _pickText(why: false),
                       onWhy: () => _pickText(why: true),
                       onTone: _pickTone,
@@ -351,7 +326,7 @@ class _DetailViewState extends State<_DetailView> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 }
 
-/// "‹ Reasons": back to the list (asks first when something is held).
+/// "‹ Goals": back to the list (asks first when something is held).
 class _NavBar extends StatelessWidget {
   const _NavBar({required this.onBack, required this.onMore});
 
@@ -384,7 +359,7 @@ class _NavBar extends StatelessWidget {
                         BackChevron(size: 21.r, color: AppColor.primary),
                         SizedBox(width: 3.w),
                         Text(
-                          strings.tab_reasons,
+                          strings.reason_detail_back,
                           style: appTheme(context).textTheme.bodyLarge!
                               .copyWith(
                                 fontSize: 17.spMin,
@@ -448,7 +423,6 @@ class _Body extends StatelessWidget {
     required this.state,
     required this.onRename,
     required this.onConnectAlarm,
-    required this.onArea,
     required this.onPurpose,
     required this.onWhy,
     required this.onTone,
@@ -459,7 +433,6 @@ class _Body extends StatelessWidget {
   final ReasonDetailState state;
   final ValueChanged<String> onRename;
   final VoidCallback onConnectAlarm;
-  final VoidCallback onArea;
   final VoidCallback onPurpose;
   final VoidCallback onWhy;
   final VoidCallback onTone;
@@ -471,7 +444,6 @@ class _Body extends StatelessWidget {
     final strings = appLanguage(context);
     final saved = state.reason;
     final draft = state.draft;
-    final area = state.area;
     final length = draft.lengthSeconds;
     final icons = Assets.icons.detail;
     final alarm = state.alarm;
@@ -483,6 +455,7 @@ class _Body extends StatelessWidget {
       required String value,
       required bool changed,
       required VoidCallback onTap,
+      bool sentence = false,
     }) {
       final shown = value.isEmpty ? strings.common_add : value;
       return ListGroupRow(
@@ -493,6 +466,7 @@ class _Body extends StatelessWidget {
         // A changed row says so in its value, and so does an empty one ("Add").
         highlight: changed || value.isEmpty,
         chevron: true,
+        sentence: sentence,
         semanticsLabel: strings.reason_detail_row_semantics(
           label,
           shown,
@@ -507,46 +481,31 @@ class _Body extends StatelessWidget {
       children: [
         _Header(
           reason: saved,
+          voice: state.voice,
           renameFailures: state.renameFailures,
           onRename: onRename,
         ),
         SizedBox(height: 24.h),
-        // A Reason that has its alarm (one alarm, one Reason) shows it below instead.
-        if (!state.hasAlarm)
-          ListGroup(
-            children: [
-              ListGroupRow(
-                icon: Assets.icons.alarm,
-                label: strings.reason_detail_connect_alarm,
-                tint: AppColor.primary,
-                chevron: true,
-                onTap: onConnectAlarm,
-              ),
-            ],
-          ),
+        // A goal that has its alarm (one alarm, one goal) shows it below instead.
+        if (!state.hasAlarm) _ConnectAlarm(onTap: onConnectAlarm),
         _Section(strings.reason_detail_about),
         ListGroup(
           children: [
             row(
-              leading: _AreaIcon(path: area?.icon),
-              label: strings.reason_detail_area,
-              value: area?.title ?? '',
-              changed: draft.areaId != saved.areaId,
-              onTap: onArea,
-            ),
-            row(
-              icon: icons.target,
+              icon: icons.flag,
               label: strings.reason_detail_purpose,
               value: draft.purpose,
               changed: draft.purpose != saved.purpose,
               onTap: onPurpose,
+              sentence: true,
             ),
             row(
-              icon: icons.heart,
+              icon: Assets.icons.bulb,
               label: strings.reason_detail_why,
               value: draft.why,
               changed: draft.why != saved.why,
               onTap: onWhy,
+              sentence: true,
             ),
           ],
         ),
@@ -554,7 +513,7 @@ class _Body extends StatelessWidget {
         ListGroup(
           children: [
             row(
-              icon: icons.target,
+              leading: _ToneIcon(path: state.sound?.icon),
               label: strings.reason_detail_tone,
               value: state.sound?.title ?? '',
               changed: draft.soundTypeId != saved.soundTypeId,
@@ -602,8 +561,10 @@ class _Body extends StatelessWidget {
   }
 }
 
-/// The alarm that plays the reason: one row per time it rings ("6:30 AM · Tue Wed",
-/// "9:30 AM · Weekends"), the clock orange. A row opens the alarm in the editor.
+/// The alarm that plays the goal, as a way through to it: one row with the time it rings
+/// next and the days ("6:34 AM · Every day"), the clock orange; switched off, the clock
+/// is grey and the value reads "Off". It reports, it does not switch: the switch is on
+/// the alarm. A row opens the alarm in the editor.
 class _AlarmRows extends StatelessWidget {
   const _AlarmRows({required this.alarm});
 
@@ -611,35 +572,45 @@ class _AlarmRows extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final words = repeatWordsOf(appLanguage(context));
+    final strings = appLanguage(context);
+    final draft = alarmDraftOf(alarm);
+    final next = nextRingOf(alarm, DateTime.now());
+    final time = AlarmTime.fromMinutes(next.hour * 60 + next.minute);
+    // Every day any of its times rings on.
+    final days = draft.byDay?.keys ?? draft.days;
     return ListGroup(
       children: [
-        for (final card in groupDays(alarmDraftOf(alarm), () => ''))
-          ListGroupRow(
-            icon: Assets.icons.alarm,
-            iconColor: AppColor.primary,
-            label: card.time.label,
-            value: repeatLabel(card.days, words),
-            chevron: true,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              context.push<bool>(RouteNames.editAlarmPath, extra: alarm);
-            },
-          ),
+        ListGroupRow(
+          icon: Assets.icons.alarm,
+          iconColor: alarm.enabled ? AppColor.primary : AppColor.textMuted,
+          label: time.label,
+          value: alarm.enabled
+              ? repeatLabel(days, repeatWordsOf(strings))
+              : strings.my_alarms_off,
+          chevron: true,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            context.push<bool>(RouteNames.editAlarmPath, extra: alarm);
+          },
+        ),
       ],
     );
   }
 }
 
-/// The area disc beside the name, which is the page title and renamed in place.
+/// The voice's face beside the name, which is the page title and renamed in place. The
+/// face follows the voice held on the Voice row (the one you tapped on My Goals is the
+/// one you land on).
 class _Header extends StatelessWidget {
   const _Header({
     required this.reason,
+    required this.voice,
     required this.renameFailures,
     required this.onRename,
   });
 
   final Reason reason;
+  final Voice? voice;
 
   /// A failed rename rebuilds the field, which puts the saved name back.
   final int renameFailures;
@@ -649,12 +620,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        ReasonEmblem(
-          areaName: reason.areaTitle,
-          areaColor: reason.area?.color,
-          areaIcon: reason.area?.icon,
-          disc: true,
-        ),
+        ReasonEmblem(voice: voice, name: reason.name, size: 52),
         SizedBox(width: 14.w),
         Expanded(
           child: ReasonNameField(
@@ -669,22 +635,97 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// A row's server icon (the area's), grey like the other rows' icons.
-class _AreaIcon extends StatelessWidget {
-  const _AreaIcon({required this.path});
+/// "Connect an alarm": the one action on a goal that has no alarm yet, a warm card (the
+/// brand colour at 7 % with a 28 % rim) with an alarm mark, the words and a chevron.
+class _ConnectAlarm extends StatelessWidget {
+  const _ConnectAlarm({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLanguage(context);
+    return Padding(
+      padding: REdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Color.alphaBlend(
+          AppColor.primary.withValues(alpha: 0.07),
+          AppColor.cardColor,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22.r),
+          side: BorderSide(color: AppColor.primary.withValues(alpha: 0.28)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Semantics(
+          button: true,
+          label: strings.reason_detail_connect_alarm,
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: REdgeInsets.symmetric(horizontal: 15, vertical: 11),
+              child: SizedBox(
+                height: 26.h,
+                child: Row(
+                  children: [
+                    AppSvgIcon(
+                      Assets.icons.alarm,
+                      size: 18.r,
+                      color: AppColor.primary,
+                    ),
+                    SizedBox(width: 11.w),
+                    Expanded(
+                      child: Text(
+                        strings.reason_detail_connect_alarm,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: appTheme(context).textTheme.bodyLarge!.copyWith(
+                          fontSize: 16.spMin,
+                          fontWeight: Dimension.textMedium,
+                          letterSpacing: -0.1,
+                          color: AppColor.primary,
+                        ),
+                      ),
+                    ),
+                    AppSvgIcon(
+                      Assets.icons.page.chevron,
+                      size: 16.r,
+                      color: AppColor.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The tone's own icon (its server path), grey like the other rows' icons; a heart until
+/// it loads or when the server has none.
+class _ToneIcon extends StatelessWidget {
+  const _ToneIcon({required this.path});
 
   final String? path;
 
   @override
   Widget build(BuildContext context) {
-    final path = this.path;
     final size = 22.r;
-    if (path == null) return SizedBox.square(dimension: size);
+    final heart = AppSvgIcon(
+      Assets.icons.detail.heart,
+      size: size,
+      color: AppColor.textSecondary,
+    );
+    final path = this.path;
+    if (path == null || path.isEmpty) return heart;
     return CachedSvgIcon(
       path: path,
       size: size,
       color: AppColor.textSecondary,
-      fallback: SizedBox.square(dimension: size),
+      fallback: heart,
     );
   }
 }

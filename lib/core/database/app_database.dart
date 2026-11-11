@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../features/alarm/data/models/alarms_table.dart';
 import '../../features/alarm_audio/data/models/alarm_audios_table.dart';
 import '../../features/area_of_life/data/models/areas_of_life_table.dart';
+import '../../features/goal_topic/data/models/goal_topics_table.dart';
 import '../../features/reasons/data/models/reasons_table.dart';
 import '../../features/settings/data/models/settings_table.dart';
 import '../../features/voice/data/models/voices_table.dart';
@@ -19,13 +20,15 @@ part 'app_database.g.dart';
     AreasOfLifeTable,
     VoicesTable,
     AlarmAudiosTable,
+    GoalTopicsTable,
+    GeneralWhysTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -69,6 +72,12 @@ class AppDatabase extends _$AppDatabase {
       }
       // v11: an alarm keeps the server's id for it (`alarm.id`).
       if (from < 11) await m.addColumn(alarmsTable, alarmsTable.remoteId);
+      // v12: goal_topics and general_whys (the device's copy of the topic chips with
+      // their goals and whys, and of the general whys) were added.
+      if (from < 12) {
+        await m.createTable(goalTopicsTable);
+        await m.createTable(generalWhysTable);
+      }
     },
   );
 }

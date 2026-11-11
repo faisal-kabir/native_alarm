@@ -2,19 +2,11 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../core/constants/app_constant.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../../../core/utils/load_status.dart';
-import '../../../../core/utils/text_utils.dart';
 import '../../../alarm/domain/entities/alarm.dart';
 import '../../../alarm/domain/usecases/watch_alarms_usecase.dart';
-import '../../../area_of_life/domain/entities/area_of_life.dart';
-import '../../../area_of_life/domain/entities/purpose_suggestion.dart';
-import '../../../area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
-import '../../../area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
-import '../../../area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
-import '../../../area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../domain/usecases/delete_reason_with_alarm_usecase.dart';
 import '../../../create_alarm/domain/usecases/sync_system_alarms_usecase.dart';
@@ -40,13 +32,9 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
   final DeleteReasonWithAlarmUseCase deleteReasonUseCase;
   final WatchAlarmsUseCase watchAlarmsUseCase;
   final SyncSystemAlarmsUseCase syncSystemAlarmsUseCase;
-  final WatchAreasOfLifeUseCase watchAreasUseCase;
-  final RefreshAreasOfLifeUseCase refreshAreasUseCase;
   final WatchVoicesUseCase watchVoicesUseCase;
   final RefreshVoicesUseCase refreshVoicesUseCase;
   final GetSoundTypesUseCase getSoundTypesUseCase;
-  final GetPurposeSuggestionsUseCase getPurposeSuggestionsUseCase;
-  final GetMatterSuggestionsUseCase getMatterSuggestionsUseCase;
 
   ReasonDetailBloc(
     this.watchReasonUseCase,
@@ -55,17 +43,12 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
     this.deleteReasonUseCase,
     this.watchAlarmsUseCase,
     this.syncSystemAlarmsUseCase,
-    this.watchAreasUseCase,
-    this.refreshAreasUseCase,
     this.watchVoicesUseCase,
     this.refreshVoicesUseCase,
     this.getSoundTypesUseCase,
-    this.getPurposeSuggestionsUseCase,
-    this.getMatterSuggestionsUseCase,
     @factoryParam Reason? reason,
   ) : super(ReasonDetailState(reason: reason!)) {
     on<ReasonDetailStartedEvent>(_onStarted);
-    on<ReasonDetailAreasWatchedEvent>(_onWatchAreas);
     on<ReasonDetailVoicesWatchedEvent>(_onWatchVoices);
     on<ReasonDetailAlarmsWatchedEvent>(_onWatchAlarms);
     on<ReasonDetailSoundTypesRequestedEvent>(_onLoadSoundTypes);
@@ -104,7 +87,6 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
     ReasonDetailStartedEvent event,
     Emitter<ReasonDetailState> emit,
   ) async {
-    add(const ReasonDetailAreasWatchedEvent());
     add(const ReasonDetailVoicesWatchedEvent());
     add(const ReasonDetailAlarmsWatchedEvent());
     add(const ReasonDetailSoundTypesRequestedEvent());
@@ -118,20 +100,6 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
           draft: state.dirty ? null : saved.draft,
         );
       },
-    );
-  }
-
-  Future<void> _onWatchAreas(
-    ReasonDetailAreasWatchedEvent event,
-    Emitter<ReasonDetailState> emit,
-  ) async {
-    // The cached list shows at once; a background update follows (a new device may
-    // have none cached yet).
-    refreshAreasUseCase(NoParams());
-    await emit.forEach<Either<Failure, List<AreaOfLife>>>(
-      watchAreasUseCase(NoParams()),
-      onData: (result) =>
-          result.fold((_) => state, (areas) => state.copyWith(areas: areas)),
     );
   }
 
@@ -211,49 +179,5 @@ class ReasonDetailBloc extends Bloc<ReasonDetailEvent, ReasonDetailState> {
     if (result.isRight() && state.alarm != null) {
       await syncSystemAlarmsUseCase(SyncSystemAlarmsParams(DateTime.now()));
     }
-  }
-
-  /// An area's purpose ideas, asked once per area while the screen is open (the
-  /// purpose sheet and the why sheet both need them). Failures are not kept.
-  final Map<int, List<PurposeSuggestion>> _purposeIdeas = {};
-
-  Future<List<PurposeSuggestion>> _purposeIdeasOf(int areaId) async {
-    final known = _purposeIdeas[areaId];
-    if (known != null) return known;
-    final result = await getPurposeSuggestionsUseCase(
-      PurposeSuggestionsParams(areaId),
-    );
-    return result.fold(
-      (failure) => throw failure,
-      (list) => _purposeIdeas[areaId] = list,
-    );
-  }
-
-  static String _purposeText(PurposeSuggestion s) =>
-      clipToWord(s.text.trim(), AppConstant.purposeMaxLength);
-
-  /// Ideas for the purpose of a reason in area [areaId] (for the purpose sheet).
-  Future<List<String>> purposeSuggestions(int areaId) async => [
-    for (final s in await _purposeIdeasOf(areaId)) _purposeText(s),
-  ];
-
-  /// Ideas for "why it matters", for area [areaId] and [purpose]: the ideas made for
-  /// the purpose idea it reads like, or the area's general ones for the user's own words.
-  Future<List<String>> whySuggestions(int areaId, String purpose) async {
-    int? purposeId;
-    try {
-      for (final s in await _purposeIdeasOf(areaId)) {
-        if (sameWords(_purposeText(s), purpose)) purposeId = s.id;
-      }
-    } on Failure {
-      // Without the purpose ideas, the area's general ideas are asked for.
-    }
-    final result = await getMatterSuggestionsUseCase(
-      MatterSuggestionsParams(areaId, purposeId),
-    );
-    return result.fold(
-      (failure) => throw failure,
-      (list) => [for (final s in list) s.text.trim()],
-    );
   }
 }

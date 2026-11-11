@@ -53,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tab_alarms => 'Alarms';
 
   @override
-  String get tab_reasons => 'Reasons';
+  String get tab_reasons => 'Goal';
 
   @override
   String get tab_settings => 'Settings';
@@ -124,36 +124,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get my_alarms_add_first_alarm_title => 'Set your first alarm';
 
   @override
-  String get my_alarms_add_first_alarm_subtitle => 'Pick a time and a reason.';
+  String get my_alarms_add_first_alarm_subtitle => 'Pick a time and a goal.';
 
   @override
   String get my_alarms_add_alarm => 'Add alarm';
 
   @override
-  String get reasons_title => 'My Reasons';
+  String get reasons_title => 'My Goals';
 
   @override
-  String get reasons_add_first_title => 'Add your first Reason';
+  String get reasons_add_first_title => 'Add your first Goal';
 
   @override
   String get reasons_add_first_subtitle => 'The why behind your day.';
 
   @override
-  String get reasons_add_label => 'New Reason';
+  String get reasons_add_label => 'New Goal';
 
   @override
-  String reason_row_subtitle(String area, String tone) {
-    return '$area · $tone';
+  String reason_row_subtitle(String voice, String tone) {
+    return '$voice · $tone';
   }
 
   @override
   String reason_row_semantics(
     String name,
-    String area,
+    String voice,
     String tone,
     String note,
   ) {
-    return '$name. $area, $tone tone.$note';
+    return '$name. $voice’s voice, $tone tone.$note';
   }
 
   @override
@@ -167,11 +167,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get common_list_empty => 'Nothing to choose from yet.';
 
   @override
+  String get create_reason_topic_semantics =>
+      'What you wake up for, in a few words';
+
+  @override
+  String get create_reason_topic_chips => 'Or pick one';
+
+  @override
+  String get create_reason_topic_more => 'More';
+
+  @override
+  String get create_reason_topic_more_semantics => 'Show more';
+
+  @override
+  String get create_reason_topic_clear => 'Clear';
+
+  @override
+  String create_reason_topic_left(int count) {
+    return '$count left';
+  }
+
+  @override
+  String get create_reason_topic_example_1 => 'My garden';
+
+  @override
+  String get create_reason_topic_example_2 => 'My dog';
+
+  @override
+  String get create_reason_topic_example_3 => 'Painting';
+
+  @override
+  String get create_reason_topic_example_4 => 'Coaching kids';
+
+  @override
+  String get create_reason_topic_example_5 => 'Volunteering';
+
+  @override
+  String get create_reason_topic_example_6 => 'Surfing';
+
+  @override
   String get create_reason_purpose_title => 'What are you\n*working toward*?';
 
   @override
-  String get create_reason_purpose_hint =>
-      'I’m working toward something that matters to me because…';
+  String get create_reason_purpose_hint => 'In your own words';
 
   @override
   String get create_reason_suggestions_label => 'Or start from one of these';
@@ -219,9 +257,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_reason_example => 'Example';
 
   @override
-  String get create_reason_example_failed => 'Couldn’t load the example.';
-
-  @override
   String get create_reason_length => 'Length';
 
   @override
@@ -237,7 +272,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_reason_length_45_note => 'A full thought, not a ramble.';
 
   @override
-  String get create_reason_create => 'Create Reason';
+  String get create_reason_create => 'Create Goal';
 
   @override
   String seconds_short(int seconds) {
@@ -245,13 +280,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get reason_ready_title => 'Your reason is *ready*.';
+  String get reason_ready_title => 'Your goal is *ready*.';
 
   @override
-  String get reason_ready_announcement => 'Your reason is ready.';
+  String get reason_ready_announcement => 'Your goal is ready.';
 
   @override
-  String get reason_ready_why => 'Why it matters';
+  String get reason_ready_topic => 'Wake up for';
+
+  @override
+  String get reason_ready_goal => 'Goal';
+
+  @override
+  String get reason_ready_why => 'Why';
 
   @override
   String get reason_ready_voice => 'Voice';
@@ -260,23 +301,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_ready_tone => 'Tone';
 
   @override
+  String get reason_ready_length => 'Length';
+
+  @override
   String get reason_ready_use_with_alarm => 'Use with alarm';
 
   @override
   String get reason_ready_save_for_later => 'Save for later';
 
   @override
-  String get reason_name_hint => 'Name this reason';
+  String get reason_name_hint => 'Name this goal';
 
   @override
-  String get reason_name_label => 'Reason name';
+  String get reason_name_label => 'Goal name';
 
   @override
   String get reason_name_save => 'Save name';
 
   @override
   String get reason_save_failed =>
-      'Couldn’t save your reason. Check your connection and try again.';
+      'Couldn’t save your goal. Check your connection and try again.';
 
   @override
   String get reason_rename_failed =>
@@ -432,6 +476,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get reason_detail_back => 'Goals';
+
+  @override
   String get reason_detail_about => 'What it’s about';
 
   @override
@@ -447,10 +494,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_detail_area => 'Area of life';
 
   @override
-  String get reason_detail_purpose => 'Purpose';
+  String get reason_detail_purpose => 'Goal';
 
   @override
-  String get reason_detail_why => 'Why it matters';
+  String get reason_detail_why => 'Why';
 
   @override
   String get reason_detail_tone => 'Tone';
@@ -463,7 +510,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String reason_detail_length_value(String name, int seconds) {
-    return '$name · $seconds sec';
+    return '$name · ${seconds}s';
   }
 
   @override
@@ -492,7 +539,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_detail_discard_title => 'Discard changes?';
 
   @override
-  String get reason_detail_discard_message => 'This reason stays as it is now.';
+  String get reason_detail_discard_message => 'This goal stays as it is now.';
 
   @override
   String get reason_detail_keep_editing => 'Keep Editing';
@@ -557,7 +604,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_actions_use_with_alarm => 'Use with an alarm';
 
   @override
-  String get reason_actions_delete => 'Delete Reason';
+  String get reason_actions_delete => 'Delete Goal';
 
   @override
   String reason_delete_title(String name) {
@@ -569,11 +616,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reason_delete_alarm_message =>
-      'Its alarm will be deleted too. Every alarm needs a reason.';
+      'Its alarm will be deleted too. Every alarm needs a goal.';
 
   @override
   String get reason_delete_failed =>
-      'Couldn’t delete this reason. Check your connection and try again.';
+      'Couldn’t delete this goal. Check your connection and try again.';
 
   @override
   String get common_ok => 'OK';
@@ -585,10 +632,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create_alarm_section => 'What you’ll hear';
 
   @override
-  String get create_alarm_choose_reason => 'Choose a reason';
+  String get create_alarm_choose_reason => 'Choose a goal';
 
   @override
-  String get create_alarm_add_reason => 'Add a reason';
+  String get create_alarm_add_reason => 'Add a goal';
 
   @override
   String get create_alarm_reason_hint => 'What should Eala say?';
@@ -742,19 +789,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reason_picker_title => 'What should wake you up?';
 
   @override
-  String get reason_picker_subtitle => 'Each alarm plays one reason.';
+  String get reason_picker_subtitle => 'Each alarm plays one goal.';
 
   @override
-  String get reason_picker_all_taken => 'Every reason already has an alarm.';
+  String get reason_picker_all_taken => 'Every goal already has an alarm.';
 
   @override
-  String get reason_picker_select => 'Select Reason';
+  String get reason_picker_select => 'Select Goal';
 
   @override
-  String get reason_picker_new => 'New Reason';
+  String get reason_picker_new => 'New Goal';
 
   @override
-  String get reason_picker_none => 'You don’t have any reasons yet.';
+  String get reason_picker_none => 'You don’t have any goals yet.';
 
   @override
   String get soundtrack_sheet_subtitle =>
@@ -840,7 +887,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get my_alarms_delete_title => 'Delete this alarm?';
 
   @override
-  String get my_alarms_delete_message => 'Your reason stays in My Reasons.';
+  String get my_alarms_delete_message => 'Your goal stays in My Goals.';
 
   @override
   String my_alarms_delete_semantics(String time) {

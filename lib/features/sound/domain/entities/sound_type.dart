@@ -14,14 +14,19 @@ class SoundType extends Equatable {
   /// Tint as an ARGB value (`0xFFRRGGBB`); null when the server sent none.
   final int? color;
 
+  /// The example line in this tone, the same for every goal (column `sample`); a
+  /// sample, never the user's own message. Null when the server has none yet.
+  final String? sample;
+
   const SoundType({
     required this.id,
     required this.title,
     this.description,
     this.icon,
     this.color,
+    this.sample,
   });
 
   @override
-  List<Object?> get props => [id, title, description, icon, color];
+  List<Object?> get props => [id, title, description, icon, color, sample];
 }

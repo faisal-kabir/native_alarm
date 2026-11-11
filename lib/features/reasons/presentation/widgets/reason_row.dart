@@ -8,8 +8,8 @@ import '../../../../main.dart';
 import '../../domain/entities/reason.dart';
 import 'reason_emblem.dart';
 
-/// A reason as a row: a card at least 78 tall (radius 14), 16 padding, 46 emblem, two text
-/// lines and a chevron. Tapping opens the reason; it does not play it.
+/// A goal as a row: a card at least 78 tall (radius 14), 16 padding, the voice's 46 face,
+/// two text lines (the name, then "Voice · Tone") and a chevron. Tapping opens the reason; it does not play it.
 class ReasonRow extends StatelessWidget {
   const ReasonRow({
     super.key,
@@ -26,7 +26,7 @@ class ReasonRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = appLanguage(context);
     final textTheme = appTheme(context).textTheme;
-    final area = reason.areaTitle;
+    final voice = reason.voice?.name ?? '';
     final tone = reason.toneTitle;
     final note = switch (badge) {
       ReasonAlarmBadge.none => '',
@@ -35,7 +35,7 @@ class ReasonRow extends StatelessWidget {
     };
     return Semantics(
       button: true,
-      label: strings.reason_row_semantics(reason.name, area, tone, note),
+      label: strings.reason_row_semantics(reason.name, voice, tone, note),
       excludeSemantics: true,
       child: Material(
         color: AppColor.cardColor,
@@ -51,9 +51,8 @@ class ReasonRow extends StatelessWidget {
               child: Row(
                 children: [
                   ReasonEmblem(
-                    areaName: area,
-                    areaColor: reason.area?.color,
-                    areaIcon: reason.area?.icon,
+                    voice: reason.voice,
+                    name: reason.name,
                     badge: badge,
                   ),
                   SizedBox(width: 13.w),
@@ -70,7 +69,7 @@ class ReasonRow extends StatelessWidget {
                         ),
                         SizedBox(height: 1.h),
                         Text(
-                          strings.reason_row_subtitle(area, tone),
+                          strings.reason_row_subtitle(voice, tone),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodyLarge,

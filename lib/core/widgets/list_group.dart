@@ -53,7 +53,7 @@ class ListGroup extends StatelessWidget {
 /// [leading] replaces the [icon] (e.g. a server icon). [highlight] turns the value
 /// orange (a changed value, or an empty one asking to be added), with a short fade.
 /// [tint] colours the icon, label and chevron (an action row: "Connect an alarm");
-/// [iconColor] the icon alone (a reason's alarm: an orange clock, a white time).
+/// [iconColor] the icon alone (a goal's alarm: an orange clock, a white time).
 class ListGroupRow extends StatelessWidget {
   const ListGroupRow({
     super.key,
@@ -67,6 +67,7 @@ class ListGroupRow extends StatelessWidget {
     this.danger = false,
     this.tint,
     this.iconColor,
+    this.sentence = false,
     this.semanticsLabel,
     this.onTap,
   }) : assert(icon != null || leading != null);
@@ -81,6 +82,11 @@ class ListGroupRow extends StatelessWidget {
   final bool danger;
   final Color? tint;
   final Color? iconColor;
+
+  /// A row whose value is a whole sentence (a goal, a why): the label keeps one short
+  /// width so two sentences of different lengths start their words in the same place,
+  /// and the value reads from the left.
+  final bool sentence;
 
   /// What a screen reader says for the whole row (label and value by default).
   final String? semanticsLabel;
@@ -124,10 +130,13 @@ class ListGroupRow extends StatelessWidget {
             else ...[
               // The label keeps its words (up to half the row); a long value gives
               // way and ends in "…".
-              ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: (1.sw - 48.w) * 0.5),
-                child: labelText,
-              ),
+              if (sentence)
+                SizedBox(width: 42.w, child: labelText)
+              else
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: (1.sw - 48.w) * 0.5),
+                  child: labelText,
+                ),
               SizedBox(width: 12.w),
               Expanded(
                 child: AnimatedDefaultTextStyle(
@@ -139,7 +148,7 @@ class ListGroupRow extends StatelessWidget {
                   ),
                   child: Text(
                     value!,
-                    textAlign: TextAlign.right,
+                    textAlign: sentence ? TextAlign.left : TextAlign.right,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

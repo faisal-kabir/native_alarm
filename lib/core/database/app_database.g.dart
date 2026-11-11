@@ -3107,6 +3107,684 @@ class AlarmAudiosTableCompanion extends UpdateCompanion<AlarmAudioRecord> {
   }
 }
 
+class $GoalTopicsTableTable extends GoalTopicsTable
+    with TableInfo<$GoalTopicsTableTable, GoalTopicRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoalTopicsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _gentleMeta = const VerificationMeta('gentle');
+  @override
+  late final GeneratedColumn<bool> gentle = GeneratedColumn<bool>(
+    'gentle',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gentle" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _keywordsMeta = const VerificationMeta(
+    'keywords',
+  );
+  @override
+  late final GeneratedColumn<String> keywords = GeneratedColumn<String>(
+    'keywords',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _goalsJsonMeta = const VerificationMeta(
+    'goalsJson',
+  );
+  @override
+  late final GeneratedColumn<String> goalsJson = GeneratedColumn<String>(
+    'goals_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _whysJsonMeta = const VerificationMeta(
+    'whysJson',
+  );
+  @override
+  late final GeneratedColumn<String> whysJson = GeneratedColumn<String>(
+    'whys_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    label,
+    gentle,
+    keywords,
+    sortOrder,
+    goalsJson,
+    whysJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'goal_topics';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GoalTopicRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('gentle')) {
+      context.handle(
+        _gentleMeta,
+        gentle.isAcceptableOrUnknown(data['gentle']!, _gentleMeta),
+      );
+    }
+    if (data.containsKey('keywords')) {
+      context.handle(
+        _keywordsMeta,
+        keywords.isAcceptableOrUnknown(data['keywords']!, _keywordsMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('goals_json')) {
+      context.handle(
+        _goalsJsonMeta,
+        goalsJson.isAcceptableOrUnknown(data['goals_json']!, _goalsJsonMeta),
+      );
+    }
+    if (data.containsKey('whys_json')) {
+      context.handle(
+        _whysJsonMeta,
+        whysJson.isAcceptableOrUnknown(data['whys_json']!, _whysJsonMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoalTopicRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoalTopicRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      )!,
+      gentle: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gentle'],
+      )!,
+      keywords: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}keywords'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      goalsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goals_json'],
+      )!,
+      whysJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}whys_json'],
+      )!,
+    );
+  }
+
+  @override
+  $GoalTopicsTableTable createAlias(String alias) {
+    return $GoalTopicsTableTable(attachedDatabase, alias);
+  }
+}
+
+class GoalTopicRecord extends DataClass implements Insertable<GoalTopicRecord> {
+  final int id;
+  final String label;
+  final bool gentle;
+  final String keywords;
+  final int sortOrder;
+  final String goalsJson;
+  final String whysJson;
+  const GoalTopicRecord({
+    required this.id,
+    required this.label,
+    required this.gentle,
+    required this.keywords,
+    required this.sortOrder,
+    required this.goalsJson,
+    required this.whysJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['label'] = Variable<String>(label);
+    map['gentle'] = Variable<bool>(gentle);
+    map['keywords'] = Variable<String>(keywords);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['goals_json'] = Variable<String>(goalsJson);
+    map['whys_json'] = Variable<String>(whysJson);
+    return map;
+  }
+
+  GoalTopicsTableCompanion toCompanion(bool nullToAbsent) {
+    return GoalTopicsTableCompanion(
+      id: Value(id),
+      label: Value(label),
+      gentle: Value(gentle),
+      keywords: Value(keywords),
+      sortOrder: Value(sortOrder),
+      goalsJson: Value(goalsJson),
+      whysJson: Value(whysJson),
+    );
+  }
+
+  factory GoalTopicRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoalTopicRecord(
+      id: serializer.fromJson<int>(json['id']),
+      label: serializer.fromJson<String>(json['label']),
+      gentle: serializer.fromJson<bool>(json['gentle']),
+      keywords: serializer.fromJson<String>(json['keywords']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      goalsJson: serializer.fromJson<String>(json['goalsJson']),
+      whysJson: serializer.fromJson<String>(json['whysJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'label': serializer.toJson<String>(label),
+      'gentle': serializer.toJson<bool>(gentle),
+      'keywords': serializer.toJson<String>(keywords),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'goalsJson': serializer.toJson<String>(goalsJson),
+      'whysJson': serializer.toJson<String>(whysJson),
+    };
+  }
+
+  GoalTopicRecord copyWith({
+    int? id,
+    String? label,
+    bool? gentle,
+    String? keywords,
+    int? sortOrder,
+    String? goalsJson,
+    String? whysJson,
+  }) => GoalTopicRecord(
+    id: id ?? this.id,
+    label: label ?? this.label,
+    gentle: gentle ?? this.gentle,
+    keywords: keywords ?? this.keywords,
+    sortOrder: sortOrder ?? this.sortOrder,
+    goalsJson: goalsJson ?? this.goalsJson,
+    whysJson: whysJson ?? this.whysJson,
+  );
+  GoalTopicRecord copyWithCompanion(GoalTopicsTableCompanion data) {
+    return GoalTopicRecord(
+      id: data.id.present ? data.id.value : this.id,
+      label: data.label.present ? data.label.value : this.label,
+      gentle: data.gentle.present ? data.gentle.value : this.gentle,
+      keywords: data.keywords.present ? data.keywords.value : this.keywords,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      goalsJson: data.goalsJson.present ? data.goalsJson.value : this.goalsJson,
+      whysJson: data.whysJson.present ? data.whysJson.value : this.whysJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalTopicRecord(')
+          ..write('id: $id, ')
+          ..write('label: $label, ')
+          ..write('gentle: $gentle, ')
+          ..write('keywords: $keywords, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('goalsJson: $goalsJson, ')
+          ..write('whysJson: $whysJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, label, gentle, keywords, sortOrder, goalsJson, whysJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoalTopicRecord &&
+          other.id == this.id &&
+          other.label == this.label &&
+          other.gentle == this.gentle &&
+          other.keywords == this.keywords &&
+          other.sortOrder == this.sortOrder &&
+          other.goalsJson == this.goalsJson &&
+          other.whysJson == this.whysJson);
+}
+
+class GoalTopicsTableCompanion extends UpdateCompanion<GoalTopicRecord> {
+  final Value<int> id;
+  final Value<String> label;
+  final Value<bool> gentle;
+  final Value<String> keywords;
+  final Value<int> sortOrder;
+  final Value<String> goalsJson;
+  final Value<String> whysJson;
+  const GoalTopicsTableCompanion({
+    this.id = const Value.absent(),
+    this.label = const Value.absent(),
+    this.gentle = const Value.absent(),
+    this.keywords = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.goalsJson = const Value.absent(),
+    this.whysJson = const Value.absent(),
+  });
+  GoalTopicsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String label,
+    this.gentle = const Value.absent(),
+    this.keywords = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.goalsJson = const Value.absent(),
+    this.whysJson = const Value.absent(),
+  }) : label = Value(label);
+  static Insertable<GoalTopicRecord> custom({
+    Expression<int>? id,
+    Expression<String>? label,
+    Expression<bool>? gentle,
+    Expression<String>? keywords,
+    Expression<int>? sortOrder,
+    Expression<String>? goalsJson,
+    Expression<String>? whysJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (label != null) 'label': label,
+      if (gentle != null) 'gentle': gentle,
+      if (keywords != null) 'keywords': keywords,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (goalsJson != null) 'goals_json': goalsJson,
+      if (whysJson != null) 'whys_json': whysJson,
+    });
+  }
+
+  GoalTopicsTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? label,
+    Value<bool>? gentle,
+    Value<String>? keywords,
+    Value<int>? sortOrder,
+    Value<String>? goalsJson,
+    Value<String>? whysJson,
+  }) {
+    return GoalTopicsTableCompanion(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      gentle: gentle ?? this.gentle,
+      keywords: keywords ?? this.keywords,
+      sortOrder: sortOrder ?? this.sortOrder,
+      goalsJson: goalsJson ?? this.goalsJson,
+      whysJson: whysJson ?? this.whysJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (gentle.present) {
+      map['gentle'] = Variable<bool>(gentle.value);
+    }
+    if (keywords.present) {
+      map['keywords'] = Variable<String>(keywords.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (goalsJson.present) {
+      map['goals_json'] = Variable<String>(goalsJson.value);
+    }
+    if (whysJson.present) {
+      map['whys_json'] = Variable<String>(whysJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalTopicsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('label: $label, ')
+          ..write('gentle: $gentle, ')
+          ..write('keywords: $keywords, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('goalsJson: $goalsJson, ')
+          ..write('whysJson: $whysJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $GeneralWhysTableTable extends GeneralWhysTable
+    with TableInfo<$GeneralWhysTableTable, GeneralWhyRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GeneralWhysTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, content, sortOrder];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'general_whys';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GeneralWhyRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GeneralWhyRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GeneralWhyRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $GeneralWhysTableTable createAlias(String alias) {
+    return $GeneralWhysTableTable(attachedDatabase, alias);
+  }
+}
+
+class GeneralWhyRecord extends DataClass
+    implements Insertable<GeneralWhyRecord> {
+  final int id;
+  final String content;
+  final int sortOrder;
+  const GeneralWhyRecord({
+    required this.id,
+    required this.content,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['content'] = Variable<String>(content);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  GeneralWhysTableCompanion toCompanion(bool nullToAbsent) {
+    return GeneralWhysTableCompanion(
+      id: Value(id),
+      content: Value(content),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory GeneralWhyRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GeneralWhyRecord(
+      id: serializer.fromJson<int>(json['id']),
+      content: serializer.fromJson<String>(json['content']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'content': serializer.toJson<String>(content),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  GeneralWhyRecord copyWith({int? id, String? content, int? sortOrder}) =>
+      GeneralWhyRecord(
+        id: id ?? this.id,
+        content: content ?? this.content,
+        sortOrder: sortOrder ?? this.sortOrder,
+      );
+  GeneralWhyRecord copyWithCompanion(GeneralWhysTableCompanion data) {
+    return GeneralWhyRecord(
+      id: data.id.present ? data.id.value : this.id,
+      content: data.content.present ? data.content.value : this.content,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GeneralWhyRecord(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, content, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GeneralWhyRecord &&
+          other.id == this.id &&
+          other.content == this.content &&
+          other.sortOrder == this.sortOrder);
+}
+
+class GeneralWhysTableCompanion extends UpdateCompanion<GeneralWhyRecord> {
+  final Value<int> id;
+  final Value<String> content;
+  final Value<int> sortOrder;
+  const GeneralWhysTableCompanion({
+    this.id = const Value.absent(),
+    this.content = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  GeneralWhysTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String content,
+    this.sortOrder = const Value.absent(),
+  }) : content = Value(content);
+  static Insertable<GeneralWhyRecord> custom({
+    Expression<int>? id,
+    Expression<String>? content,
+    Expression<int>? sortOrder,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (content != null) 'content': content,
+      if (sortOrder != null) 'sort_order': sortOrder,
+    });
+  }
+
+  GeneralWhysTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? content,
+    Value<int>? sortOrder,
+  }) {
+    return GeneralWhysTableCompanion(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GeneralWhysTableCompanion(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3120,6 +3798,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AlarmAudiosTableTable alarmAudiosTable = $AlarmAudiosTableTable(
     this,
   );
+  late final $GoalTopicsTableTable goalTopicsTable = $GoalTopicsTableTable(
+    this,
+  );
+  late final $GeneralWhysTableTable generalWhysTable = $GeneralWhysTableTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3131,6 +3815,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     areasOfLifeTable,
     voicesTable,
     alarmAudiosTable,
+    goalTopicsTable,
+    generalWhysTable,
   ];
 }
 
@@ -4761,6 +5447,424 @@ typedef $$AlarmAudiosTableTableProcessedTableManager =
       AlarmAudioRecord,
       PrefetchHooks Function()
     >;
+typedef $$GoalTopicsTableTableCreateCompanionBuilder =
+    GoalTopicsTableCompanion Function({
+      Value<int> id,
+      required String label,
+      Value<bool> gentle,
+      Value<String> keywords,
+      Value<int> sortOrder,
+      Value<String> goalsJson,
+      Value<String> whysJson,
+    });
+typedef $$GoalTopicsTableTableUpdateCompanionBuilder =
+    GoalTopicsTableCompanion Function({
+      Value<int> id,
+      Value<String> label,
+      Value<bool> gentle,
+      Value<String> keywords,
+      Value<int> sortOrder,
+      Value<String> goalsJson,
+      Value<String> whysJson,
+    });
+
+class $$GoalTopicsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $GoalTopicsTableTable> {
+  $$GoalTopicsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gentle => $composableBuilder(
+    column: $table.gentle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get keywords => $composableBuilder(
+    column: $table.keywords,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get goalsJson => $composableBuilder(
+    column: $table.goalsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get whysJson => $composableBuilder(
+    column: $table.whysJson,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GoalTopicsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $GoalTopicsTableTable> {
+  $$GoalTopicsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gentle => $composableBuilder(
+    column: $table.gentle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get keywords => $composableBuilder(
+    column: $table.keywords,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get goalsJson => $composableBuilder(
+    column: $table.goalsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get whysJson => $composableBuilder(
+    column: $table.whysJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GoalTopicsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GoalTopicsTableTable> {
+  $$GoalTopicsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<bool> get gentle =>
+      $composableBuilder(column: $table.gentle, builder: (column) => column);
+
+  GeneratedColumn<String> get keywords =>
+      $composableBuilder(column: $table.keywords, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get goalsJson =>
+      $composableBuilder(column: $table.goalsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get whysJson =>
+      $composableBuilder(column: $table.whysJson, builder: (column) => column);
+}
+
+class $$GoalTopicsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GoalTopicsTableTable,
+          GoalTopicRecord,
+          $$GoalTopicsTableTableFilterComposer,
+          $$GoalTopicsTableTableOrderingComposer,
+          $$GoalTopicsTableTableAnnotationComposer,
+          $$GoalTopicsTableTableCreateCompanionBuilder,
+          $$GoalTopicsTableTableUpdateCompanionBuilder,
+          (
+            GoalTopicRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $GoalTopicsTableTable,
+              GoalTopicRecord
+            >,
+          ),
+          GoalTopicRecord,
+          PrefetchHooks Function()
+        > {
+  $$GoalTopicsTableTableTableManager(
+    _$AppDatabase db,
+    $GoalTopicsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GoalTopicsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GoalTopicsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GoalTopicsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> label = const Value.absent(),
+                Value<bool> gentle = const Value.absent(),
+                Value<String> keywords = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<String> goalsJson = const Value.absent(),
+                Value<String> whysJson = const Value.absent(),
+              }) => GoalTopicsTableCompanion(
+                id: id,
+                label: label,
+                gentle: gentle,
+                keywords: keywords,
+                sortOrder: sortOrder,
+                goalsJson: goalsJson,
+                whysJson: whysJson,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String label,
+                Value<bool> gentle = const Value.absent(),
+                Value<String> keywords = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<String> goalsJson = const Value.absent(),
+                Value<String> whysJson = const Value.absent(),
+              }) => GoalTopicsTableCompanion.insert(
+                id: id,
+                label: label,
+                gentle: gentle,
+                keywords: keywords,
+                sortOrder: sortOrder,
+                goalsJson: goalsJson,
+                whysJson: whysJson,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$GoalTopicsTableTable, GoalTopicRecord>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $GoalTopicsTableTable,
+                    GoalTopicRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GoalTopicsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GoalTopicsTableTable,
+      GoalTopicRecord,
+      $$GoalTopicsTableTableFilterComposer,
+      $$GoalTopicsTableTableOrderingComposer,
+      $$GoalTopicsTableTableAnnotationComposer,
+      $$GoalTopicsTableTableCreateCompanionBuilder,
+      $$GoalTopicsTableTableUpdateCompanionBuilder,
+      (
+        GoalTopicRecord,
+        BaseReferences<_$AppDatabase, $GoalTopicsTableTable, GoalTopicRecord>,
+      ),
+      GoalTopicRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$GeneralWhysTableTableCreateCompanionBuilder =
+    GeneralWhysTableCompanion Function({
+      Value<int> id,
+      required String content,
+      Value<int> sortOrder,
+    });
+typedef $$GeneralWhysTableTableUpdateCompanionBuilder =
+    GeneralWhysTableCompanion Function({
+      Value<int> id,
+      Value<String> content,
+      Value<int> sortOrder,
+    });
+
+class $$GeneralWhysTableTableFilterComposer
+    extends Composer<_$AppDatabase, $GeneralWhysTableTable> {
+  $$GeneralWhysTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GeneralWhysTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $GeneralWhysTableTable> {
+  $$GeneralWhysTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GeneralWhysTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GeneralWhysTableTable> {
+  $$GeneralWhysTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+}
+
+class $$GeneralWhysTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GeneralWhysTableTable,
+          GeneralWhyRecord,
+          $$GeneralWhysTableTableFilterComposer,
+          $$GeneralWhysTableTableOrderingComposer,
+          $$GeneralWhysTableTableAnnotationComposer,
+          $$GeneralWhysTableTableCreateCompanionBuilder,
+          $$GeneralWhysTableTableUpdateCompanionBuilder,
+          (
+            GeneralWhyRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $GeneralWhysTableTable,
+              GeneralWhyRecord
+            >,
+          ),
+          GeneralWhyRecord,
+          PrefetchHooks Function()
+        > {
+  $$GeneralWhysTableTableTableManager(
+    _$AppDatabase db,
+    $GeneralWhysTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GeneralWhysTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GeneralWhysTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GeneralWhysTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => GeneralWhysTableCompanion(
+                id: id,
+                content: content,
+                sortOrder: sortOrder,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String content,
+                Value<int> sortOrder = const Value.absent(),
+              }) => GeneralWhysTableCompanion.insert(
+                id: id,
+                content: content,
+                sortOrder: sortOrder,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$GeneralWhysTableTable, GeneralWhyRecord>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $GeneralWhysTableTable,
+                    GeneralWhyRecord
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GeneralWhysTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GeneralWhysTableTable,
+      GeneralWhyRecord,
+      $$GeneralWhysTableTableFilterComposer,
+      $$GeneralWhysTableTableOrderingComposer,
+      $$GeneralWhysTableTableAnnotationComposer,
+      $$GeneralWhysTableTableCreateCompanionBuilder,
+      $$GeneralWhysTableTableUpdateCompanionBuilder,
+      (
+        GeneralWhyRecord,
+        BaseReferences<_$AppDatabase, $GeneralWhysTableTable, GeneralWhyRecord>,
+      ),
+      GeneralWhyRecord,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4777,4 +5881,8 @@ class $AppDatabaseManager {
       $$VoicesTableTableTableManager(_db, _db.voicesTable);
   $$AlarmAudiosTableTableTableManager get alarmAudiosTable =>
       $$AlarmAudiosTableTableTableManager(_db, _db.alarmAudiosTable);
+  $$GoalTopicsTableTableTableManager get goalTopicsTable =>
+      $$GoalTopicsTableTableTableManager(_db, _db.goalTopicsTable);
+  $$GeneralWhysTableTableTableManager get generalWhysTable =>
+      $$GeneralWhysTableTableTableManager(_db, _db.generalWhysTable);
 }

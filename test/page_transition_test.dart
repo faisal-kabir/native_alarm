@@ -14,10 +14,7 @@ void main() {
       'on ${platform.name} a page slides in from the right and back out to it',
       (tester) async {
         debugDefaultTargetPlatformOverride = platform;
-        await registerFakeAlarmDependencies(
-          FakeAlarmRepository(),
-          areaOfLifeRepository: FakeAreaOfLifeRepository(),
-        );
+        await registerFakeAlarmDependencies(FakeAlarmRepository());
         await tester.pumpWidget(const MyApp());
         await tester.pumpAndSettle();
         final screenWidth =

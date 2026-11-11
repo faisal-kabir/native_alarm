@@ -17,10 +17,10 @@ void main() {
     expect(find.text('Your alarms'), findsOneWidget);
     expect(find.text('Up to 3'), findsOneWidget);
     expect(find.text('Set your first alarm'), findsOneWidget);
-    expect(find.text('Pick a time and a reason.'), findsOneWidget);
+    expect(find.text('Pick a time and a goal.'), findsOneWidget);
     // The glass lens draws a second copy of the selected tab's label.
     expect(find.text('Alarms'), findsWidgets);
-    expect(find.text('Reasons'), findsWidgets);
+    expect(find.text('Goal'), findsWidgets);
     expect(find.text('Settings'), findsWidgets);
   });
 
@@ -31,10 +31,10 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Reasons').first);
+    await tester.tap(find.text('Goal').first);
     await tester.pumpAndSettle();
-    expect(find.text('My Reasons'), findsOneWidget);
-    expect(find.text('Add your first Reason'), findsOneWidget);
+    expect(find.text('My Goals'), findsOneWidget);
+    expect(find.text('Add your first Goal'), findsOneWidget);
     expect(find.text('The why behind your day.'), findsOneWidget);
 
     await tester.tap(find.text('Settings').first);
@@ -55,10 +55,10 @@ void main() {
 
     await tester.fling(find.text('My Alarms'), const Offset(-600, 0), 1500);
     await tester.pumpAndSettle();
-    expect(find.text('Add your first Reason'), findsOneWidget);
+    expect(find.text('Add your first Goal'), findsOneWidget);
 
     await tester.fling(
-      find.text('Add your first Reason'),
+      find.text('Add your first Goal'),
       const Offset(600, 0),
       1500,
     );
@@ -88,7 +88,7 @@ void main() {
   });
 
   testWidgets(
-    'Reasons tab lists reasons with area and tone, then the New Reason row',
+    'Reasons tab lists reasons with voice and tone, then the New Reason row',
     (WidgetTester tester) async {
       await registerFakeAlarmDependencies(
         FakeAlarmRepository(),
@@ -105,24 +105,26 @@ void main() {
             name: 'Second reason',
             area: 'Beta',
             tone: 'Tone B',
+            voiceId: 2,
+            voice: 'Orion',
           ),
         ]),
       );
       await tester.pumpWidget(const MyApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Reasons').first);
+      await tester.tap(find.text('Goal').first);
       await tester.pumpAndSettle();
 
       expect(find.text('First reason'), findsOneWidget);
-      expect(find.text('Alpha · Tone A'), findsOneWidget);
+      expect(find.text('Astra · Tone A'), findsOneWidget);
       expect(find.text('Second reason'), findsOneWidget);
-      expect(find.text('Beta · Tone B'), findsOneWidget);
-      // The emblem shows the first letter of the area's name.
+      expect(find.text('Orion · Tone B'), findsOneWidget);
+      // The mark is the voice's face; with no picture, the first letter of its name.
       expect(find.text('A'), findsOneWidget);
-      expect(find.text('B'), findsOneWidget);
-      expect(find.text('New Reason'), findsOneWidget);
-      expect(find.text('Add your first Reason'), findsNothing);
+      expect(find.text('O'), findsOneWidget);
+      expect(find.text('New Goal'), findsOneWidget);
+      expect(find.text('Add your first Goal'), findsNothing);
     },
   );
 

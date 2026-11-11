@@ -33,11 +33,11 @@ void main() {
   ) async {
     final handle = tester.ensureSemantics();
     final cases = {
-      ReasonAlarmBadge.none: 'Build my own thing. Area X, Tone Y tone.',
+      ReasonAlarmBadge.none: 'Build my own thing. Astra’s voice, Tone Y tone.',
       ReasonAlarmBadge.on:
-          'Build my own thing. Area X, Tone Y tone. Played by an alarm.',
+          'Build my own thing. Astra’s voice, Tone Y tone. Played by an alarm.',
       ReasonAlarmBadge.off:
-          'Build my own thing. Area X, Tone Y tone. Its alarm is off.',
+          'Build my own thing. Astra’s voice, Tone Y tone. Its alarm is off.',
     };
     for (final entry in cases.entries) {
       await tester.pumpWidget(_host(entry.key));

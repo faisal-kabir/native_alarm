@@ -5,10 +5,10 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../../goal_topic/domain/goal_topic_search.dart';
 import '../../domain/entities/new_reason.dart';
 import '../../domain/entities/reason.dart';
 import '../../domain/entities/reason_draft.dart';
-import '../../domain/entities/reason_name.dart';
 import '../../domain/repositories/reason_repository.dart';
 import '../datasources/reason_local_data_source.dart';
 import '../datasources/reason_remote_data_source.dart';
@@ -82,21 +82,25 @@ class ReasonRepositoryImpl implements ReasonRepository {
 
   @override
   Future<Either<Failure, Reason>> createReason(NewReason reason) => _write(
-    () async {
-      final userId = await remoteDataSource.fetchOwnUserId();
-      final base = reason.baseName.trim();
-      final taken = await remoteDataSource.fetchNamesStartingWith(userId, base);
-      return remoteDataSource.insertReason(
-        userId,
-        nextReasonName(base, taken),
-        reason.draft,
-      );
-    },
+    () async => remoteDataSource.insertReason(
+      await remoteDataSource.fetchOwnUserId(),
+      reason.name.trim(),
+      reason.draft,
+    ),
   );
 
   @override
   Future<Either<Failure, Reason>> renameReason(int id, String name) =>
-      _write(() => remoteDataSource.updateReason(id, {'name': name.trim()}));
+      // The title is the topic: one field, renamed together.
+      _write(
+        () => remoteDataSource.updateReason(id, {
+          'name': name.trim(),
+          'topic': name.trim(),
+          // The new words may call for gentleness (or no longer do).
+          'focus':
+              (isGentleText(name) ? GoalFocus.gentle : GoalFocus.general).value,
+        }),
+      );
 
   @override
   Future<Either<Failure, Reason>> updateReason(int id, ReasonDraft draft) =>

@@ -45,27 +45,25 @@ import 'package:eala/core/speech/dictation_controller.dart';
 
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
 import 'package:eala/features/area_of_life/domain/entities/matter_suggestion.dart';
-import 'package:eala/features/area_of_life/domain/usecases/get_matter_suggestions_usecase.dart';
 import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
-import 'package:eala/features/area_of_life/domain/usecases/get_purpose_suggestions_usecase.dart';
-import 'package:eala/features/sound/domain/entities/sound_quote.dart';
 import 'package:eala/features/sound/domain/entities/sound_type.dart';
 import 'package:eala/features/sound/domain/repositories/sound_repository.dart';
-import 'package:eala/features/sound/domain/usecases/get_sound_quote_usecase.dart';
 import 'package:eala/features/sound/domain/usecases/get_sound_types_usecase.dart';
 import 'package:eala/features/voice/domain/entities/voice.dart';
 import 'package:eala/features/voice/domain/repositories/voice_repository.dart';
 import 'package:eala/features/voice/domain/usecases/refresh_voices_usecase.dart';
 import 'package:eala/features/voice/domain/usecases/watch_voices_usecase.dart';
 import 'package:eala/features/area_of_life/domain/repositories/area_of_life_repository.dart';
-import 'package:eala/features/area_of_life/domain/usecases/refresh_areas_of_life_usecase.dart';
-import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_usecase.dart';
 import 'package:eala/features/create_reason/presentation/bloc/create_reason_bloc.dart';
+import 'package:eala/features/goal_topic/domain/entities/goal_topic.dart';
+import 'package:eala/features/goal_topic/domain/repositories/goal_topic_repository.dart';
+import 'package:eala/features/goal_topic/domain/usecases/refresh_goal_topics_usecase.dart';
+import 'package:eala/features/goal_topic/domain/usecases/watch_general_whys_usecase.dart';
+import 'package:eala/features/goal_topic/domain/usecases/watch_goal_topics_usecase.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/domain/repositories/reason_repository.dart';
 import 'package:eala/features/reasons/domain/entities/new_reason.dart';
 import 'package:eala/features/reasons/domain/entities/reason_draft.dart';
-import 'package:eala/features/reasons/domain/entities/reason_name.dart';
 import 'package:eala/features/reasons/domain/usecases/create_reason_usecase.dart';
 import 'package:eala/features/reasons/domain/usecases/refresh_reasons_usecase.dart';
 import 'package:eala/features/reason_detail/domain/usecases/delete_reason_with_alarm_usecase.dart';
@@ -235,6 +233,8 @@ class FakeReasonRepository implements ReasonRepository {
     purpose: d.purpose,
     why: d.why,
     lengthSeconds: d.lengthSeconds,
+    topic: d.topic,
+    focus: d.focus,
     areaId: d.areaId,
     area: _find(areas, (a) => a.id == d.areaId),
     soundTypeId: d.soundTypeId,
@@ -281,10 +281,7 @@ class FakeReasonRepository implements ReasonRepository {
   Future<Either<Failure, Reason>> createReason(NewReason reason) async {
     if (offline) return const Left(ServerFailure('offline'));
     created.add(reason);
-    final name = nextReasonName(reason.baseName, [
-      for (final r in reasons) r.name,
-    ]);
-    final saved = _join(_nextId++, name, reason.draft);
+    final saved = _join(_nextId++, reason.name, reason.draft);
     _put(saved);
     return Right(saved);
   }
@@ -494,18 +491,10 @@ FakeDictation? lastFakeDictation;
 /// In-memory [SoundRepository]: [sounds] and [quotes]; [quoteAnswer] delays the
 /// example line, [offline] fails both calls.
 class FakeSoundRepository implements SoundRepository {
-  FakeSoundRepository({
-    this.sounds = const [],
-    this.quotes = const [],
-    this.quoteAnswer,
-    this.offline = false,
-  });
+  FakeSoundRepository({this.sounds = const [], this.offline = false});
 
   List<SoundType> sounds;
-  List<SoundQuote> quotes;
-  Future<void>? quoteAnswer;
   bool offline;
-  final List<(int, int)> quoteRequests = [];
 
   @override
   Future<Either<Failure, List<SoundType>>> getSoundTypes() async {
@@ -513,19 +502,54 @@ class FakeSoundRepository implements SoundRepository {
     if (offline) return const Left(ServerFailure('offline'));
     return Right(sounds);
   }
+}
+
+/// In-memory [GoalTopicRepository]. [saved] is what is "on the device"; a refresh
+/// replaces it with [server] (or fails when [offline]) once [serverAnswer] completes,
+/// so tests can look at the loading state first.
+class FakeGoalTopicRepository implements GoalTopicRepository {
+  FakeGoalTopicRepository({
+    this.saved = const [],
+    this.server = const [],
+    this.savedWhys = const [],
+    this.serverWhys = const [],
+    this.offline = false,
+    this.serverAnswer,
+  });
+
+  List<GoalTopic> saved;
+  List<GoalTopic> server;
+  List<String> savedWhys;
+  List<String> serverWhys;
+  bool offline;
+  Future<void>? serverAnswer;
+  int refreshCount = 0;
+  final StreamController<List<GoalTopic>> _topics =
+      StreamController.broadcast();
+  final StreamController<List<String>> _whys = StreamController.broadcast();
 
   @override
-  Future<Either<Failure, SoundQuote?>> getSoundQuote(
-    int areaId,
-    int soundId,
-  ) async {
-    quoteRequests.add((areaId, soundId));
-    await (quoteAnswer ?? Future<void>.delayed(Duration.zero));
+  Stream<Either<Failure, List<GoalTopic>>> watchTopics() async* {
+    yield Right(saved);
+    yield* _topics.stream.map(Right.new);
+  }
+
+  @override
+  Stream<Either<Failure, List<String>>> watchGeneralWhys() async* {
+    yield Right(savedWhys);
+    yield* _whys.stream.map(Right.new);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> refresh() async {
+    refreshCount++;
+    await serverAnswer;
     if (offline) return const Left(ServerFailure('offline'));
-    for (final q in quotes) {
-      if (q.areaId == areaId && q.soundId == soundId) return Right(q);
-    }
-    return const Right(null);
+    saved = server;
+    savedWhys = serverWhys;
+    _topics.add(saved);
+    _whys.add(savedWhys);
+    return const Right(unit);
   }
 }
 
@@ -563,7 +587,7 @@ Future<void> registerFakeAlarmDependencies(
   AlarmRepository repository, {
   ReasonRepository? reasonRepository,
   SettingsRepository? settingsRepository,
-  AreaOfLifeRepository? areaOfLifeRepository,
+  GoalTopicRepository? goalTopicRepository,
   VoiceRepository? voiceRepository,
   SoundRepository? soundRepository,
   AlarmAudioRepository? alarmAudioRepository,
@@ -623,7 +647,6 @@ Future<void> registerFakeAlarmDependencies(
     reason,
     _,
   ) {
-    final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
     final voices = voiceRepository ?? FakeVoiceRepository();
     final sound = soundRepository ?? FakeSoundRepository();
     return ReasonDetailBloc(
@@ -647,29 +670,23 @@ Future<void> registerFakeAlarmDependencies(
         reasons,
         alarmScheduler ?? FakeAlarmScheduler(),
       ),
-      WatchAreasOfLifeUseCase(areas),
-      RefreshAreasOfLifeUseCase(areas),
       WatchVoicesUseCase(voices),
       RefreshVoicesUseCase(voices),
       GetSoundTypesUseCase(sound),
-      GetPurposeSuggestionsUseCase(areas),
-      GetMatterSuggestionsUseCase(areas),
       reason,
     );
   });
   instance.registerFactory<CreateReasonBloc>(() {
-    final areas = areaOfLifeRepository ?? FakeAreaOfLifeRepository();
+    final topics = goalTopicRepository ?? FakeGoalTopicRepository();
     final voices = voiceRepository ?? FakeVoiceRepository();
     final sound = soundRepository ?? FakeSoundRepository();
     return CreateReasonBloc(
-      WatchAreasOfLifeUseCase(areas),
-      RefreshAreasOfLifeUseCase(areas),
+      WatchGoalTopicsUseCase(topics),
+      WatchGeneralWhysUseCase(topics),
+      RefreshGoalTopicsUseCase(topics),
       WatchVoicesUseCase(voices),
       RefreshVoicesUseCase(voices),
-      GetPurposeSuggestionsUseCase(areas),
-      GetMatterSuggestionsUseCase(areas),
       GetSoundTypesUseCase(sound),
-      GetSoundQuoteUseCase(sound),
       CreateReasonUseCase(reasons),
     );
   });

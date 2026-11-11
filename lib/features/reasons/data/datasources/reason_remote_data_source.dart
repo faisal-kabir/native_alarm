@@ -10,9 +10,6 @@ abstract class ReasonRemoteDataSource {
   /// The signed-in user's `user.id` (the row's first column), for `reason.user_id`.
   Future<int> fetchOwnUserId();
 
-  /// Names of [userId]'s reasons that start with [base] (to pick an unused name).
-  Future<List<String>> fetchNamesStartingWith(int userId, String base);
-
   /// Inserts the reason for [userId] as [name]; returns the new row with its joins
   /// ([reasonSelect]).
   Future<Map<String, dynamic>> insertReason(
@@ -36,9 +33,12 @@ abstract class ReasonRemoteDataSource {
   Future<void> deleteReason(int id);
 }
 
-/// The `reason` columns a [ReasonDraft] fills ("why" empty → null).
+/// The `reason` columns a [ReasonDraft] fills ("why" empty → null; a reason made before
+/// topics existed keeps its `area_id` and has no topic to write).
 Map<String, Object?> reasonDraftColumns(ReasonDraft draft) => {
-  'area_id': draft.areaId,
+  if (draft.topic.trim().isNotEmpty) 'topic': draft.topic.trim(),
+  'focus': draft.focus.value,
+  if (draft.areaId != null) 'area_id': draft.areaId,
   'purpose': draft.purpose.trim(),
   'why': draft.why.trim().isEmpty ? null : draft.why.trim(),
   'sound_type_id': draft.soundTypeId,
@@ -55,25 +55,6 @@ class ReasonRemoteDataSourceImpl implements ReasonRemoteDataSource {
 
   @override
   Future<int> fetchOwnUserId() => ownUserId();
-
-  @override
-  Future<List<String>> fetchNamesStartingWith(int userId, String base) async {
-    try {
-      // LIKE treats % and _ as wildcards: escape them in the base name.
-      final pattern = base.replaceAllMapped(
-        RegExp(r'[\\%_]'),
-        (m) => '\\${m[0]}',
-      );
-      final rows = await client
-          .from('reason')
-          .select('name')
-          .eq('user_id', userId)
-          .like('name', '$pattern%');
-      return [for (final row in rows) (row['name'] as String?) ?? ''];
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
 
   @override
   Future<Map<String, dynamic>> insertReason(

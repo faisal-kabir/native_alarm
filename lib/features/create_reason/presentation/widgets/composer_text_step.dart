@@ -32,6 +32,7 @@ class ComposerTextStep extends StatefulWidget {
     required this.maxLength,
     this.showCounter = true,
     this.note,
+    this.fieldMinHeight = 72,
     required this.suggestions,
   });
 
@@ -44,6 +45,9 @@ class ComposerTextStep extends StatefulWidget {
   final int maxLength;
   final bool showCounter;
   final String? note;
+
+  /// The field is at least this tall (dp) before anything is written.
+  final double fieldMinHeight;
   final Widget Function(ValueChanged<String> fill) suggestions;
 
   @override
@@ -126,6 +130,7 @@ class _ComposerTextStepState extends State<ComposerTextStep> {
               maxLength: widget.maxLength,
               showCounter: widget.showCounter,
               note: widget.note,
+              minHeight: widget.fieldMinHeight,
               onDictationUnavailable: () => ScaffoldMessenger.of(context)
                   .showSnackBar(
                     SnackBar(content: Text(strings.dictation_unavailable)),

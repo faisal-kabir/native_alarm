@@ -72,6 +72,15 @@ abstract final class AppColor {
   static const Color scrim = Color(0x80000000);
   static const Color shadowSoft = Color(0x1F000000);
 
+  /// The round clear button at the end of a text field.
+  static const Color clearButton = Color(0x52EBEBF5); // rgba(235,235,245,.32)
+
+  /// The outline of a quiet chip (the topic step's "More").
+  static const Color chipOutline = Color(0x29F7F5F1); // rgba(247,245,241,.16)
+
+  /// A page dot that is not the current one.
+  static const Color dotIdle = Color(0x40EBEBF5); // rgba(235,235,245,.25)
+
   /// iOS's raised segment in a segmented control.
   static const Color segmentRaised = Color(0xFF636366);
 

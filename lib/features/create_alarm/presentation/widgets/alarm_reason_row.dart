@@ -9,8 +9,8 @@ import '../../../../main.dart';
 import '../../../reasons/domain/entities/reason.dart';
 import '../../../reasons/presentation/widgets/reason_emblem.dart';
 
-/// The alarm editor's Reason row (the first row of "What you'll hear"): the Reason's
-/// area mark, its name, "Area · Tone" and an orange "Change ›".
+/// The alarm editor's Reason row (the first row of "What you'll hear"): the goal's
+/// voice face, its name, "Voice · Tone" and an orange "Change ›".
 ///
 /// With no [reason] it keeps the same footprint so choosing one fills it in place: a
 /// dashed tile that breathes (its orange outline 32 % ↔ 72 %, 2.8 s; still with
@@ -43,7 +43,7 @@ class AlarmReasonRow extends StatelessWidget {
     final meta = reason == null
         ? hint
         : [
-            reason.areaTitle,
+            reason.voice?.name ?? '',
             reason.toneTitle,
           ].where((s) => s.isNotEmpty).join(' · ');
     final textTheme = appTheme(context).textTheme;
@@ -60,9 +60,9 @@ class AlarmReasonRow extends StatelessWidget {
               reason == null
                   ? const _EmptyTile()
                   : ReasonEmblem(
-                      areaName: reason.areaTitle,
-                      areaColor: reason.area?.color,
-                      areaIcon: reason.area?.icon,
+                      voice: reason.voice,
+                      name: reason.name,
+                      size: 42,
                     ),
               SizedBox(width: 12.w),
               Expanded(

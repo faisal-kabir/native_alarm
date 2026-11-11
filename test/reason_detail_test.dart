@@ -1,12 +1,9 @@
-import 'package:eala/core/di/injection.dart';
 import 'package:eala/core/router/app_router.dart';
 import 'package:eala/core/router/route_names.dart';
 import 'package:eala/core/widgets/app_sheet.dart';
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
 import 'package:eala/features/create_alarm/presentation/pages/create_alarm_page.dart';
-import 'package:eala/features/area_of_life/domain/entities/purpose_suggestion.dart';
-import 'package:eala/features/reason_detail/presentation/bloc/reason_detail_bloc.dart';
 import 'package:eala/features/reason_detail/presentation/pages/reason_detail_page.dart';
 import 'package:eala/features/reasons/domain/entities/reason.dart';
 import 'package:eala/features/reasons/presentation/widgets/reason_row.dart';
@@ -58,15 +55,6 @@ Future<FakeReasonRepository> openDetail(
     alarmScheduler: scheduler,
     remoteAlarmRepository: remote,
     reasonRepository: reasons,
-    areaOfLifeRepository: FakeAreaOfLifeRepository(
-      saved: const [health, work],
-      server: const [health, work],
-      areaSuggestions: const {
-        1: [
-          PurposeSuggestion(id: 1, areaId: 1, text: 'Rest deeply every night'),
-        ],
-      },
-    ),
     voiceRepository: FakeVoiceRepository(
       saved: const [astra, bold],
       server: const [astra, bold],
@@ -75,7 +63,7 @@ Future<FakeReasonRepository> openDetail(
   );
   await tester.pumpWidget(const MyApp());
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Reasons').first);
+  await tester.tap(find.text('Goal').first);
   await tester.pumpAndSettle();
   await tester.tap(find.byType(ReasonRow));
   await tester.pumpAndSettle();
@@ -90,72 +78,86 @@ Future<void> tapRow(WidgetTester tester, String label) async {
 void main() {
   setUp(() => appRouter.go(RouteNames.dashboardPath));
 
-  test('the purpose ideas are asked once for both text sheets', () async {
-    final areas = FakeAreaOfLifeRepository(
-      saved: const [health],
-      server: const [health],
-      areaSuggestions: const {
-        1: [
-          PurposeSuggestion(id: 5, areaId: 1, text: 'Rest deeply every night'),
-        ],
-      },
-    );
-    await registerFakeAlarmDependencies(
-      FakeAlarmRepository(),
-      reasonRepository: FakeReasonRepository(
-        const [saved],
-        const [health],
-        const [encouraging],
-        const [astra],
-      ),
-      areaOfLifeRepository: areas,
-    );
-    final bloc = instance<ReasonDetailBloc>(param1: saved);
-    expect(await bloc.purposeSuggestions(1), ['Rest deeply every night']);
-    // The why ideas follow the purpose idea the text reads like.
-    await bloc.whySuggestions(1, 'rest deeply  every night');
-    expect(areas.suggestionRequests, [1]);
-    expect(areas.matterRequests, [(1, 5)]);
-    await bloc.close();
-  });
-
   testWidgets('a reason opens with everything it holds', (tester) async {
     await openDetail(tester);
     expect(find.byType(ReasonDetailPage), findsOneWidget);
     expect(find.text('Mornings'), findsWidgets);
-    expect(find.text('Health'), findsOneWidget);
+    expect(find.text('Goals'), findsOneWidget, reason: 'the back label');
+    expect(
+      find.text('Area of life'),
+      findsNothing,
+      reason: 'no areas any more',
+    );
+    expect(find.text('Health'), findsNothing);
     expect(find.text('Sleep well every night'), findsOneWidget);
+    expect(find.text('Why'), findsOneWidget);
     expect(find.text('Add'), findsOneWidget); // no "why" yet
     expect(find.text('Encouraging'), findsOneWidget);
     expect(find.text('Astra'), findsOneWidget);
-    expect(find.text('Short · 30 sec'), findsOneWidget);
+    expect(find.text('Short · 30s'), findsOneWidget);
     expect(find.text('Not in an alarm yet.'), findsOneWidget);
     expect(find.text('Connect an alarm'), findsOneWidget);
     expect(find.bySemanticsLabel('More'), findsOneWidget);
     expect(find.text('Save Changes'), findsNothing);
   });
 
-  testWidgets('a chosen area is held, then saved with Save Changes', (
+  testWidgets('a chosen voice is held, then saved with Save Changes', (
     tester,
   ) async {
     final reasons = await openDetail(tester);
-    await tapRow(tester, 'Area of life');
-    expect(find.text('What part of life is this for?'), findsOneWidget);
-    expect(find.text('Keep This Area'), findsOneWidget);
-
-    await tester.tap(find.text('Work'));
+    await tapRow(tester, 'Voice');
+    await tester.tap(find.text('Bold'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use Work'));
+    await tester.tap(find.text('Use Bold'));
     await tester.pumpAndSettle();
 
-    // Held, not saved: the row says Work and the Save bar is up.
-    expect(find.text('Work'), findsOneWidget);
+    // Held, not saved: the row says Bold and the Save bar is up.
+    expect(find.text('Bold'), findsOneWidget);
     expect(reasons.updates, isEmpty);
     await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
 
-    expect(reasons.updates.single.$2, saved.draft.copyWith(areaId: 2));
+    expect(reasons.updates.single.$2, saved.draft.copyWith(voiceId: 2));
     expect(find.text('Save Changes'), findsNothing);
+  });
+
+  testWidgets('Goal and Why start their words in the same place', (
+    tester,
+  ) async {
+    await openDetail(
+      tester,
+      reason: const Reason(
+        id: 7,
+        name: 'Mornings',
+        purpose: 'Sleep well every night',
+        why: 'I want more energy',
+        lengthSeconds: 30,
+        areaId: 1,
+        area: health,
+        soundTypeId: 1,
+        sound: encouraging,
+        voiceId: 1,
+        voice: astra,
+      ),
+    );
+    final goal = tester.getTopLeft(find.text('Sleep well every night')).dx;
+    final why = tester.getTopLeft(find.text('I want more energy')).dx;
+    expect(goal, why);
+  });
+
+  testWidgets('the face at the top follows the voice held on the Voice row', (
+    tester,
+  ) async {
+    await openDetail(tester);
+    // With no pictures, a face is the first letter of its voice's name.
+    expect(find.text('A'), findsOneWidget);
+    await tapRow(tester, 'Voice');
+    await tester.tap(find.text('Bold'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Use Bold'));
+    await tester.pumpAndSettle();
+    expect(find.text('B'), findsWidgets);
+    expect(find.text('A'), findsNothing);
   });
 
   testWidgets('choosing the saved value again is no change', (tester) async {
@@ -165,7 +167,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Use Standard'));
     await tester.pumpAndSettle();
-    expect(find.text('Standard · 45 sec'), findsOneWidget);
+    expect(find.text('Standard · 45s'), findsOneWidget);
     expect(find.text('Save Changes'), findsOneWidget);
 
     await tapRow(tester, 'Length');
@@ -212,7 +214,7 @@ void main() {
     await tester.tap(find.text('Use Bold'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Reasons').first);
+    await tester.tap(find.text('Goals'));
     await tester.pumpAndSettle();
     expect(find.text('Discard changes?'), findsOneWidget);
     await tester.tap(find.text('Discard').last);
@@ -221,11 +223,12 @@ void main() {
     expect(find.byType(ReasonRow), findsOneWidget);
   });
 
-  testWidgets('the purpose sheet offers ideas and holds new words', (
+  testWidgets('the goal sheet holds new words and offers no ideas', (
     tester,
   ) async {
     await openDetail(tester);
-    await tapRow(tester, 'Purpose');
+    await tester.tap(find.text('Goal').last);
+    await tester.pumpAndSettle();
     expect(find.text('What are you working toward?'), findsOneWidget);
     expect(find.text('No Changes'), findsOneWidget);
 
@@ -233,15 +236,48 @@ void main() {
       of: find.byType(AppSheet),
       matching: find.byType(TextField),
     );
+    // Ideas belong to making a goal; this sheet edits one that exists.
     await tester.enterText(field, '');
     await tester.pumpAndSettle();
-    expect(find.text('Rest deeply every night'), findsOneWidget);
-    await tester.tap(find.text('Rest deeply every night'));
+    expect(find.text('Rest deeply every night'), findsNothing);
+    await tester.enterText(field, 'Rest deeply every night');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Use This'));
     await tester.pumpAndSettle();
 
     expect(find.text('Rest deeply every night'), findsOneWidget);
+    expect(find.text('Save Changes'), findsOneWidget);
+  });
+
+  testWidgets('the why sheet may be left empty to clear it', (tester) async {
+    await openDetail(
+      tester,
+      reason: const Reason(
+        id: 7,
+        name: 'Mornings',
+        purpose: 'Sleep well every night',
+        why: 'I want more energy',
+        lengthSeconds: 30,
+        areaId: 1,
+        area: health,
+        soundTypeId: 1,
+        sound: encouraging,
+        voiceId: 1,
+        voice: astra,
+      ),
+    );
+    await tester.tap(find.text('Why'));
+    await tester.pumpAndSettle();
+    expect(find.text('Why does it matter to you?'), findsOneWidget);
+    final field = find.descendant(
+      of: find.byType(AppSheet),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(field, '');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add'), findsOneWidget);
     expect(find.text('Save Changes'), findsOneWidget);
   });
 
@@ -272,10 +308,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Reasons').first);
+    await tester.tap(find.text('Goals'));
     await tester.pumpAndSettle();
     expect(find.byType(ReasonDetailPage), findsNothing);
-    expect(find.text('Health · Calm'), findsOneWidget);
+    expect(find.text('Astra · Calm'), findsOneWidget);
   });
 
   testWidgets('… → Delete Reason asks first, then deletes and goes back', (
@@ -285,7 +321,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('More'));
     await tester.pumpAndSettle();
     expect(find.text('Use with an alarm'), findsOneWidget);
-    await tester.tap(find.text('Delete Reason'));
+    await tester.tap(find.text('Delete Goal'));
     await tester.pumpAndSettle();
     // The question comes 120 ms after the sheet has gone.
     await tester.pump(const Duration(milliseconds: 150));
@@ -300,7 +336,7 @@ void main() {
 
     await tester.tap(find.bySemanticsLabel('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete Reason'));
+    await tester.tap(find.text('Delete Goal'));
     await tester.pumpAndSettle();
     // The question comes 120 ms after the sheet has gone.
     await tester.pump(const Duration(milliseconds: 150));
@@ -318,14 +354,14 @@ void main() {
     reasons.offline = true;
     await tester.tap(find.bySemanticsLabel('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete Reason'));
+    await tester.tap(find.text('Delete Goal'));
     await tester.pumpAndSettle();
     // The question comes 120 ms after the sheet has gone.
     await tester.pump(const Duration(milliseconds: 150));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Couldn’t delete this reason'), findsOneWidget);
+    expect(find.textContaining('Couldn’t delete this goal'), findsOneWidget);
     expect(find.byType(ReasonDetailPage), findsOneWidget);
   });
 
@@ -392,7 +428,7 @@ void main() {
     Future<void> askToDelete(WidgetTester tester) async {
       await tester.tap(find.bySemanticsLabel('More'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete Reason'));
+      await tester.tap(find.text('Delete Goal'));
       await tester.pumpAndSettle();
       // The question comes 120 ms after the sheet has gone.
       await tester.pump(const Duration(milliseconds: 150));
@@ -409,12 +445,21 @@ void main() {
       expect(find.text('Tue Wed'), findsOneWidget);
     });
 
+    testWidgets('switched off, its row says Off', (tester) async {
+      final alarms = alarmsWithOne();
+      alarms.store['a'] = alarms.store['a']!.copyWith(enabled: false);
+      await openDetail(tester, reason: withAlarm, alarms: alarms);
+      expect(find.text('6:30 AM'), findsOneWidget);
+      expect(find.text('Off'), findsOneWidget);
+      expect(find.text('Tue Wed'), findsNothing);
+    });
+
     testWidgets('its "…" offers no other alarm', (tester) async {
       await openDetail(tester, reason: withAlarm, alarms: alarmsWithOne());
       await tester.tap(find.bySemanticsLabel('More'));
       await tester.pumpAndSettle();
       expect(find.text('Use with an alarm'), findsNothing);
-      expect(find.text('Delete Reason'), findsOneWidget);
+      expect(find.text('Delete Goal'), findsOneWidget);
     });
 
     testWidgets('deleting it deletes its alarm too, everywhere', (
@@ -433,7 +478,7 @@ void main() {
       await askToDelete(tester);
       expect(find.text('Delete “Mornings”?'), findsOneWidget);
       expect(
-        find.text('Its alarm will be deleted too. Every alarm needs a reason.'),
+        find.text('Its alarm will be deleted too. Every alarm needs a goal.'),
         findsOneWidget,
       );
       await tester.tap(find.text('Delete'));
@@ -458,10 +503,7 @@ void main() {
       await askToDelete(tester);
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Couldn’t delete this reason'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Couldn’t delete this goal'), findsOneWidget);
       expect(alarms.store, hasLength(1));
       expect(reasons.deletes, isEmpty);
     });
