@@ -16,6 +16,12 @@ abstract class UserProfileRemoteDataSource {
   /// Updates only `platform`, `app_version` (and `fcm_token` when [info] has one) of
   /// the user's row and returns the row as it is now.
   Future<UserProfile> updateDeviceInfo(String authUserId, DeviceInfo info);
+
+  /// Writes [fields] (column → value) into the user's row and returns it as it is now.
+  Future<UserProfile> updateFields(
+    String authUserId,
+    Map<String, Object?> fields,
+  );
 }
 
 @LazySingleton(as: UserProfileRemoteDataSource)
@@ -58,6 +64,30 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
             'platform': info.platform,
             'app_version': info.appVersion,
             'fcm_token': ?info.fcmToken,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('auth_user_id', authUserId)
+          .select()
+          .maybeSingle();
+      if (row == null) throw const ServerException('No profile row to update');
+      return userProfileFromJson(row);
+    } on ServerException {
+      rethrow;
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<UserProfile> updateFields(
+    String authUserId,
+    Map<String, Object?> fields,
+  ) async {
+    try {
+      final row = await client
+          .from('user')
+          .update({
+            ...fields,
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('auth_user_id', authUserId)

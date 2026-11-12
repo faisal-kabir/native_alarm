@@ -8,6 +8,7 @@ import '../../features/create_reason/presentation/pages/create_reason_page.dart'
 import '../../features/create_reason/presentation/pages/reason_ready_page.dart';
 import '../../features/reason_detail/presentation/pages/reason_detail_page.dart';
 import '../../features/reasons/domain/entities/reason.dart';
+import '../../features/settings/presentation/pages/profile_page.dart';
 import 'route_names.dart';
 
 import 'package:go_router/go_router.dart';
@@ -67,6 +68,11 @@ final GoRouter appRouter = GoRouter(
           reasonId: state.extra is int ? state.extra! as int : null,
         ),
       ),
+    ),
+    GoRoute(
+      path: RouteNames.profilePath,
+      name: RouteNames.profile,
+      pageBuilder: (context, state) => appPage(state, const ProfilePage()),
     ),
     GoRoute(
       path: RouteNames.editAlarmPath,

@@ -48,6 +48,17 @@ abstract final class AppConstant {
   /// it if the files are served from elsewhere (a CDN, another bucket prefix).
   static const String baseUrl = '$SUPABASE_URL/storage/v1/object/public/';
 
+  /// Google sign-in (Google Cloud project `eala-01` → Google Auth Platform → Clients).
+  /// [googleServerClientId] is the *Web* client: Google makes the ID token for it, and
+  /// Supabase (Authentication → Providers → Google → Client IDs) accepts it.
+  /// [googleIosClientId] is the iOS client; its reversed form is the URL scheme in
+  /// `ios/Runner/Info.plist`, and the two must change together. Client IDs are public
+  /// (no secret goes in the app).
+  static const String googleServerClientId =
+      '980238433703-5j6f873707lpbc8dpniq125e2rmgr5ss.apps.googleusercontent.com';
+  static const String googleIosClientId =
+      '980238433703-6o5pmdms55q2br4bgkspfvhnoch390s0.apps.googleusercontent.com';
+
   static const String SUPABASE_URL = "https://jnvohuvefbjgcuzpnmek.supabase.co";
   static const String SUPABASE_KEY =
       "sb_publishable_jSRwQ9vwCi7cJloq1tdgqQ_7VVDeCIN";

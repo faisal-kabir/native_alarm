@@ -31,6 +31,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/alarm_off.svg
   SvgGenImage get alarmOff => const SvgGenImage('assets/icons/alarm_off.svg');
 
+  /// Directory path: assets/icons/auth
+  $AssetsIconsAuthGen get auth => const $AssetsIconsAuthGen();
+
   /// File path: assets/icons/bulb.svg
   SvgGenImage get bulb => const SvgGenImage('assets/icons/bulb.svg');
 
@@ -84,6 +87,19 @@ class $AssetsTranscriptsGen {
 
   /// List of all assets
   List<String> get values => [demoAlarmMessage];
+}
+
+class $AssetsIconsAuthGen {
+  const $AssetsIconsAuthGen();
+
+  /// File path: assets/icons/auth/apple.svg
+  SvgGenImage get apple => const SvgGenImage('assets/icons/auth/apple.svg');
+
+  /// File path: assets/icons/auth/google.svg
+  SvgGenImage get google => const SvgGenImage('assets/icons/auth/google.svg');
+
+  /// List of all assets
+  List<SvgGenImage> get values => [apple, google];
 }
 
 class $AssetsIconsDetailGen {
@@ -151,6 +167,10 @@ class $AssetsIconsSettingsGen {
   /// File path: assets/icons/settings/help.svg
   SvgGenImage get help => const SvgGenImage('assets/icons/settings/help.svg');
 
+  /// File path: assets/icons/settings/logout.svg
+  SvgGenImage get logout =>
+      const SvgGenImage('assets/icons/settings/logout.svg');
+
   /// File path: assets/icons/settings/quote.svg
   SvgGenImage get quote => const SvgGenImage('assets/icons/settings/quote.svg');
 
@@ -173,6 +193,7 @@ class $AssetsIconsSettingsGen {
     crown,
     doc,
     help,
+    logout,
     quote,
     shield,
     star,

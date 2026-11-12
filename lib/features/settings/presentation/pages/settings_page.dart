@@ -1,32 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../../../core/di/injection.dart';
+import '../../../../core/router/route_names.dart';
+import '../../../../core/widgets/app_alert.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../../gen/assets.gen.dart';
 import '../../../../main.dart';
+import '../bloc/account_bloc.dart';
+import '../bloc/account_event.dart';
+import '../bloc/account_state.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
+import '../widgets/account_notices.dart';
 import '../widgets/horizon.dart';
 import '../widgets/profile_card.dart';
+import '../widgets/sign_in_sheet.dart';
 import '../../../../core/widgets/list_group.dart';
 
 /// The "Settings" tab of the Dashboard.
 ///
-/// There is no account system yet, so the page always shows the signed-out look: an
-/// unnamed profile, the "Sign In" row and the free plan. The Premium badge, credits
-/// and "Sign Out" rows from the design are added with the account feature.
+/// The account is told in two places, by who is signed in ([AccountBloc]):
+///
+/// * the card at the top: the name (or "Set your name"), and under it "Signed in with
+///   Apple" / "Signed in with Google" / "Signed in on this device" / "Not signed in";
+///   it opens Profile;
+/// * the Account group: signed in, "Sign Out" (after a question); not signed in, "Sign In"
+///   (the sheet with the Apple and Google buttons) and, under the group, what is at stake.
+///
+/// "Delete account" is there either way. The Premium badge and credits come with the
+/// subscription feature.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (BuildContext context) =>
-          instance<SettingsBloc>()..add(const LoadSettingsEvent()),
-      child: const _SettingsView(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (BuildContext context) =>
+              instance<SettingsBloc>()..add(const LoadSettingsEvent()),
+        ),
+        // One shared account for every screen that shows it; never closed here.
+        BlocProvider.value(
+          value: instance<AccountBloc>()..add(const AccountStartedEvent()),
+        ),
+      ],
+      child: const AccountNoticeListener(child: _SettingsView()),
     );
   }
 }
@@ -49,14 +74,37 @@ class _SettingsViewState extends State<_SettingsView>
     child: SectionHeader(title: title),
   );
 
-  Widget _caption(BuildContext context, String text) => Padding(
-    padding: REdgeInsets.fromLTRB(4, 8, 4, 0),
-    child: Text(
-      text,
-      style: appTheme(context).textTheme.bodyLarge!
-          .copyWith(height: 1.45, letterSpacing: 0),
-    ),
-  );
+  /// "Sign In": the sheet; whichever button is tapped signs in with that provider.
+  Future<void> _signIn(BuildContext context) async {
+    final bloc = context.read<AccountBloc>();
+    if (bloc.state.busy) return;
+    HapticFeedback.selectionClick();
+    final provider = await showSignInSheet(context);
+    if (provider == null) return;
+    HapticFeedback.mediumImpact();
+    bloc.add(AccountSignInRequestedEvent(provider));
+  }
+
+  /// "Sign Out": asks first, saying that nothing is lost.
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final bloc = context.read<AccountBloc>();
+    if (bloc.state.busy) return;
+    final strings = appLanguage(context);
+    final out = await showAppAlert<bool>(
+      context,
+      title: strings.account_sign_out_title,
+      message: strings.account_sign_out_message,
+      actions: [
+        AppAlertAction(label: strings.common_cancel, value: false),
+        AppAlertAction(
+          label: strings.settings_sign_out,
+          value: true,
+          destructive: true,
+        ),
+      ],
+    );
+    if (out ?? false) bloc.add(const AccountSignOutRequestedEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,9 +139,22 @@ class _SettingsViewState extends State<_SettingsView>
                     ),
                   ),
                   SizedBox(height: 16.h),
-                  ProfileCard(
-                    name: '',
-                    subtitle: strings.settings_not_signed_in,
+                  BlocBuilder<AccountBloc, AccountState>(
+                    buildWhen: (a, b) =>
+                        a.name != b.name || a.status != b.status,
+                    builder: (context, account) => ProfileCard(
+                      name: account.name,
+                      subtitle: switch (account.status) {
+                        AccountStatus.apple => strings.settings_signed_in_apple,
+                        AccountStatus.google =>
+                          strings.settings_signed_in_google,
+                        AccountStatus.thisDevice =>
+                          strings.settings_signed_in_device,
+                        AccountStatus.signedOut =>
+                          strings.settings_not_signed_in,
+                      },
+                      onTap: () => context.push(RouteNames.profilePath),
+                    ),
                   ),
                   if (settings != null) ...[
                     _sectionTitle(strings.settings_notifications),
@@ -122,7 +183,7 @@ class _SettingsViewState extends State<_SettingsView>
                         ),
                       ],
                     ),
-                    _caption(context, strings.settings_notifications_note),
+                    ListGroupNote(strings.settings_notifications_note),
                   ],
                   _sectionTitle(strings.settings_subscription),
                   ListGroup(
@@ -176,19 +237,38 @@ class _SettingsViewState extends State<_SettingsView>
                     ],
                   ),
                   _sectionTitle(strings.settings_account),
-                  ListGroup(
-                    children: [
-                      ListGroupRow(
-                        icon: icons.user,
-                        label: strings.settings_sign_in,
-                        chevron: true,
-                      ),
-                      ListGroupRow(
-                        icon: icons.trash,
-                        label: strings.settings_delete_account,
-                        danger: true,
-                      ),
-                    ],
+                  BlocBuilder<AccountBloc, AccountState>(
+                    buildWhen: (a, b) => a.signedIn != b.signedIn,
+                    builder: (context, account) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ListGroup(
+                          children: [
+                            if (account.signedIn)
+                              ListGroupRow(
+                                icon: icons.logout,
+                                label: strings.settings_sign_out,
+                                onTap: () => _confirmSignOut(context),
+                              )
+                            else
+                              ListGroupRow(
+                                icon: icons.user,
+                                label: strings.settings_sign_in,
+                                chevron: true,
+                                onTap: () => _signIn(context),
+                              ),
+                            ListGroupRow(
+                              icon: icons.trash,
+                              label: strings.settings_delete_account,
+                              danger: true,
+                            ),
+                          ],
+                        ),
+                        // What is at stake, for someone who has not signed in.
+                        if (!account.signedIn)
+                          ListGroupNote(strings.settings_sign_in_note),
+                      ],
+                    ),
                   ),
                   if (appInfo != null) ...[
                     SizedBox(height: 24.h),

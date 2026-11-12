@@ -4,6 +4,8 @@ import 'package:eala/features/auth/data/datasources/user_profile_local_data_sour
 import 'package:eala/features/auth/data/datasources/user_profile_remote_data_source.dart';
 import 'package:eala/features/auth/data/models/user_profile_model.dart';
 import 'package:eala/features/auth/data/repositories/user_profile_repository_impl.dart';
+import 'package:eala/features/auth/domain/entities/app_user.dart';
+import 'package:eala/features/auth/domain/entities/auth_provider.dart';
 import 'package:eala/features/auth/domain/entities/device_info.dart';
 import 'package:eala/features/auth/domain/entities/user_profile.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -36,6 +38,29 @@ class _FakeRemote implements UserProfileRemoteDataSource {
   Future<UserProfile> fetchProfile(String authUserId) async {
     if (fail) throw const ServerException('offline');
     return row!;
+  }
+
+  final List<Map<String, Object?>> fieldUpdates = [];
+
+  @override
+  Future<UserProfile> updateFields(
+    String authUserId,
+    Map<String, Object?> fields,
+  ) async {
+    if (fail) throw const ServerException('offline');
+    fieldUpdates.add(fields);
+    final old = row ?? UserProfile(id: 7, authUserId: authUserId);
+    return row = UserProfile(
+      id: old.id,
+      authUserId: authUserId,
+      name: fields['name'] as String? ?? old.name,
+      email: fields['email'] as String? ?? old.email,
+      primaryProvider:
+          fields['primary_provider'] as String? ?? old.primaryProvider,
+      platform: old.platform,
+      appVersion: old.appVersion,
+      fcmToken: old.fcmToken,
+    );
   }
 
   @override
@@ -187,6 +212,89 @@ void main() {
       final result = await r.updateDeviceInfo(info);
       expect(result.isLeft(), isTrue);
       expect(await local().read(), _profile);
+    });
+  });
+
+  group('the name and the account', () {
+    test('a name is saved on the server and kept on the device', () async {
+      final remote = _FakeRemote('uuid-1', row: _profile);
+      final repo = UserProfileRepositoryImpl(remote, local());
+
+      final saved = await repo.updateName('  Sam ');
+      expect(saved.getOrElse(() => throw 'failed').name, 'Sam');
+      expect(remote.fieldUpdates.single, {'name': 'Sam'});
+      expect(
+        (await repo.getCachedProfile()).getOrElse(() => null)?.name,
+        'Sam',
+      );
+    });
+
+    test('a name that can not be spoken is not saved', () async {
+      final remote = _FakeRemote('uuid-1', row: _profile);
+      final repo = UserProfileRepositoryImpl(remote, local());
+      for (final bad in ['', 'A', '7even', 'Sam!', '  ']) {
+        expect((await repo.updateName(bad)).isLeft(), isTrue, reason: bad);
+      }
+      expect(remote.fieldUpdates, isEmpty);
+    });
+
+    test('a name that fails to save leaves the saved one', () async {
+      final remote = _FakeRemote('uuid-1', row: _profile);
+      final repo = UserProfileRepositoryImpl(remote, local());
+      await repo.syncProfile();
+      final failing = UserProfileRepositoryImpl(
+        _FakeRemote('uuid-1', row: _profile, fail: true),
+        local(),
+      );
+      expect((await failing.updateName('Sam')).isLeft(), isTrue);
+      expect(
+        (await repo.getCachedProfile()).getOrElse(() => null)?.name,
+        'Alex',
+      );
+    });
+
+    test('no one signed in, nothing is saved', () async {
+      final repo = UserProfileRepositoryImpl(_FakeRemote(null), local());
+      final result = await repo.updateName('Sam');
+      expect(result.fold((f) => f, (_) => null), isA<ServerFailure>());
+    });
+
+    test('a sign-in writes how they sign in and their e-mail', () async {
+      final remote = _FakeRemote(
+        'uuid-1',
+        row: const UserProfile(id: 7, authUserId: 'uuid-1', name: 'Alex'),
+      );
+      final repo = UserProfileRepositoryImpl(remote, local());
+      await repo.recordSignIn(
+        const AppUser(
+          id: 'uuid-1',
+          isAnonymous: false,
+          provider: AuthProvider.apple,
+          email: 'me@icloud.com',
+        ),
+        suggestedName: 'Someone Else',
+      );
+      expect(remote.fieldUpdates.single, {
+        'primary_provider': 'apple',
+        'email': 'me@icloud.com',
+      }, reason: 'a name already set is never overwritten');
+    });
+
+    test('...and takes the provider\'s name when none is set', () async {
+      final remote = _FakeRemote(
+        'uuid-1',
+        row: const UserProfile(id: 7, authUserId: 'uuid-1'),
+      );
+      final repo = UserProfileRepositoryImpl(remote, local());
+      await repo.recordSignIn(
+        const AppUser(
+          id: 'uuid-1',
+          isAnonymous: false,
+          provider: AuthProvider.google,
+        ),
+        suggestedName: 'Alex Rivers 🙂',
+      );
+      expect(remote.fieldUpdates.single['name'], 'Alex Rivers');
     });
   });
 }

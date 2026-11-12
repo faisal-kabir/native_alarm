@@ -47,6 +47,26 @@ class ListGroup extends StatelessWidget {
   }
 }
 
+/// A line under a [ListGroup] saying what its rows mean ("These settings don't affect
+/// your alarms.", what signing in keeps).
+class ListGroupNote extends StatelessWidget {
+  const ListGroupNote(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: REdgeInsets.fromLTRB(4, 8, 4, 0),
+      child: Text(
+        text,
+        style: appTheme(context).textTheme.bodyLarge!
+            .copyWith(height: 1.45, letterSpacing: 0),
+      ),
+    );
+  }
+}
+
 /// One row of a [ListGroup]: icon, label, then an optional value, trailing widget (a
 /// switch) and chevron. At least 52 tall; grows with the text.
 ///

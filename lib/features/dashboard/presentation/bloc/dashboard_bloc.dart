@@ -13,6 +13,7 @@ import '../../../auth/domain/entities/device_info.dart';
 import '../../../create_alarm/domain/usecases/sync_system_alarms_usecase.dart';
 import '../../../create_alarm/domain/usecases/upload_pending_alarms_usecase.dart';
 import '../../../auth/domain/usecases/ensure_signed_in_usecase.dart';
+import '../../../auth/domain/usecases/finish_account_merge_usecase.dart';
 import '../../../auth/domain/usecases/sync_user_profile_usecase.dart';
 import '../../../auth/domain/usecases/update_device_info_usecase.dart';
 import '../../../settings/domain/usecases/get_app_info_usecase.dart';
@@ -24,7 +25,8 @@ import 'dashboard_state.dart';
 /// and bringing the alarm sounds and sound tracks (rows and files, needed to make
 /// alarms offline) up to date in the background every time the app opens, keeping the
 /// device's alarm system in step with the saved alarms (and again once the sounds are
-/// in), and sending the server alarms made offline. The tabs' data
+/// in), sending the server alarms made offline, and finishing a move of goals and
+/// alarms into an account that a sign-in left unfinished. The tabs' data
 /// lives in their features (My Alarms, Reasons, Settings).
 @injectable
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
@@ -33,6 +35,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
   final AnalyticsService analytics;
   final EnsureSignedInUseCase ensureSignedInUseCase;
+  final FinishAccountMergeUseCase finishAccountMergeUseCase;
   final SyncUserProfileUseCase syncUserProfileUseCase;
   final UpdateDeviceInfoUseCase updateDeviceInfoUseCase;
   final GetAppInfoUseCase getAppInfoUseCase;
@@ -45,6 +48,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   DashboardBloc(
     this.analytics,
     this.ensureSignedInUseCase,
+    this.finishAccountMergeUseCase,
     this.syncUserProfileUseCase,
     this.updateDeviceInfoUseCase,
     this.getAppInfoUseCase,
@@ -79,6 +83,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     }, (user) => user);
     if (user == null) return;
     debugPrint('Supabase user ${user.id} (anonymous: ${user.isAnonymous})');
+
+    // First, so the alarms sent below and the profile read below are the account's.
+    final merge = await finishAccountMergeUseCase(NoParams());
+    merge.fold(
+      (failure) =>
+          debugPrint('Account merge still waiting: ${failure.message}'),
+      (merged) {
+        if (merged) debugPrint('Account merge finished');
+      },
+    );
 
     // Run alongside the rest; their tables need the session.
     final audio = refreshAlarmAudioUseCase(NoParams());

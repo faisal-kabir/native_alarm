@@ -73,6 +73,10 @@ import 'package:eala/features/area_of_life/domain/usecases/watch_areas_of_life_u
     as _i375;
 import 'package:eala/features/auth/data/datasources/auth_remote_data_source.dart'
     as _i570;
+import 'package:eala/features/auth/data/datasources/pending_merge_local_data_source.dart'
+    as _i945;
+import 'package:eala/features/auth/data/datasources/social_credential_source.dart'
+    as _i1061;
 import 'package:eala/features/auth/data/datasources/user_profile_local_data_source.dart'
     as _i125;
 import 'package:eala/features/auth/data/datasources/user_profile_remote_data_source.dart'
@@ -87,12 +91,22 @@ import 'package:eala/features/auth/domain/repositories/user_profile_repository.d
     as _i512;
 import 'package:eala/features/auth/domain/usecases/ensure_signed_in_usecase.dart'
     as _i131;
+import 'package:eala/features/auth/domain/usecases/finish_account_merge_usecase.dart'
+    as _i480;
 import 'package:eala/features/auth/domain/usecases/get_cached_user_profile_usecase.dart'
     as _i25;
+import 'package:eala/features/auth/domain/usecases/sign_in_with_provider_usecase.dart'
+    as _i201;
+import 'package:eala/features/auth/domain/usecases/sign_out_usecase.dart'
+    as _i700;
 import 'package:eala/features/auth/domain/usecases/sync_user_profile_usecase.dart'
     as _i157;
 import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.dart'
     as _i798;
+import 'package:eala/features/auth/domain/usecases/update_user_name_usecase.dart'
+    as _i887;
+import 'package:eala/features/auth/domain/usecases/watch_auth_user_usecase.dart'
+    as _i298;
 import 'package:eala/features/create_alarm/data/datasources/alarm_remote_data_source.dart'
     as _i181;
 import 'package:eala/features/create_alarm/data/repositories/remote_alarm_repository_impl.dart'
@@ -176,6 +190,8 @@ import 'package:eala/features/settings/domain/usecases/get_settings_usecase.dart
     as _i57;
 import 'package:eala/features/settings/domain/usecases/save_settings_usecase.dart'
     as _i936;
+import 'package:eala/features/settings/presentation/bloc/account_bloc.dart'
+    as _i1054;
 import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart'
     as _i678;
 import 'package:eala/features/sound/data/datasources/sound_remote_data_source.dart'
@@ -238,6 +254,11 @@ extension GetItInjectableX on _i174.GetIt {
       () => storageModule.secureStorage,
     );
     gh.lazySingleton<_i454.SupabaseClient>(() => supabaseModule.supabase);
+    gh.lazySingleton<_i945.PendingMergeLocalDataSource>(
+      () => _i945.PendingMergeLocalDataSourceImpl(
+        gh<_i558.FlutterSecureStorage>(),
+      ),
+    );
     gh.lazySingleton<_i360.AppInfoDataSource>(
       () => _i360.AppInfoDataSourceImpl(),
     );
@@ -250,6 +271,9 @@ extension GetItInjectableX on _i174.GetIt {
       ),
     );
     gh.factory<_i327.SamplePlayer>(() => _i327.CachedSamplePlayer());
+    gh.lazySingleton<_i1061.SocialCredentialSource>(
+      () => _i1061.SocialCredentialSourceImpl(),
+    );
     gh.lazySingleton<_i965.SpeechRecognizer>(
       () => _i965.SpeechRecognizer(gh<_i941.SpeechToText>()),
     );
@@ -297,9 +321,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i466.AlarmAudioRemoteDataSource>(
       () => _i466.AlarmAudioRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
-    gh.lazySingleton<_i653.AuthRepository>(
-      () => _i9.AuthRepositoryImpl(gh<_i570.AuthRemoteDataSource>()),
-    );
     gh.lazySingleton<_i760.AreaOfLifeRemoteDataSource>(
       () => _i760.AreaOfLifeRemoteDataSourceImpl(gh<_i454.SupabaseClient>()),
     );
@@ -332,6 +353,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i1064.SoundRepository>(
       () => _i727.SoundRepositoryImpl(gh<_i546.SoundRemoteDataSource>()),
+    );
+    gh.lazySingleton<_i653.AuthRepository>(
+      () => _i9.AuthRepositoryImpl(
+        gh<_i570.AuthRemoteDataSource>(),
+        gh<_i1061.SocialCredentialSource>(),
+        gh<_i945.PendingMergeLocalDataSource>(),
+      ),
     );
     gh.lazySingleton<_i582.SettingsRepository>(
       () => _i807.SettingsRepositoryImpl(
@@ -375,6 +403,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i131.EnsureSignedInUseCase>(
       () => _i131.EnsureSignedInUseCase(gh<_i653.AuthRepository>()),
+    );
+    gh.lazySingleton<_i298.WatchAuthUserUseCase>(
+      () => _i298.WatchAuthUserUseCase(gh<_i653.AuthRepository>()),
     );
     gh.lazySingleton<_i23.ReasonRepository>(
       () => _i534.ReasonRepositoryImpl(
@@ -425,6 +456,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i899.AlarmAudioFileStore>(),
       ),
     );
+    gh.lazySingleton<_i201.SignInWithProviderUseCase>(
+      () => _i201.SignInWithProviderUseCase(
+        gh<_i653.AuthRepository>(),
+        gh<_i512.UserProfileRepository>(),
+        gh<_i23.ReasonRepository>(),
+      ),
+    );
     gh.lazySingleton<_i586.GetAlarmsUseCase>(
       () => _i586.GetAlarmsUseCase(gh<_i1032.AlarmRepository>()),
     );
@@ -448,6 +486,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i798.UpdateDeviceInfoUseCase>(
       () => _i798.UpdateDeviceInfoUseCase(gh<_i512.UserProfileRepository>()),
+    );
+    gh.lazySingleton<_i887.UpdateUserNameUseCase>(
+      () => _i887.UpdateUserNameUseCase(gh<_i512.UserProfileRepository>()),
     );
     gh.lazySingleton<_i173.AlarmScheduler>(
       () => _i177.SystemAlarmManager(
@@ -489,6 +530,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i173.AlarmScheduler>(),
       ),
     );
+    gh.lazySingleton<_i480.FinishAccountMergeUseCase>(
+      () => _i480.FinishAccountMergeUseCase(
+        gh<_i653.AuthRepository>(),
+        gh<_i23.ReasonRepository>(),
+      ),
+    );
     gh.factory<_i946.CreateReasonBloc>(
       () => _i946.CreateReasonBloc(
         gh<_i688.WatchGoalTopicsUseCase>(),
@@ -511,6 +558,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i40.UploadPendingAlarmsUseCase(
         gh<_i1032.AlarmRepository>(),
         gh<_i452.RemoteAlarmRepository>(),
+      ),
+    );
+    gh.lazySingleton<_i700.SignOutUseCase>(
+      () => _i700.SignOutUseCase(
+        gh<_i653.AuthRepository>(),
+        gh<_i512.UserProfileRepository>(),
       ),
     );
     gh.factory<_i64.ReasonReadyBloc>(
@@ -568,6 +621,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i173.AlarmScheduler>(),
       ),
     );
+    gh.lazySingleton<_i1054.AccountBloc>(
+      () => _i1054.AccountBloc(
+        gh<_i298.WatchAuthUserUseCase>(),
+        gh<_i25.GetCachedUserProfileUseCase>(),
+        gh<_i887.UpdateUserNameUseCase>(),
+        gh<_i201.SignInWithProviderUseCase>(),
+        gh<_i700.SignOutUseCase>(),
+      ),
+    );
     gh.factoryParam<_i494.CreateAlarmBloc, int?, _i959.Alarm?>(
       (reasonId, editing) => _i494.CreateAlarmBloc(
         gh<_i305.WatchReasonsUseCase>(),
@@ -600,6 +662,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i875.DashboardBloc(
         gh<_i36.AnalyticsService>(),
         gh<_i131.EnsureSignedInUseCase>(),
+        gh<_i480.FinishAccountMergeUseCase>(),
         gh<_i157.SyncUserProfileUseCase>(),
         gh<_i798.UpdateDeviceInfoUseCase>(),
         gh<_i49.GetAppInfoUseCase>(),

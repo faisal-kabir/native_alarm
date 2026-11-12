@@ -885,6 +885,156 @@ abstract class AppLocalizations {
   /// **'Sign In'**
   String get settings_sign_in;
 
+  /// No description provided for @settings_sign_out.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Out'**
+  String get settings_sign_out;
+
+  /// No description provided for @settings_signed_in_apple.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with Apple'**
+  String get settings_signed_in_apple;
+
+  /// No description provided for @settings_signed_in_google.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with Google'**
+  String get settings_signed_in_google;
+
+  /// No description provided for @settings_signed_in_device.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in on this device'**
+  String get settings_signed_in_device;
+
+  /// No description provided for @settings_sign_in_note.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your goals, alarms and Premium if you delete the app or switch phones.'**
+  String get settings_sign_in_note;
+
+  /// No description provided for @account_profile_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get account_profile_title;
+
+  /// No description provided for @account_profile_back.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get account_profile_back;
+
+  /// No description provided for @account_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get account_save;
+
+  /// No description provided for @account_your_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get account_your_name;
+
+  /// No description provided for @account_name_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your first name'**
+  String get account_name_hint;
+
+  /// No description provided for @account_name_semantics.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get account_name_semantics;
+
+  /// No description provided for @account_section.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account_section;
+
+  /// No description provided for @account_signed_in_with.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in with'**
+  String get account_signed_in_with;
+
+  /// No description provided for @account_provider_apple.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple'**
+  String get account_provider_apple;
+
+  /// No description provided for @account_provider_google.
+  ///
+  /// In en, this message translates to:
+  /// **'Google'**
+  String get account_provider_google;
+
+  /// No description provided for @account_provider_device.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get account_provider_device;
+
+  /// No description provided for @account_sign_out_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of Eala?'**
+  String get account_sign_out_title;
+
+  /// No description provided for @account_sign_out_message.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goals stay with your account. Sign back in any time to pick up where you left off.'**
+  String get account_sign_out_message;
+
+  /// No description provided for @account_sign_in_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your goals safe'**
+  String get account_sign_in_title;
+
+  /// No description provided for @account_sign_in_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'So they follow you to any phone.'**
+  String get account_sign_in_subtitle;
+
+  /// No description provided for @account_sign_in_apple.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Apple'**
+  String get account_sign_in_apple;
+
+  /// No description provided for @account_sign_in_google.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google'**
+  String get account_sign_in_google;
+
+  /// No description provided for @account_sign_in_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t sign in. Check your connection and try again.'**
+  String get account_sign_in_failed;
+
+  /// No description provided for @account_sign_out_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t sign out. Check your connection and try again.'**
+  String get account_sign_out_failed;
+
+  /// No description provided for @account_name_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save your name. Check your connection and try again.'**
+  String get account_name_failed;
+
   /// No description provided for @settings_delete_account.
   ///
   /// In en, this message translates to:

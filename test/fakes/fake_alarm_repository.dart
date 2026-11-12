@@ -23,6 +23,7 @@ import 'package:eala/features/auth/domain/repositories/user_profile_repository.d
 import 'package:eala/features/auth/domain/usecases/sync_user_profile_usecase.dart';
 import 'package:eala/features/auth/domain/usecases/update_device_info_usecase.dart';
 import 'package:eala/features/auth/domain/usecases/ensure_signed_in_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/finish_account_merge_usecase.dart';
 import 'package:eala/core/error/failures.dart';
 import 'package:eala/features/alarm/domain/entities/alarm.dart';
 import 'package:eala/features/alarm/domain/repositories/alarm_repository.dart';
@@ -41,6 +42,13 @@ import 'package:eala/features/settings/presentation/bloc/settings_bloc.dart';
 import 'dart:async';
 
 import 'package:eala/core/audio/sample_player.dart';
+import 'package:eala/features/auth/domain/entities/auth_provider.dart';
+import 'package:eala/features/auth/domain/usecases/get_cached_user_profile_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/sign_in_with_provider_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/sign_out_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/update_user_name_usecase.dart';
+import 'package:eala/features/auth/domain/usecases/watch_auth_user_usecase.dart';
+import 'package:eala/features/settings/presentation/bloc/account_bloc.dart';
 import 'package:eala/core/speech/dictation_controller.dart';
 
 import 'package:eala/features/area_of_life/domain/entities/area_of_life.dart';
@@ -111,12 +119,88 @@ class FakeAlarmRepository implements AlarmRepository {
 
 /// Pretends to be signed in anonymously; counts how often a session was ensured.
 class FakeAuthRepository implements AuthRepository {
+  FakeAuthRepository({AppUser? user})
+    : _user = user ?? const AppUser(id: 'test-uuid', isAnonymous: true);
+
   int calls = 0;
+  AppUser? _user;
+  final StreamController<AppUser?> _changes = StreamController.broadcast();
+
+  /// The providers signed in with, and how often it signed out.
+  final List<AuthProvider> signIns = [];
+  int signOuts = 0;
+
+  /// Makes the next sign-in fail with it (a [CancelledFailure], a [ServerFailure]...).
+  Failure? signInFailure;
+
+  /// The next sign-in goes to an account that already existed ([SignedIn.joined]),
+  /// with the move of this user's things left unfinished when [mergePending].
+  bool joins = false;
+  bool mergePending = false;
+
+  /// What [finishPendingMerge] answers, and how often it was asked.
+  bool mergeWaiting = false;
+  int mergeChecks = 0;
+  bool signOutFails = false;
+
+  /// The name the provider gives with a sign-in.
+  String? providerName;
+
+  /// Holds a sign-in until completed (to look at the busy state).
+  Completer<void>? signInGate;
+
+  AppUser? get user => _user;
 
   @override
   Future<Either<Failure, AppUser>> ensureSignedIn() async {
     calls++;
-    return const Right(AppUser(id: 'test-uuid', isAnonymous: true));
+    return Right(_user!);
+  }
+
+  @override
+  Stream<AppUser?> watchUser() async* {
+    yield _user;
+    yield* _changes.stream;
+  }
+
+  @override
+  Future<Either<Failure, SignedIn>> signIn(AuthProvider provider) async {
+    signIns.add(provider);
+    await signInGate?.future;
+    final failure = signInFailure;
+    if (failure != null) return Left(failure);
+    _user = AppUser(
+      id: 'test-uuid',
+      isAnonymous: false,
+      provider: provider,
+      email: 'alex@example.com',
+    );
+    _changes.add(_user);
+    return Right(
+      SignedIn(
+        _user!,
+        name: providerName,
+        joined: joins,
+        mergePending: joins && mergePending,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, bool>> finishPendingMerge() async {
+    mergeChecks++;
+    final waiting = mergeWaiting;
+    mergeWaiting = false;
+    return Right(waiting);
+  }
+
+  @override
+  Future<Either<Failure, AppUser>> signOut() async {
+    signOuts++;
+    if (signOutFails) return const Left(ServerFailure('offline'));
+    _user = const AppUser(id: 'anon-uuid', isAnonymous: true);
+    _changes.add(_user);
+    return Right(_user!);
   }
 }
 
@@ -126,6 +210,11 @@ class FakeUserProfileRepository implements UserProfileRepository {
   UserProfile? cached;
   final List<DeviceInfo> deviceUpdates = [];
 
+  /// The names saved, the sign-ins recorded, and whether saving a name fails.
+  final List<String> names = [];
+  final List<AppUser> signInsRecorded = [];
+  bool nameFails = false;
+
   @override
   Future<Either<Failure, UserProfile?>> getCachedProfile() async =>
       Right(cached);
@@ -133,7 +222,7 @@ class FakeUserProfileRepository implements UserProfileRepository {
   @override
   Future<Either<Failure, UserProfile>> syncProfile() async {
     syncs++;
-    return Right(cached = const UserProfile(id: 1, authUserId: 'test-uuid'));
+    return Right(cached ??= const UserProfile(id: 1, authUserId: 'test-uuid'));
   }
 
   @override
@@ -143,9 +232,47 @@ class FakeUserProfileRepository implements UserProfileRepository {
       cached = UserProfile(
         id: 1,
         authUserId: 'test-uuid',
+        name: cached?.name,
+        email: cached?.email,
+        primaryProvider: cached?.primaryProvider,
         platform: info.platform,
         appVersion: info.appVersion,
         fcmToken: info.fcmToken,
+      ),
+    );
+  }
+
+  UserProfile _with({String? name, String? provider, String? email}) =>
+      UserProfile(
+        id: 1,
+        authUserId: 'test-uuid',
+        name: name ?? cached?.name,
+        email: email ?? cached?.email,
+        primaryProvider: provider ?? cached?.primaryProvider,
+        platform: cached?.platform,
+        appVersion: cached?.appVersion,
+        fcmToken: cached?.fcmToken,
+      );
+
+  @override
+  Future<Either<Failure, UserProfile>> updateName(String name) async {
+    if (nameFails) return const Left(ServerFailure('offline'));
+    names.add(name);
+    return Right(cached = _with(name: name.trim()));
+  }
+
+  @override
+  Future<Either<Failure, UserProfile>> recordSignIn(
+    AppUser user, {
+    String? suggestedName,
+  }) async {
+    signInsRecorded.add(user);
+    final needsName = (cached?.name ?? '').trim().isEmpty;
+    return Right(
+      cached = _with(
+        name: needsName ? suggestedName : null,
+        provider: user.provider?.value,
+        email: user.email,
       ),
     );
   }
@@ -588,6 +715,8 @@ Future<void> registerFakeAlarmDependencies(
   ReasonRepository? reasonRepository,
   SettingsRepository? settingsRepository,
   GoalTopicRepository? goalTopicRepository,
+  AuthRepository? authRepository,
+  UserProfileRepository? userProfileRepository,
   VoiceRepository? voiceRepository,
   SoundRepository? soundRepository,
   AlarmAudioRepository? alarmAudioRepository,
@@ -599,15 +728,26 @@ Future<void> registerFakeAlarmDependencies(
   SplashGate.shown = true;
   final remote = remoteAlarmRepository ?? FakeRemoteAlarmRepository();
   instance.registerLazySingleton<AnalyticsService>(FakeAnalyticsService.new);
-  instance.registerLazySingleton<AuthRepository>(FakeAuthRepository.new);
-  instance.registerLazySingleton<UserProfileRepository>(
-    FakeUserProfileRepository.new,
-  );
+  final auth = authRepository ?? FakeAuthRepository();
+  final profiles = userProfileRepository ?? FakeUserProfileRepository();
+  instance.registerLazySingleton<AuthRepository>(() => auth);
+  instance.registerLazySingleton<UserProfileRepository>(() => profiles);
   final reasons = reasonRepository ?? FakeReasonRepository();
+  // One account for every screen that shows it, as in the app.
+  instance.registerLazySingleton<AccountBloc>(
+    () => AccountBloc(
+      WatchAuthUserUseCase(auth),
+      GetCachedUserProfileUseCase(profiles),
+      UpdateUserNameUseCase(profiles),
+      SignInWithProviderUseCase(auth, profiles, reasons),
+      SignOutUseCase(auth, profiles),
+    ),
+  );
   instance.registerFactory<DashboardBloc>(
     () => DashboardBloc(
       instance<AnalyticsService>(),
       EnsureSignedInUseCase(instance<AuthRepository>()),
+      FinishAccountMergeUseCase(instance<AuthRepository>(), reasons),
       SyncUserProfileUseCase(instance<UserProfileRepository>()),
       UpdateDeviceInfoUseCase(instance<UserProfileRepository>()),
       GetAppInfoUseCase(FakeSettingsRepository()),

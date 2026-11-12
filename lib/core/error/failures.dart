@@ -14,3 +14,8 @@ class NetworkFailure extends Failure {
 class CacheFailure extends Failure {
   const CacheFailure(super.message);
 }
+
+/// The person closed the Apple / Google sheet without choosing: not an error to show.
+class CancelledFailure extends Failure {
+  const CancelledFailure(super.message);
+}

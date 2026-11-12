@@ -448,6 +448,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings_sign_in => 'Sign In';
 
   @override
+  String get settings_sign_out => 'Sign Out';
+
+  @override
+  String get settings_signed_in_apple => 'Signed in with Apple';
+
+  @override
+  String get settings_signed_in_google => 'Signed in with Google';
+
+  @override
+  String get settings_signed_in_device => 'Signed in on this device';
+
+  @override
+  String get settings_sign_in_note =>
+      'Keep your goals, alarms and Premium if you delete the app or switch phones.';
+
+  @override
+  String get account_profile_title => 'Profile';
+
+  @override
+  String get account_profile_back => 'Settings';
+
+  @override
+  String get account_save => 'Save';
+
+  @override
+  String get account_your_name => 'Your name';
+
+  @override
+  String get account_name_hint => 'Your first name';
+
+  @override
+  String get account_name_semantics => 'First name';
+
+  @override
+  String get account_section => 'Account';
+
+  @override
+  String get account_signed_in_with => 'Signed in with';
+
+  @override
+  String get account_provider_apple => 'Apple';
+
+  @override
+  String get account_provider_google => 'Google';
+
+  @override
+  String get account_provider_device => 'This device';
+
+  @override
+  String get account_sign_out_title => 'Sign out of Eala?';
+
+  @override
+  String get account_sign_out_message =>
+      'Your goals stay with your account. Sign back in any time to pick up where you left off.';
+
+  @override
+  String get account_sign_in_title => 'Keep your goals safe';
+
+  @override
+  String get account_sign_in_subtitle => 'So they follow you to any phone.';
+
+  @override
+  String get account_sign_in_apple => 'Sign in with Apple';
+
+  @override
+  String get account_sign_in_google => 'Sign in with Google';
+
+  @override
+  String get account_sign_in_failed =>
+      'Couldn’t sign in. Check your connection and try again.';
+
+  @override
+  String get account_sign_out_failed =>
+      'Couldn’t sign out. Check your connection and try again.';
+
+  @override
+  String get account_name_failed =>
+      'Couldn’t save your name. Check your connection and try again.';
+
+  @override
   String get settings_delete_account => 'Delete account';
 
   @override
